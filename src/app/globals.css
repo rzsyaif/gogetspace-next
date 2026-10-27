@@ -32,6 +32,15 @@
 @keyframes bp-dialog-in {
   from { opacity: 0; transform: scale(0.94); }
 }
+/* Radix Accordion/Collapsible content height */
+@keyframes bp-accordion-down {
+  from { height: 0; opacity: 0; }
+  to { height: var(--radix-accordion-content-height); opacity: 1; }
+}
+@keyframes bp-accordion-up {
+  from { height: var(--radix-accordion-content-height); opacity: 1; }
+  to { height: 0; opacity: 0; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

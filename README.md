@@ -21,7 +21,8 @@ pnpm dev          # http://localhost:3000
 | `pnpm typecheck` | Generate route types, then `tsc --noEmit` |
 | `pnpm tokens` | Regenerate `src/styles/tokens.css` from `tokens/baseplate.tokens.json` |
 
-Routes: `/` lists the prototype screens, `/styleguide` shows every token and component in light and dark.
+Routes: `/` is the marketing homepage (ported from the Framer site), `/screens` lists the prototype screens,
+`/styleguide` shows every token and component in light and dark.
 
 ## Design tokens
 
@@ -71,12 +72,24 @@ import { Button, Field, Input } from "@/components/ui"
 Bricolage Grotesque (headings) and Geist / Geist Mono (body, code) are self-hosted from `src/fonts`
 (SIL Open Font License) via `next/font/local`, so builds don't depend on Google Fonts.
 
+## Homepage
+
+`src/app/page.tsx` composes the sections in `src/components/site`. The page is always light (`data-theme="light"`).
+
+- **Pixel Blocks** (`pixel-blocks.tsx`): canvas falling-blocks game behind the hero. Clicking drops the next piece at the cursor.
+  When the visitor focuses a prompt input, the board dissolves; it rebuilds when they cancel or scroll away (`prompt-events.ts`).
+- **Prompt input** (`prompt-input.tsx`): demo attachments, Enter to "generate", animated outline and glow.
+- **How it works**: a sticky panel. Each 100vh of scroll is one step, and the bars show real scroll progress.
+- **Feature cards**: illustrations animate on hover, or when scrolled into view on touch screens.
+- Images still load from the Framer CDN (`assets.ts`, allowed in `next.config.ts`). Move them to `/public` when the Framer site is retired.
+
 ## Project layout
 
 ```
 src/
   app/              routes (App Router)
   components/ui/    Baseplate components
+  components/site/  marketing homepage sections (Pixel Blocks, AI prompt input, feature cards, …)
   components/       app-level pieces (theme toggle, …)
   fonts/            self-hosted font files + licenses
   lib/              helpers (cn)
