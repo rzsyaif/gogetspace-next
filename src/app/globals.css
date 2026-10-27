@@ -32,6 +32,21 @@
 @keyframes bp-dialog-in {
   from { opacity: 0; transform: scale(0.94); }
 }
+@keyframes bp-sheet-in {
+  from { opacity: 0; transform: translateY(48px); }
+}
+/* "working on it" text shimmer */
+@keyframes bp-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+@utility shimmer-text {
+  background-image: linear-gradient(90deg, var(--color-fg-primary) 0%, var(--color-fg-primary) 35%, var(--color-fg-disabled) 50%, var(--color-fg-primary) 65%, var(--color-fg-primary) 100%);
+  background-size: 200% 100%;
+  background-clip: text;
+  color: transparent;
+  animation: bp-shimmer 1.8s linear infinite;
+}
 /* Radix Accordion/Collapsible content height */
 @keyframes bp-accordion-down {
   from { height: 0; opacity: 0; }
@@ -60,4 +75,98 @@
   background-image: radial-gradient(circle, currentColor 0 8px, transparent 8.5px);
   background-size: 32px 32px;
   background-repeat: space; /* whole studs only, evenly spread */
+}
+
+/* Sitemap org chart: connectors drawn with borders between parent and child rows */
+@layer components {
+  .sitemap-tree ul {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    padding-top: 36px;
+  }
+  .sitemap-tree > ul {
+    padding-top: 0;
+  }
+  .sitemap-tree li {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 36px 12px 0;
+  }
+  .sitemap-tree > ul > li {
+    padding-top: 0;
+  }
+  .sitemap-tree li::before,
+  .sitemap-tree li::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 50%;
+    width: 50%;
+    height: 36px;
+    border-top: 1px solid var(--color-line-strong);
+  }
+  .sitemap-tree li::after {
+    right: auto;
+    left: 50%;
+    border-left: 1px solid var(--color-line-strong);
+  }
+  .sitemap-tree > ul > li::before,
+  .sitemap-tree > ul > li::after,
+  .sitemap-tree li:only-child::before {
+    display: none;
+  }
+  .sitemap-tree li:only-child::after {
+    border-top: 0;
+  }
+  .sitemap-tree li:first-child::before,
+  .sitemap-tree li:last-child::after {
+    border: 0 none;
+  }
+  .sitemap-tree li:last-child::before {
+    border-right: 1px solid var(--color-line-strong);
+    border-radius: 0 12px 0 0;
+  }
+  .sitemap-tree li:first-child:not(:only-child)::after {
+    border-radius: 12px 0 0 0;
+  }
+  .sitemap-tree ul ul::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 50%;
+    height: 36px;
+    border-left: 1px solid var(--color-line-strong);
+  }
+  /* third level stacks vertically under its parent */
+  .sitemap-tree ul ul ul {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 20px 0 0 28px;
+  }
+  .sitemap-tree ul ul ul::before {
+    left: 12px;
+    height: calc(100% - 22px);
+  }
+  .sitemap-tree ul ul ul > li {
+    padding: 0;
+    align-items: flex-start;
+  }
+  .sitemap-tree ul ul ul > li::before {
+    display: block;
+    top: 22px;
+    left: -16px;
+    right: auto;
+    width: 16px;
+    height: 0;
+    border: 0;
+    border-top: 1px solid var(--color-line-strong);
+    border-radius: 0;
+  }
+  .sitemap-tree ul ul ul > li::after {
+    display: none;
+  }
 }

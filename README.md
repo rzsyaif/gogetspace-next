@@ -21,8 +21,15 @@ pnpm dev          # http://localhost:3000
 | `pnpm typecheck` | Generate route types, then `tsc --noEmit` |
 | `pnpm tokens` | Regenerate `src/styles/tokens.css` from `tokens/baseplate.tokens.json` |
 
-Routes: `/` is the marketing homepage (ported from the Framer site), `/screens` lists the prototype screens,
-`/styleguide` shows every token and component in light and dark.
+Routes:
+
+| Route | What it is |
+| --- | --- |
+| `/` | Marketing homepage (ported from the Framer site) |
+| `/generate?q=…` | Generation flow: plan → review brief, style, sitemap → build → publish |
+| `/preview/[style]/[page]` | The generated Bakti Analisa site — 11 pages in every style option |
+| `/screens` | Index of the prototype screens |
+| `/styleguide` | Every token and component in light and dark |
 
 ## Design tokens
 
@@ -83,6 +90,23 @@ Bricolage Grotesque (headings) and Geist / Geist Mono (body, code) are self-host
 - **Feature cards**: illustrations animate on hover, or when scrolled into view on touch screens.
 - Images still load from the Framer CDN (`assets.ts`, allowed in `next.config.ts`). Move them to `/public` when the Framer site is retired.
 
+## Generation flow
+
+Typing a prompt on the homepage opens `/generate`. A scripted agent (`src/lib/generation/state.ts`, timers in
+`gen-provider.tsx`) plans the site, then the person reviews three artifacts in a sheet: an editable brief (guesses are
+highlighted until confirmed), style options with a live preview of the real site, and a sitemap (map or list, with
+rename / add / remove and plan limits). "Start Creation" opens the workspace: chat, build progress, credits, and a
+preview of the generated site with device sizes and a page switcher. Sign-up is asked for only when publishing.
+
+Product decisions built in: a follow-up sent while planning **restarts the plan**; **sign-up happens at Publish**.
+
+The session is kept in `sessionStorage`, so a refresh resumes. The **Prototype** button (bottom-left) replays the flow
+with an edge case (vague prompt, nothing found online, several matches, search down, a failing or slow step, a declined
+request, low or exhausted credits, a page that fails to build), jumps to any stage, and changes the speed.
+
+The generated site lives in `src/components/bakti-site` and reads only theme variables, so every style option restyles
+all pages. Content is in `src/lib/bakti`.
+
 ## Project layout
 
 ```
@@ -90,6 +114,9 @@ src/
   app/              routes (App Router)
   components/ui/    Baseplate components
   components/site/  marketing homepage sections (Pixel Blocks, AI prompt input, feature cards, …)
+  components/generate/   generation flow (chat, review sheet, workspace, publish, prototype controls)
+  components/bakti-site/ the generated client site
+  lib/generation/   flow state and the brief; lib/bakti/ site content, themes, sitemap
   components/       app-level pieces (theme toggle, …)
   fonts/            self-hosted font files + licenses
   lib/              helpers (cn)
