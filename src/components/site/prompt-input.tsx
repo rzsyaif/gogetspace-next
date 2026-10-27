@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type MouseEvent } from "react"
+import { useRouter } from "next/navigation"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import { ArrowUp, Plus, Sparkle, X } from "lucide-react"
 import { cn } from "@/lib/cn"
@@ -30,6 +31,8 @@ export interface PromptInputProps {
   /** seconds the demo "generates" for before returning to the input; 0 = until stopped */
   generateFor?: number
   onSubmit?: (brief: { text: string; files: DemoFile[] }) => void
+  /** after a short "generating" moment, open the generation flow at this route with the prompt */
+  flowHref?: string
   className?: string
 }
 
@@ -57,9 +60,11 @@ export function PromptInput({
   demoFiles = DEFAULT_FILES,
   generateFor = 8,
   onSubmit,
+  flowHref,
   className,
 }: PromptInputProps) {
   const reduce = useReducedMotion()
+  const router = useRouter()
   const files: FileItem[] = demoFiles.map((f, i) => ({
     ...f,
     id: i,
@@ -124,6 +129,13 @@ export function PromptInput({
     setGenerating(true)
     taRef.current?.blur()
     onSubmit?.({ text, files: attached.map((a) => a.file) })
+    if (flowHref) {
+      const note = attached.length ? ` (attached: ${attached.map((a) => a.file.name).join(", ")})` : ""
+      try {
+        sessionStorage.removeItem("gogetspace-generation")
+      } catch {}
+      timers.current.push(window.setTimeout(() => router.push(`${flowHref}?q=${encodeURIComponent(text.trim() + note)}`), 1400))
+    }
   }
   const stop = () => {
     setGenerating(false)

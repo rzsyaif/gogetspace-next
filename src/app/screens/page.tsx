@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ArrowRight, House, LayoutDashboard, MessagesSquare, Palette, Sparkles } from "lucide-react"
+import { ArrowRight, Globe, House, LayoutDashboard, MessagesSquare, Palette, Sparkles } from "lucide-react"
 import { Badge, Card, Logo } from "@/components/ui"
 import { ThemeToggle } from "@/components/theme"
 
@@ -9,8 +9,9 @@ export const metadata: Metadata = { title: "Prototype screens" }
 const SCREENS = [
   { href: "/", title: "Homepage", desc: "Marketing site with the AI prompt, Pixel Blocks and feature cards.", Icon: House, ready: true },
   { href: "/styleguide", title: "Style guide", desc: "Baseplate tokens and components, in light and dark.", Icon: Palette, ready: true },
-  { href: "#", title: "Generating", desc: "Prompt → brief → style options → sitemap → building.", Icon: Sparkles, ready: false },
-  { href: "#", title: "Editor", desc: "Chat with the agent beside a live preview of the site.", Icon: MessagesSquare, ready: false },
+  { href: "/generate", title: "Generating", desc: "Prompt → brief → style options → sitemap → building → publish, with edge cases.", Icon: Sparkles, ready: true },
+  { href: "/generate", title: "Editor", desc: "Chat with the agent beside a live preview of the site (first version inside the generation flow).", Icon: MessagesSquare, ready: true },
+  { href: "/preview/clinical-clarity", title: "Generated site", desc: "The Bakti Analisa site the agent builds — 11 pages in 9 styles.", Icon: Globe, ready: true },
   { href: "#", title: "Dashboard", desc: "Sites, domains, billing and account settings.", Icon: LayoutDashboard, ready: false },
 ]
 

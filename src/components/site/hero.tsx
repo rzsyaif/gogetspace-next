@@ -19,7 +19,7 @@ export function Hero() {
           </h1>
           <p className="type-body-lg text-neutral-600">Build a dream space for your business. Start for free.</p>
         </div>
-        <PromptInput />
+        <PromptInput flowHref="/generate" />
       </div>
     </section>
   )

@@ -8,7 +8,7 @@ export function Cta() {
           <p className="type-label-sm text-blue-500">YOUR ALL-IN-ONE WEBSITE SOLUTION</p>
           <h2 id="cta-title" className="type-display text-neutral-900">Ready to start building your space?</h2>
         </div>
-        <PromptInput />
+        <PromptInput flowHref="/generate" />
       </div>
     </section>
   )
