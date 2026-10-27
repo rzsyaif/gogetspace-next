@@ -120,6 +120,11 @@ push("    color-scheme: dark;")
 lines.push(...dark)
 push("  }")
 push("}")
+// force light on a subtree (e.g. the marketing site) whatever the page theme
+push('[data-theme="light"] {')
+push("  color-scheme: light;")
+lines.push(...semanticBlock("light"))
+push("}")
 push()
 
 // ---------- Type utilities matching the Figma text styles ----------
