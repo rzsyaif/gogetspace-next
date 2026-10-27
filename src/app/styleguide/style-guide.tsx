@@ -1,0 +1,405 @@
+"use client"
+
+import { useState, type ReactNode } from "react"
+import Link from "next/link"
+import { ArrowRight, Globe, LayoutTemplate, Pencil, Plus, Search, Settings, Sparkles, Trash2 } from "lucide-react"
+import {
+  Alert,
+  Avatar,
+  Badge,
+  Button,
+  Card,
+  Checkbox,
+  Chip,
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  Field,
+  Input,
+  Logo,
+  ProgressBar,
+  Select,
+  StudsMedia,
+  Switch,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  Textarea,
+  Toast,
+  Tooltip,
+  TooltipProvider,
+} from "@/components/ui"
+import { ThemeToggle } from "@/components/theme"
+
+const SEMANTIC: { group: string; items: { name: string; className: string }[] }[] = [
+  {
+    group: "Backgrounds",
+    items: [
+      { name: "bg-canvas", className: "bg-canvas" },
+      { name: "bg-surface", className: "bg-surface" },
+      { name: "bg-surface-raised", className: "bg-surface-raised" },
+      { name: "bg-subtle", className: "bg-subtle" },
+      { name: "bg-muted", className: "bg-muted" },
+      { name: "bg-inverse", className: "bg-inverse" },
+    ],
+  },
+  {
+    group: "Actions",
+    items: [
+      { name: "action-primary", className: "bg-action-primary" },
+      { name: "action-primary-hover", className: "bg-action-primary-hover" },
+      { name: "action-secondary", className: "bg-action-secondary" },
+      { name: "action-ghost-hover", className: "bg-action-ghost-hover" },
+      { name: "action-destructive", className: "bg-action-destructive" },
+      { name: "action-disabled", className: "bg-action-disabled" },
+    ],
+  },
+  {
+    group: "Accents",
+    items: [
+      { name: "accent-blue", className: "bg-accent-blue" },
+      { name: "accent-blue-subtle", className: "bg-accent-blue-subtle" },
+      { name: "accent-coral", className: "bg-accent-coral" },
+      { name: "accent-coral-subtle", className: "bg-accent-coral-subtle" },
+      { name: "accent-yellow", className: "bg-accent-yellow" },
+      { name: "accent-yellow-subtle", className: "bg-accent-yellow-subtle" },
+      { name: "accent-green", className: "bg-accent-green" },
+      { name: "accent-green-subtle", className: "bg-accent-green-subtle" },
+    ],
+  },
+]
+
+const TYPE = [
+  ["type-display", "Your business, online today"],
+  ["type-h1", "Build a dream space"],
+  ["type-h2", "Simple plans, everything included"],
+  ["type-h3", "From a sentence to a live website"],
+  ["type-h4", "Connect your domain"],
+  ["type-h5", "Plan how your space is built"],
+  ["type-h6", "Do I need any technical skills?"],
+  ["type-body-lg", "Build a dream space for your business. Start for free."],
+  ["type-body-md", "Answer a few questions in plain words. We handle the design."],
+  ["type-body-sm", "Hosting and security are already set up."],
+  ["type-label-lg", "Start with Business"],
+  ["type-label-md", "Start building"],
+  ["type-label-sm", "YOUR ALL-IN-ONE WEBSITE SOLUTION"],
+  ["type-caption", "Last edited 2 minutes ago"],
+] as const
+
+function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+  return (
+    <section id={id} className="scroll-mt-24 flex flex-col gap-6 border-t border-line-default py-12">
+      <h2 className="type-h3">{title}</h2>
+      {children}
+    </section>
+  )
+}
+
+export function StyleGuide({ palettes }: { palettes: [string, Record<string, string>][] }) {
+  const [toast, setToast] = useState(false)
+  const [alertOpen, setAlertOpen] = useState(true)
+  const [progress, setProgress] = useState(50)
+  const [selected, setSelected] = useState(1)
+
+  return (
+    <TooltipProvider>
+      <header className="sticky top-0 z-40 border-b border-line-default bg-canvas/90 backdrop-blur">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-8">
+          <Link href="/" className="rounded-md focus-visible:outline-none focus-visible:focus-ring">
+            <Logo />
+          </Link>
+          <nav aria-label="Sections" className="hidden items-center gap-1 lg:flex">
+            {["colors", "type", "buttons", "forms", "menus", "feedback", "display"].map((s) => (
+              <a key={s} href={`#${s}`} className="rounded-sm px-3 py-1.5 type-label-md capitalize text-fg-secondary hover:bg-subtle hover:text-fg-primary">
+                {s}
+              </a>
+            ))}
+          </nav>
+          <ThemeToggle />
+        </div>
+      </header>
+
+      <main className="mx-auto w-full max-w-6xl px-4 pb-24 sm:px-8">
+        <div className="flex flex-col gap-3 py-12">
+          <Badge tone="brand" className="self-start">Baseplate by GoGetSpace</Badge>
+          <h1 className="type-h1">Style guide</h1>
+          <p className="max-w-2xl type-body-lg text-fg-secondary">
+            Tokens and components generated from the Figma library. Switch the theme in the header to check dark mode.
+          </p>
+        </div>
+
+        <Section id="colors" title="Colors">
+          <div className="flex flex-col gap-3">
+            {palettes.map(([name, steps]) => (
+              <div key={name} className="grid grid-cols-[72px_1fr] items-center gap-3">
+                <span className="type-label-md capitalize text-fg-secondary">{name}</span>
+                <div className="grid grid-cols-11 overflow-hidden rounded-md border border-line-default">
+                  {Object.entries(steps).map(([step, hex]) => (
+                    <div key={step} title={`${name}/${step} ${hex}`} className="flex h-12 items-end p-1.5" style={{ background: hex }}>
+                      <span className={`hidden type-caption sm:inline ${Number(step) >= 500 ? "text-white/80" : "text-black/60"}`}>{step}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="grid gap-6 md:grid-cols-3">
+            {SEMANTIC.map((g) => (
+              <div key={g.group} className="flex flex-col gap-2">
+                <h3 className="type-label-md text-fg-secondary">{g.group}</h3>
+                <ul className="flex flex-col gap-1.5">
+                  {g.items.map((i) => (
+                    <li key={i.name} className="flex items-center gap-3">
+                      <span className={`size-8 shrink-0 rounded-sm border border-line-default ${i.className}`} />
+                      <code className="font-mono text-[13px] text-fg-secondary">{i.name}</code>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </Section>
+
+        <Section id="type" title="Typography">
+          <div className="flex flex-col divide-y divide-line-default">
+            {TYPE.map(([cls, sample]) => (
+              <div key={cls} className="grid gap-2 py-4 md:grid-cols-[160px_1fr] md:items-baseline">
+                <code className="font-mono text-[13px] text-fg-tertiary">{cls}</code>
+                <p className={cls}>{sample}</p>
+              </div>
+            ))}
+          </div>
+        </Section>
+
+        <Section id="buttons" title="Buttons">
+          {(["sm", "md", "lg"] as const).map((size) => (
+            <div key={size} className="flex flex-wrap items-center gap-4">
+              <span className="w-10 type-label-md text-fg-tertiary">{size}</span>
+              <Button size={size}>Start building</Button>
+              <Button size={size} variant="secondary" leadingIcon={<Pencil />}>
+                Edit brief
+              </Button>
+              <Button size={size} variant="ghost">
+                Log in
+              </Button>
+              <Button size={size} variant="destructive" leadingIcon={<Trash2 />}>
+                Delete site
+              </Button>
+              <Button size={size} disabled>
+                Disabled
+              </Button>
+            </div>
+          ))}
+          <div className="flex flex-wrap items-center gap-4">
+            <span className="w-10 type-label-md text-fg-tertiary">icon</span>
+            <Tooltip content="New site">
+              <Button size="icon-md" aria-label="New site">
+                <Plus />
+              </Button>
+            </Tooltip>
+            <Tooltip content="Settings">
+              <Button size="icon-sm" variant="secondary" aria-label="Settings">
+                <Settings />
+              </Button>
+            </Tooltip>
+            <Button variant="primary" trailingIcon={<ArrowRight />}>
+              Continue
+            </Button>
+            <Button asChild variant="secondary">
+              <Link href="/">As a link</Link>
+            </Button>
+          </div>
+        </Section>
+
+        <Section id="forms" title="Forms">
+          <div className="grid gap-8 md:grid-cols-2">
+            <Field label="Business name" helper="Shown on your site header">
+              <Input placeholder="e.g. Rahma Family Clinic" />
+            </Field>
+            <Field label="Domain" error="This domain is already taken">
+              <Input defaultValue="baktianalisa.com" leadingIcon={<Globe />} />
+            </Field>
+            <Field label="Practice type" helper="Helps us pick the right sections">
+              <Select
+                options={[
+                  { value: "law", label: "Law firm" },
+                  { value: "medical", label: "Medical clinic" },
+                  { value: "dental", label: "Dental practice" },
+                  { value: "lab", label: "Clinical laboratory" },
+                  { value: "accounting", label: "Accounting" },
+                ]}
+              />
+            </Field>
+            <Field label="Search">
+              <Input placeholder="Search your sites" leadingIcon={<Search />} />
+            </Field>
+            <Field label="About your business" helper="A sentence or two is enough" className="md:col-span-2">
+              <Textarea placeholder="A clinical laboratory in Penang serving patients, doctors and companies." />
+            </Field>
+            <div className="flex flex-col gap-4">
+              <Checkbox label="Show opening hours on my site" defaultChecked />
+              <Checkbox label="Add a booking page" description="Visitors can pick a date and time" />
+              <Checkbox label="Select all pages" checked="indeterminate" />
+              <Checkbox label="Disabled option" disabled />
+            </div>
+            <div className="flex flex-col gap-4">
+              <Switch label="Publish site automatically" defaultChecked />
+              <Switch label="Show cookie banner" />
+              <Switch label="Disabled" disabled />
+            </div>
+          </div>
+        </Section>
+
+        <Section id="menus" title="Menus, tabs and dialogs">
+          <div className="flex flex-wrap items-start gap-6">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="secondary">Site actions</Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuLabel>Bakti Analisa</DropdownMenuLabel>
+                <DropdownMenuItem>
+                  <Pencil /> Edit site
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Globe /> Connect domain
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <LayoutTemplate /> Duplicate
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem tone="danger">
+                  <Trash2 /> Delete site
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button leadingIcon={<Globe />}>Connect domain</Button>
+              </DialogTrigger>
+              <DialogContent
+                title="Connect your domain"
+                description="Type the domain you already own, or pick a new one while you build."
+                footer={
+                  <>
+                    <DialogClose asChild>
+                      <Button variant="ghost">Cancel</Button>
+                    </DialogClose>
+                    <DialogClose asChild>
+                      <Button>Connect domain</Button>
+                    </DialogClose>
+                  </>
+                }
+              >
+                <Field label="Domain" helper="Free for the first year">
+                  <Input defaultValue="baktianalisa.com" leadingIcon={<Globe />} />
+                </Field>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <Tabs defaultValue="pages" className="flex flex-col gap-4">
+            <TabsList aria-label="Editor panels">
+              <TabsTrigger value="pages">Pages</TabsTrigger>
+              <TabsTrigger value="style">Style</TabsTrigger>
+              <TabsTrigger value="settings">Settings</TabsTrigger>
+            </TabsList>
+            <TabsContent value="pages" className="type-body-md text-fg-secondary">Home, Tests &amp; Packages, For Doctors, About, Contact.</TabsContent>
+            <TabsContent value="style" className="type-body-md text-fg-secondary">Clinical Clarity — Plus Jakarta Sans and Inter.</TabsContent>
+            <TabsContent value="settings" className="type-body-md text-fg-secondary">Domain, SEO and integrations.</TabsContent>
+          </Tabs>
+        </Section>
+
+        <Section id="feedback" title="Feedback">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Alert tone="info" title="Your brief is ready">Review it, change anything you like, then pick a style.</Alert>
+            <Alert tone="success" title="Site published">bakti-analisa.get.space is live.</Alert>
+            <Alert tone="warning" title="Domain not connected yet">DNS changes can take up to 24 hours.</Alert>
+            {alertOpen && (
+              <Alert tone="error" title="Payment failed" onDismiss={() => setAlertOpen(false)}>
+                Update your card to keep your site online.
+              </Alert>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-4">
+            <Toast tone="success" message="Changes saved" action={{ label: "Undo", onClick: () => setToast(true) }} />
+            <Toast tone="processing" message="Publishing…" />
+            <Toast tone="error" message="Couldn’t publish" action={{ label: "Retry", onClick: () => setToast(true) }} />
+            {toast && <Badge tone="success">Action clicked</Badge>}
+          </div>
+          <div className="flex max-w-md flex-col gap-3">
+            <ProgressBar value={progress} label="Building your pages…" />
+            <div className="flex gap-2">
+              <Button size="sm" variant="secondary" onClick={() => setProgress((p) => Math.max(0, p - 25))}>
+                −25
+              </Button>
+              <Button size="sm" variant="secondary" onClick={() => setProgress((p) => Math.min(100, p + 25))}>
+                +25
+              </Button>
+            </div>
+          </div>
+        </Section>
+
+        <Section id="display" title="Badges, chips, avatars and cards">
+          <div className="flex flex-wrap gap-2">
+            {(["neutral", "brand", "success", "warning", "error"] as const).map((t) => (
+              <Badge key={t} tone={t} className="capitalize">
+                {t}
+              </Badge>
+            ))}
+            {(["neutral", "brand", "success", "warning", "error"] as const).map((t) => (
+              <Badge key={`${t}-solid`} tone={t} look="solid" className="capitalize">
+                {t}
+              </Badge>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {["Add a booking page", "Show opening hours", "Add a price list"].map((c, i) => (
+              <Chip key={c} icon={<Sparkles />} selected={selected === i} onClick={() => setSelected(i)}>
+                {c}
+              </Chip>
+            ))}
+          </div>
+          <div className="flex items-center gap-3">
+            <Avatar size="sm" name="Rizqy Ali" />
+            <Avatar size="md" name="Bakti Analisa" />
+            <Avatar size="lg" name="Kiki" />
+            <Avatar size="md" />
+          </div>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              { title: "Clinic starter", desc: "Home, services, doctors and a booking page.", badge: "New" },
+              { title: "Law firm", desc: "Practice areas, team profiles and a consultation form.", badge: null },
+              { title: "Clinical lab", desc: "Test menu, packages, doctor referrals and results.", badge: "Popular" },
+            ].map((c, i) => (
+              <Card key={c.title} interactive selected={i === 2} className="flex flex-col">
+                <StudsMedia />
+                <div className="flex flex-1 flex-col gap-2 p-5">
+                  <div className="flex items-center gap-2">
+                    <h3 className="flex-1 type-h6">{c.title}</h3>
+                    {c.badge && <Badge tone="brand">{c.badge}</Badge>}
+                  </div>
+                  <p className="type-body-sm text-fg-secondary">{c.desc}</p>
+                </div>
+                <div className="px-5 pb-5">
+                  <Button size="sm" variant="secondary">
+                    Use template
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </Section>
+      </main>
+    </TooltipProvider>
+  )
+}

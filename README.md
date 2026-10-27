@@ -1,36 +1,86 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# GoGetSpace — app UI prototype
 
-## Getting Started
+Front-end prototype of the GoGetSpace builder (generating flow, agentic editor, dashboard).
+There is no backend: screens run on sample data and a scripted agent.
 
-First, run the development server:
+Built with **Next.js 16** (App Router, Turbopack), **React 19**, **TypeScript**, **Tailwind CSS 4**,
+**Radix UI** primitives, **Motion** and **lucide-react**, styled with the **Baseplate by GoGetSpace** design system.
+
+## Getting started
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
+pnpm dev          # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+| Script | What it does |
+| --- | --- |
+| `pnpm dev` | Start the dev server |
+| `pnpm build` / `pnpm start` | Production build / serve it |
+| `pnpm lint` | ESLint |
+| `pnpm typecheck` | Generate route types, then `tsc --noEmit` |
+| `pnpm tokens` | Regenerate `src/styles/tokens.css` from `tokens/baseplate.tokens.json` |
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Routes: `/` lists the prototype screens, `/styleguide` shows every token and component in light and dark.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Design tokens
 
-## Learn More
+`tokens/baseplate.tokens.json` is exported from the Baseplate Figma library (variables, text styles and effect styles).
+`pnpm tokens` turns it into `src/styles/tokens.css`, which:
 
-To learn more about Next.js, take a look at the following resources:
+- replaces Tailwind's default palette with Baseplate primitives (`bg-blue-500`, `text-neutral-600`, …)
+- adds semantic colors that switch automatically in dark mode
+- maps radius (`rounded-sm|md|lg|xl|full` = 6/10/16/24/999px) and shadows (`shadow-block-sm|md|lg`, `shadow-soft-sm|md|lg`)
+- defines one utility per Figma text style; sizes drop to the mobile scale below 810px
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Don't edit `tokens.css` by hand — change the JSON (or re-export from Figma) and run `pnpm tokens`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Cheat sheet
 
-## Deploy on Vercel
+| Figma | Tailwind |
+| --- | --- |
+| `color/bg/canvas`, `surface`, `subtle`, `muted`, `inverse` | `bg-canvas`, `bg-surface`, `bg-subtle`, `bg-muted`, `bg-inverse` |
+| `color/text/primary`, `secondary`, `tertiary`, `brand`, `link` | `text-fg-primary`, `text-fg-secondary`, `text-fg-tertiary`, `text-fg-brand`, `text-fg-link` |
+| `color/border/default`, `strong` | `border-line-default`, `border-line-strong` |
+| `color/action/primary/default`, `hover`, `pressed` | `bg-action-primary`, `bg-action-primary-hover`, `bg-action-primary-pressed` |
+| `color/status/success/bg` … | `bg-status-success-bg`, `text-status-success-text`, … |
+| Heading/H2, Body/Small, Label/Medium … | `type-h2`, `type-body-sm`, `type-label-md`, … |
+| Effect `Block/Medium`, `Soft/Medium`, `Focus/Ring` | `shadow-block-md`, `shadow-soft-md`, `focus-ring` |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Theme: the OS setting is used by default; `<ThemeToggle />` forces light or dark (`data-theme` on `<html>`, saved in `localStorage`).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Components
+
+`src/components/ui` mirrors the Baseplate component set:
+
+Button (sm/md/lg/icon × primary/secondary/ghost/destructive, with the lego press), Logo, Badge, Chip, Avatar,
+Field + Input + Textarea, Select, DropdownMenu, Checkbox, Switch, Tabs, Tooltip, Dialog (modal), Alert, Toast,
+ProgressBar, Card and StudsMedia.
+
+```tsx
+import { Button, Field, Input } from "@/components/ui"
+
+<Field label="Business name" helper="Shown on your site header">
+  <Input placeholder="e.g. Rahma Family Clinic" />
+</Field>
+<Button size="lg" trailingIcon={<ArrowRight />}>Start building</Button>
+```
+
+## Fonts
+
+Bricolage Grotesque (headings) and Geist / Geist Mono (body, code) are self-hosted from `src/fonts`
+(SIL Open Font License) via `next/font/local`, so builds don't depend on Google Fonts.
+
+## Project layout
+
+```
+src/
+  app/              routes (App Router)
+  components/ui/    Baseplate components
+  components/       app-level pieces (theme toggle, …)
+  fonts/            self-hosted font files + licenses
+  lib/              helpers (cn)
+  styles/tokens.css generated — do not edit
+tokens/             Baseplate token source (from Figma)
+scripts/            build-tokens.mjs
+```
