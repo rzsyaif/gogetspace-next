@@ -10,7 +10,7 @@ import { GenProvider, useGen } from "./gen-provider"
 import { Messages } from "./chat-blocks"
 import { ChatInput } from "./chat-input"
 import { ReviewSheet } from "./review-sheet"
-import { AccountButton, PreviewPane, ProjectHeader, Rail, SidePanel, type Tab } from "./workspace"
+import { AccountButton, MobileNav, PreviewPane, ProjectHeader, Rail, SidePanel, type Tab } from "./workspace"
 import { ScenarioPanel } from "./scenario-panel"
 
 const EASE = [0.65, 0, 0.25, 1] as const
@@ -61,6 +61,16 @@ function Shell() {
   const [chatOpen, setChatOpen] = useState(true)
   const [mobileView, setMobileView] = useState<"chat" | "preview">("chat")
   const [toast, setToast] = useState<string | null>(null)
+  // phones: when the build finishes, show the site straight away
+  const buildStatus = s.buildRun ? s.runs[s.buildRun]?.status : undefined
+  const [seenBuild, setSeenBuild] = useState(buildStatus)
+  if (buildStatus !== seenBuild) {
+    setSeenBuild(buildStatus)
+    if (buildStatus === "done" && !wide) {
+      setMobileView("preview")
+      setToast("Your site is ready")
+    }
+  }
   useEffect(() => {
     if (!toast) return
     const t = window.setTimeout(() => setToast(null), 2400)
@@ -88,7 +98,7 @@ function Shell() {
         )}
       </motion.header>
 
-      {/* phone editor bar: logo, chat/preview switch, account */}
+      {/* phone editor bar: logo, chat/preview switch, menu (tabs + account) */}
       {create && !wide && (
         <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 border-b border-line-default px-4 py-3">
           <Link href="/" aria-label="GoGetSpace home"><Logo markOnly size={32} /></Link>
@@ -105,7 +115,13 @@ function Shell() {
               { value: "preview", label: "Preview" },
             ]}
           />
-          <AccountButton compact />
+          <MobileNav
+            tab={tab}
+            onTab={(t) => {
+              setTab(t)
+              setMobileView("chat")
+            }}
+          />
         </motion.div>
       )}
 

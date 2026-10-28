@@ -72,6 +72,7 @@ App components built for the generation flow (also on `/styleguide` → App patt
 - **IconButton** — quiet icon-only button for close, reload, zoom and row menus
 - **StepList / Step / StepIndicator** — vertical task list whose markers are joined by one continuous line
 - **PromptBox**, **PromptAttachButton**, **PromptSendButton**, **AttachmentChip** — the chat and "create your own style" boxes
+- **Drawer** — side panel (the phone editor menu)
 - **RadioCard** / **RadioDot** — bordered radio choices (publish domain, style options)
 - **Alert** now also has a `neutral` tone, `actions`, a custom or hidden `icon` and a compact `size="sm"`
 

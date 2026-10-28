@@ -17,9 +17,11 @@ import {
   Link2,
   Loader,
   Lock,
+  Menu,
   Monitor,
   MousePointerClick,
   PanelLeft,
+  Plus,
   RefreshCw,
   RotateCcw,
   Share2,
@@ -28,7 +30,7 @@ import {
   Tablet,
   X,
 } from "lucide-react"
-import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, IconButton, Logo, SegmentedControl, Tooltip } from "@/components/ui"
+import { Avatar, Button, Drawer, DrawerContent, DrawerTrigger, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, IconButton, Logo, SegmentedControl, Tooltip } from "@/components/ui"
 import { cn } from "@/lib/cn"
 import { flatten, type PageNode } from "@/lib/bakti/sitemap"
 import { getTheme } from "@/lib/bakti/themes"
@@ -73,6 +75,96 @@ export function Rail({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) {
         <AccountButton />
       </div>
     </nav>
+  )
+}
+
+/**
+ * Phone editor menu: the rail's workspace tabs and the account, in a drawer from the right edge.
+ * Picking a tab shows its panel in the Chat view.
+ */
+export function MobileNav({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) {
+  const { s, dispatch } = useGen()
+  const [open, setOpen] = useState(false)
+  const [signup, setSignup] = useState(false)
+  const pick = (t: Tab) => {
+    onTab(t)
+    setOpen(false)
+  }
+  return (
+    <>
+      <Drawer open={open} onOpenChange={setOpen}>
+        <DrawerTrigger asChild>
+          <IconButton aria-label="Open menu" size="lg" shape="round" tone="filled">
+            <Menu />
+          </IconButton>
+        </DrawerTrigger>
+        <DrawerContent
+          title="Menu"
+          header={
+            <Link href="/" aria-label="GoGetSpace home" className="inline-flex rounded-md focus-visible:outline-none focus-visible:focus-ring">
+              <Logo size={32} />
+            </Link>
+          }
+          footer={
+            s.account ? (
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-3">
+                  <Avatar size="md" name={s.account.name} />
+                  <span className="flex min-w-0 flex-col">
+                    <span className="truncate type-label-md text-fg-primary">{s.account.name}</span>
+                    <span className="truncate type-body-sm text-fg-tertiary">{s.account.email}</span>
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <Button asChild size="sm" variant="secondary" className="flex-1">
+                    <Link href="/screens">Dashboard</Link>
+                  </Button>
+                  <Button size="sm" variant="secondary" className="flex-1" leadingIcon={<LogOut />} onClick={() => dispatch({ type: "signOut" })}>
+                    Sign out
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <p className="type-body-sm text-fg-secondary">Not signed in. You only need an account to publish.</p>
+                <Button
+                  leadingIcon={<CircleUser />}
+                  onClick={() => {
+                    setOpen(false)
+                    setSignup(true)
+                  }}
+                >
+                  Log in or sign up
+                </Button>
+              </div>
+            )
+          }
+        >
+          <nav aria-label="Workspace" className="flex flex-col gap-1">
+            {RAIL.map(({ id, Icon, label }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => pick(id)}
+                aria-current={tab === id ? "page" : undefined}
+                className={cn(
+                  "flex h-12 items-center gap-3 rounded-md px-3 type-label-lg transition-colors focus-visible:outline-none focus-visible:focus-ring",
+                  tab === id ? "bg-inverse text-fg-inverse" : "text-fg-primary hover:bg-subtle",
+                )}
+              >
+                <Icon className="size-5" strokeWidth={1.75} />
+                {label}
+              </button>
+            ))}
+          </nav>
+          <div className="my-3 border-t border-line-default" />
+          <Link href="/" className="flex h-12 items-center gap-3 rounded-md px-3 type-label-lg text-fg-primary hover:bg-subtle focus-visible:outline-none focus-visible:focus-ring">
+            <Plus className="size-5" strokeWidth={1.75} /> New website
+          </Link>
+        </DrawerContent>
+      </Drawer>
+      <AccountDialog open={signup} onOpenChange={setSignup} />
+    </>
   )
 }
 
