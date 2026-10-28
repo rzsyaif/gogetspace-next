@@ -218,7 +218,7 @@ export type Action =
   | { type: "signOut" }
   | { type: "agentNote"; text: string }
   | { type: "published"; domain: string }
-  | { type: "jump"; to: JumpTarget; scenario?: Scenario }
+  | { type: "jump"; to: JumpTarget; scenario?: Scenario; plan?: Plan }
 
 export type JumpTarget = "generating" | "ready" | "review-brief" | "review-style" | "review-sitemap" | "creating" | "built" | "published"
 
@@ -498,7 +498,7 @@ export function reducer(s: GenState, a: Action): GenState {
       return { ...s, publish: { status: "live", domain: a.domain } }
 
     case "jump":
-      return jump(a.scenario ? { ...s, scenario: a.scenario } : s, a.to)
+      return jump(a.scenario ? { ...s, scenario: a.scenario } : s, a.to, a.plan)
   }
 }
 
@@ -519,7 +519,7 @@ function finishBuild(s: GenState): GenState {
 }
 
 /** jump straight to a stage of the flow (scenario switcher) */
-function jump(s: GenState, to: JumpTarget): GenState {
+function jump(s: GenState, to: JumpTarget, plan: Plan = "business"): GenState {
   let n = initialState(s.prompt, s.scenario === "restricted" || s.scenario === "vague" ? "happy" : s.scenario, s.speed)
   if (to === "generating") return n
   // finish the plan run
@@ -532,7 +532,7 @@ function jump(s: GenState, to: JumpTarget): GenState {
   if (to === "review-style") return { ...n, review: { open: true, step: 1 } }
   n = { ...n, styleId: n.styleId ?? "clinical-clarity", artifacts: { ...n.artifacts, style: "confirmed" } }
   if (to === "review-sitemap") return { ...n, review: { open: true, step: 2 } }
-  n = startBuild({ ...n, artifacts: { ...n.artifacts, sitemap: "confirmed" }, plan: "business" })
+  n = startBuild({ ...n, artifacts: { ...n.artifacts, sitemap: "confirmed" }, plan })
   if (to === "creating") return n
   // finish the build
   const pages = Object.fromEntries(Object.entries(n.pages).map(([k, v]) => [k, v === "queued" ? "built" : v])) as Record<string, PageStatus>
@@ -545,3 +545,13 @@ function jump(s: GenState, to: JumpTarget): GenState {
 
 export const isPlanActive = (s: GenState) => s.runs[s.planRun]?.status === "running"
 export { nextId }
+
+/**
+ * A finished site, as the standalone editor opens it: planned, built with the site's plan and (when live)
+ * published. `ready` gives a site that is still waiting for its plan to be reviewed.
+ */
+export function siteState(opts: { prompt: string; plan: Plan; live: boolean; built: boolean; account: { name: string; email: string }; domain: string; credits: number }): GenState {
+  const base = initialState(opts.prompt, "happy")
+  const n = opts.built ? reducer(base, { type: "jump", to: opts.live ? "published" : "built", plan: opts.plan }) : reducer(base, { type: "jump", to: "ready" })
+  return { ...n, plan: opts.plan, credits: opts.credits, account: opts.account, publish: { status: opts.live ? "live" : "idle", domain: opts.domain } }
+}

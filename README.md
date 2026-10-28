@@ -28,6 +28,8 @@ Routes:
 | `/` | Marketing homepage (ported from the Framer site) |
 | `/generate?q=…` | Generation flow: plan → review brief, style, sitemap → build → publish |
 | `/preview/[style]/[page]` | The generated Bakti Analisa site — 11 pages in every style option |
+| `/dashboard` | Account home: new-site prompt and all websites; also `/websites`, `/domains`, `/billing`, `/settings`, `/inbox` |
+| `/sites/[id]` | The editor for one website (`?tab=analytics`, `enquiries`, `plan`, `domain`…) |
 | `/screens` | Index of the prototype screens |
 | `/styleguide` | Every token and component in light and dark |
 
@@ -72,7 +74,7 @@ App components built for the generation flow (also on `/styleguide` → App patt
 - **IconButton** — quiet icon-only button for close, reload, zoom and row menus
 - **StepList / Step / StepIndicator** — vertical task list whose markers are joined by one continuous line
 - **PromptBox**, **PromptAttachButton**, **PromptSendButton**, **AttachmentChip** — the chat and "create your own style" boxes
-- **Drawer** — side panel (the phone editor menu)
+- **Drawer** — side panel (phone menus in the editor and the dashboard)
 - **RadioCard** / **RadioDot** — bordered radio choices (publish domain, style options)
 - **Alert** now also has a `neutral` tone, `actions`, a custom or hidden `icon` and a compact `size="sm"`
 
@@ -139,6 +141,21 @@ request, low or exhausted credits, a page that fails to build), jumps to any sta
 
 The generated site lives in `src/components/bakti-site` and reads only theme variables, so every style option restyles
 all pages. Content is in `src/lib/bakti`.
+
+## Dashboard and editor
+
+An account has several websites and **each website has its own plan** (`src/lib/plans.ts`, shared with the pricing
+section). Sample data lives in `src/lib/account/data.ts`; `src/lib/account/store.ts` keeps plan changes, enquiry
+statuses and invoices in sessionStorage so the dashboard and the editor stay in step.
+
+- `/dashboard` (Figma 94:2350, `components/dashboard`): sidebar with New Website, Websites, Domains, the account's
+  websites with Live/Draft, Billings, Settings, the account menu and the inbox; it collapses to icons on desktop and
+  becomes a drawer on phones. Home greets by name with the prompt and lists the websites (plan + status on each card).
+- `/sites/[id]`: the editor on its own. The rail adds **Analytics**, **Enquiries** and **Plan**, which open full-width
+  pages (`components/account`); the logo goes back to the dashboard and the site picker switches websites. Drafts
+  that haven't been built show where planning stopped. The editor at the end of `/generate` is the same component.
+- Upgrades name the website and the charge, apply to that website only, and add an invoice in Billings. Analytics
+  history depends on the plan (Free 7 days, Starter 30 days, Business 12 months).
 
 ## Project layout
 

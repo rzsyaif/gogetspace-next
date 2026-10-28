@@ -97,7 +97,7 @@ export function Toast({
   )
 }
 
-export function ProgressBar({ value, label, className }: { value: number; label?: ReactNode; className?: string }) {
+export function ProgressBar({ value, label, ariaLabel, className }: { value: number; label?: ReactNode; ariaLabel?: string; className?: string }) {
   const v = Math.max(0, Math.min(100, Math.round(value)))
   return (
     <div className={cn("flex flex-col gap-2", className)}>
@@ -107,7 +107,7 @@ export function ProgressBar({ value, label, className }: { value: number; label?
           <span className="type-label-md tabular-nums text-fg-secondary">{v}%</span>
         </div>
       )}
-      <div role="progressbar" aria-valuenow={v} aria-valuemin={0} aria-valuemax={100} className="h-3 overflow-hidden rounded-full bg-muted">
+      <div role="progressbar" aria-label={ariaLabel} aria-valuenow={v} aria-valuemin={0} aria-valuemax={100} className="h-3 overflow-hidden rounded-full bg-muted">
         <div className="h-full rounded-full bg-action-primary transition-[width] duration-500 ease-out" style={{ width: `${v}%` }} />
       </div>
     </div>

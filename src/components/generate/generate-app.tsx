@@ -11,7 +11,9 @@ import { GenProvider, useGen } from "./gen-provider"
 import { Messages } from "./chat-blocks"
 import { ChatInput } from "./chat-input"
 import { ReviewSheet } from "./review-sheet"
-import { AccountButton, MobileNav, PreviewPane, ProjectHeader, Rail, SidePanel, type Tab } from "./workspace"
+import { AccountButton, FULL_TABS, MobileNav, PreviewPane, ProjectHeader, Rail, SidePanel, type Tab } from "./workspace"
+import { FlowSiteProvider, useEditorSite } from "./editor-site"
+import { DraftChat, DraftPreview, SitePanel } from "./site-panels"
 import { ScenarioPanel } from "./scenario-panel"
 
 const EASE = [0.65, 0, 0.25, 1] as const
@@ -22,7 +24,9 @@ export function GenerateApp() {
   return (
     <TooltipProvider>
       <GenProvider prompt={q?.trim() || null}>
-        <Shell />
+        <FlowSiteProvider>
+          <Shell />
+        </FlowSiteProvider>
       </GenProvider>
     </TooltipProvider>
   )
@@ -33,8 +37,10 @@ export function GenerateApp() {
  * closes, the centred chat shrinks into the left sidebar, the rail and the preview slide in, and the top bar
  * folds away (the editor has no top navbar — the logo lives on the rail).
  */
-function Shell() {
+export function Shell({ initialTab = "agent" }: { initialTab?: Tab }) {
   const { s } = useGen()
+  const editor = useEditorSite()
+  const flow = editor.mode === "flow"
   const wide = useMedia("(min-width: 1024px)")
   const xl = useMedia("(min-width: 1440px)")
   // let the review sheet finish closing before the layout changes
@@ -44,9 +50,11 @@ function Shell() {
     const t = window.setTimeout(() => setLayout(s.phase), s.phase === "create" ? 380 : 0)
     return () => window.clearTimeout(t)
   }, [s.phase, layout])
-  const create = layout === "create"
+  // an account's website always opens straight into the editor
+  const create = !flow || layout === "create"
 
-  const [tab, setTab] = useState<Tab>("agent")
+  const [tab, setTab] = useState<Tab>(initialTab)
+  const fullPanel = create && FULL_TABS.includes(tab)
   const [chatOpen, setChatOpen] = useState(true)
   const [mobileView, setMobileView] = useState<"chat" | "preview">("chat")
   const [toast, setToast] = useState<string | null>(null)
@@ -67,7 +75,7 @@ function Shell() {
   }, [toast])
 
   const sidebar = xl ? 380 : 340
-  const chatWidth = !create || !wide ? "100%" : chatOpen ? sidebar : 0
+  const chatWidth = !create || !wide ? "100%" : chatOpen && !fullPanel ? sidebar : 0
 
   return (
     <div data-theme="light" className="flex h-svh flex-col overflow-hidden bg-canvas text-fg-primary">
@@ -90,15 +98,18 @@ function Shell() {
       {/* phone editor bar: logo, chat/preview switch, menu (tabs + account) */}
       {create && !wide && (
         <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 border-b border-line-default px-4 py-3">
-          <Link href="/" aria-label="GoGetSpace home"><Logo markOnly size={32} /></Link>
+          <Link href="/dashboard" aria-label="Back to the dashboard"><Logo markOnly size={32} /></Link>
           <SegmentedControl
             as="tablist"
             label="Editor view"
             size="sm"
             fill
             className="flex-1"
-            value={mobileView}
-            onChange={setMobileView}
+            value={fullPanel ? null : mobileView}
+            onChange={(v) => {
+              setMobileView(v)
+              if (fullPanel) setTab("agent")
+            }}
             options={[
               { value: "chat", label: "Chat" },
               { value: "preview", label: "Preview" },
@@ -108,7 +119,7 @@ function Shell() {
             tab={tab}
             onTab={(t) => {
               setTab(t)
-              setMobileView("chat")
+              if (!FULL_TABS.includes(t)) setMobileView("chat")
             }}
           />
         </motion.div>
@@ -128,7 +139,7 @@ function Shell() {
           initial={false}
           animate={{ width: chatWidth }}
           transition={{ duration: 0.6, ease: EASE }}
-          className={cn("flex min-h-0 shrink-0 flex-col overflow-hidden", create && !wide && mobileView !== "chat" && "hidden")}
+          className={cn("flex min-h-0 shrink-0 flex-col overflow-hidden", create && !wide && (mobileView !== "chat" || fullPanel) && "hidden")}
         >
           <div className={cn("flex min-h-0 flex-1 flex-col", create && wide && "min-w-[340px]")}>
             <AnimatePresence initial={false}>
@@ -138,12 +149,26 @@ function Shell() {
                 </motion.div>
               )}
             </AnimatePresence>
-            {create && tab !== "agent" ? <SidePanel tab={tab} onBack={() => setTab("agent")} /> : <ChatColumn compact={create} />}
+            {create && (tab === "domain" || tab === "database" || tab === "settings") ? (
+              <SidePanel tab={tab} onBack={() => setTab("agent")} />
+            ) : editor.site.built || flow ? (
+              <ChatColumn compact={create} />
+            ) : (
+              <DraftChat />
+            )}
           </div>
         </motion.section>
 
+        {fullPanel && (
+          <section aria-label={tab} className="flex min-h-0 min-w-0 flex-1 flex-col p-1">
+            <div className="min-h-0 flex-1 overflow-y-auto rounded-xl border border-line-default bg-surface">
+              <SitePanel tab={tab} onTab={setTab} />
+            </div>
+          </section>
+        )}
+
         <AnimatePresence initial={false}>
-          {create && (
+          {create && !fullPanel && (
             <motion.section
               key="preview"
               aria-label="Preview"
@@ -152,14 +177,14 @@ function Shell() {
               transition={{ delay: 0.2, duration: 0.6, ease: EASE }}
               className={cn("min-h-0 min-w-0 flex-1 flex-col gap-1 p-1", wide || mobileView === "preview" ? "flex" : "hidden")}
             >
-              <PreviewPane chatOpen={chatOpen} onShowChat={() => setChatOpen(true)} onToast={setToast} />
+              {editor.site.built || flow ? <PreviewPane chatOpen={chatOpen} onShowChat={() => setChatOpen(true)} onToast={setToast} /> : <DraftPreview />}
             </motion.section>
           )}
         </AnimatePresence>
       </div>
 
-      <ReviewSheet />
-      <ScenarioPanel />
+      {flow && <ReviewSheet />}
+      {flow && <ScenarioPanel />}
       <AnimatePresence>
         {toast && (
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 12 }} className="fixed bottom-24 left-1/2 z-[60] -translate-x-1/2">

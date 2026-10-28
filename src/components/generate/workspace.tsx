@@ -4,7 +4,11 @@ import { useRef, useState } from "react"
 import { AnimatePresence, motion } from "motion/react"
 import Link from "next/link"
 import {
+  ChartColumn,
   Check,
+  Gem,
+  Inbox,
+  LayoutGrid,
   ChevronDown,
   CircleUser,
   LogOut,
@@ -30,7 +34,7 @@ import {
   Tablet,
   X,
 } from "lucide-react"
-import { Avatar, Button, Drawer, DrawerContent, DrawerTrigger, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, IconButton, Logo, SegmentedControl, Tooltip } from "@/components/ui"
+import { Avatar, Button, Drawer, DrawerContent, DrawerTrigger, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, IconButton, Logo, SegmentedControl, Tooltip } from "@/components/ui"
 import { cn } from "@/lib/cn"
 import { flatten, type PageNode } from "@/lib/bakti/sitemap"
 import { getTheme } from "@/lib/bakti/themes"
@@ -39,6 +43,8 @@ import { useGen } from "./gen-provider"
 import { PreviewFrame, type EditEvent } from "./preview-frame"
 import { CLINIC_FRONT, CLINIC_PHOTO, GALLERY_IMAGES } from "@/components/site/assets"
 import { AccountDialog, PublishFlow } from "./publish"
+import { useEditorSite } from "./editor-site"
+import { useAccountState } from "@/lib/account/store"
 
 const DEVICES = [
   { id: "desktop", Icon: Monitor, width: 1280, label: "Desktop" },
@@ -47,31 +53,38 @@ const DEVICES = [
 ] as const
 type Device = (typeof DEVICES)[number]["id"]
 
-export type Tab = "agent" | "domain" | "database" | "settings"
+export type Tab = "agent" | "analytics" | "enquiries" | "plan" | "domain" | "database" | "settings"
+/** tabs that take over the chat and preview with a full-width page */
+export const FULL_TABS: Tab[] = ["analytics", "enquiries", "plan"]
 
 const RAIL: { id: Tab; Icon: typeof Sparkles; label: string }[] = [
   { id: "agent", Icon: Sparkles, label: "Agent" },
+  { id: "analytics", Icon: ChartColumn, label: "Analytics" },
+  { id: "enquiries", Icon: Inbox, label: "Enquiries" },
+  { id: "plan", Icon: Gem, label: "Plan" },
   { id: "domain", Icon: Link2, label: "Domain" },
   { id: "database", Icon: Database, label: "Database" },
   { id: "settings", Icon: Cog, label: "Settings" },
 ]
 
-/** Editor rail: logo on top, workspace tabs, Account at the bottom (the editor has no top navbar). */
+/** Editor rail: logo (back to the dashboard) on top, workspace tabs, Account at the bottom (no top navbar). */
 export function Rail({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) {
   return (
-    <nav aria-label="Workspace" className="flex h-full w-[106px] flex-col items-center gap-6 px-6 py-5">
-      <Link href="/" aria-label="GoGetSpace home" className="mb-1 rounded-md focus-visible:outline-none focus-visible:focus-ring">
-        <Logo markOnly size={40} />
-      </Link>
+    <nav aria-label="Workspace" className="flex h-full w-[106px] flex-col items-center gap-3 overflow-y-auto px-6 py-5 [scrollbar-width:none]">
+      <Tooltip content="All websites" side="right">
+        <Link href="/dashboard" aria-label="Back to the dashboard" className="mb-2 shrink-0 rounded-md focus-visible:outline-none focus-visible:focus-ring">
+          <Logo markOnly size={40} />
+        </Link>
+      </Tooltip>
       {RAIL.map(({ id, Icon, label }) => (
-        <button key={id} type="button" onClick={() => onTab(id)} aria-current={tab === id ? "page" : undefined} className="group flex w-[58px] flex-col items-center gap-1.5">
-          <span className={cn("grid w-full place-items-center rounded-lg border p-3", tab === id ? "border-fg-secondary bg-inverse text-fg-inverse" : "border-line-default bg-subtle text-fg-secondary group-hover:bg-muted")}>
-            <Icon className="size-7" strokeWidth={1.75} />
+        <button key={id} type="button" onClick={() => onTab(id)} aria-current={tab === id ? "page" : undefined} className="group flex w-[58px] shrink-0 flex-col items-center gap-1 focus-visible:outline-none">
+          <span className={cn("grid w-full place-items-center rounded-lg border p-2.5 group-focus-visible:focus-ring", tab === id ? "border-fg-secondary bg-inverse text-fg-inverse" : "border-line-default bg-subtle text-fg-secondary group-hover:bg-muted")}>
+            <Icon className="size-6" strokeWidth={1.75} />
           </span>
           <span className={cn("type-label-sm", tab === id ? "text-fg-primary" : "text-fg-tertiary")}>{label}</span>
         </button>
       ))}
-      <div className="mt-auto">
+      <div className="mt-auto shrink-0 pt-3">
         <AccountButton />
       </div>
     </nav>
@@ -101,7 +114,7 @@ export function MobileNav({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void })
         <DrawerContent
           title="Menu"
           header={
-            <Link href="/" aria-label="GoGetSpace home" className="inline-flex rounded-md focus-visible:outline-none focus-visible:focus-ring">
+            <Link href="/dashboard" aria-label="Back to the dashboard" className="inline-flex rounded-md focus-visible:outline-none focus-visible:focus-ring">
               <Logo size={32} />
             </Link>
           }
@@ -117,7 +130,7 @@ export function MobileNav({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void })
                 </div>
                 <div className="flex gap-2">
                   <Button asChild size="sm" variant="secondary" className="flex-1">
-                    <Link href="/screens">Dashboard</Link>
+                    <Link href="/dashboard">Dashboard</Link>
                   </Button>
                   <Button size="sm" variant="secondary" className="flex-1" leadingIcon={<LogOut />} onClick={() => dispatch({ type: "signOut" })}>
                     Sign out
@@ -158,7 +171,10 @@ export function MobileNav({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void })
             ))}
           </nav>
           <div className="my-3 border-t border-line-default" />
-          <Link href="/" className="flex h-12 items-center gap-3 rounded-md px-3 type-label-lg text-fg-primary hover:bg-subtle focus-visible:outline-none focus-visible:focus-ring">
+          <Link href="/dashboard" className="flex h-12 items-center gap-3 rounded-md px-3 type-label-lg text-fg-primary hover:bg-subtle focus-visible:outline-none focus-visible:focus-ring">
+            <LayoutGrid className="size-5" strokeWidth={1.75} /> All websites
+          </Link>
+          <Link href="/dashboard?new=1" className="flex h-12 items-center gap-3 rounded-md px-3 type-label-lg text-fg-primary hover:bg-subtle focus-visible:outline-none focus-visible:focus-ring">
             <Plus className="size-5" strokeWidth={1.75} /> New website
           </Link>
         </DrawerContent>
@@ -193,7 +209,7 @@ export function AccountButton({ compact }: { compact?: boolean }) {
                 <span className="block type-body-sm text-fg-tertiary normal-case">{s.account.email}</span>
               </DropdownMenuLabel>
               <DropdownMenuItem asChild>
-                <Link href="/screens">Dashboard</Link>
+                <Link href="/dashboard">Dashboard</Link>
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => dispatch({ type: "signOut" })}>
                 <LogOut className="size-4" /> Sign out
@@ -229,26 +245,44 @@ export function ProjectHeader({ onHide }: { onHide: () => void }) {
 }
 
 function ProjectSelect() {
+  const { site } = useEditorSite()
+  const { sites } = useAccountState()
+  const others = sites.filter((x) => x.id !== site.id)
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="flex h-12 min-w-0 flex-1 items-center gap-2 rounded-md border border-line-strong bg-surface px-4 text-left focus-visible:outline-none focus-visible:focus-ring">
-        <span className="min-w-0 flex-1 truncate type-body-md text-fg-primary">Bakti Analisa Clinical Laboratory Penang</span>
+        <span className="min-w-0 flex-1 truncate type-body-md text-fg-primary">{site.name}</span>
         <ChevronDown className="size-5 shrink-0 text-fg-secondary" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-72">
-        <DropdownMenuLabel>Your sites</DropdownMenuLabel>
+        <DropdownMenuLabel>Your websites</DropdownMenuLabel>
         <DropdownMenuItem>
-          <Check className="size-4" /> Bakti Analisa Clinical Laboratory Penang
+          <Check className="size-4" /> <span className="truncate">{site.name}</span>
+        </DropdownMenuItem>
+        {others.map((x) => (
+          <DropdownMenuItem key={x.id} asChild>
+            <Link href={`/sites/${x.id}`}>
+              <span className="size-4" aria-hidden /> <span className="truncate">{x.name}</span>
+            </Link>
+          </DropdownMenuItem>
+        ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/dashboard">
+            <LayoutGrid className="size-4" /> All websites
+          </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href="/">+ New website</Link>
+          <Link href="/dashboard?new=1">
+            <Plus className="size-4" /> New website
+          </Link>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )
 }
 
-export function SidePanel({ tab, onBack }: { tab: Exclude<Tab, "agent">; onBack: () => void }) {
+export function SidePanel({ tab, onBack }: { tab: "domain" | "database" | "settings"; onBack: () => void }) {
   const { s } = useGen()
   const title = { domain: "Domain", database: "Database", settings: "Settings" }[tab]
   return (
