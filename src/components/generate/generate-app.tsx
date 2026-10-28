@@ -1,11 +1,12 @@
 "use client"
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { AnimatePresence, motion } from "motion/react"
 import { Logo, SegmentedControl, Toast, TooltipProvider } from "@/components/ui"
 import { cn } from "@/lib/cn"
+import { useMedia } from "@/lib/use-media"
 import { GenProvider, useGen } from "./gen-provider"
 import { Messages } from "./chat-blocks"
 import { ChatInput } from "./chat-input"
@@ -24,18 +25,6 @@ export function GenerateApp() {
         <Shell />
       </GenProvider>
     </TooltipProvider>
-  )
-}
-
-function useMedia(query: string) {
-  return useSyncExternalStore(
-    (cb) => {
-      const mq = window.matchMedia(query)
-      mq.addEventListener("change", cb)
-      return () => mq.removeEventListener("change", cb)
-    },
-    () => window.matchMedia(query).matches,
-    () => false,
   )
 }
 

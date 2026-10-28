@@ -9,6 +9,8 @@ import { ALT_THEMES, CUSTOM_THEME, THEMES, type SiteTheme } from "@/lib/bakti/th
 import { FONT_STACK, siteFontVars } from "@/components/bakti-site/site-fonts"
 import { useGen } from "./gen-provider"
 import { HeroPreview } from "@/components/bakti-site/hero-preview"
+import { useMedia } from "@/lib/use-media"
+import { StyleCarousel } from "./style-carousel"
 
 /**
  * Pick one of the proposed looks (or make your own). The preview is only the hero, in the same layout for every
@@ -16,7 +18,8 @@ import { HeroPreview } from "@/components/bakti-site/hero-preview"
  */
 export function StyleStep() {
   const { s, dispatch } = useGen()
-  const [device, setDevice] = useState<"desktop" | "mobile">(() => (typeof window !== "undefined" && window.innerWidth < 640 ? "mobile" : "desktop"))
+  const phone = useMedia("(max-width: 639px)")
+  const [device, setDevice] = useState<"desktop" | "mobile">("desktop")
   const [shuffling, setShuffling] = useState(false)
   const [custom, setCustom] = useState("")
   const [reference, setReference] = useState(false)
@@ -44,6 +47,39 @@ export function StyleStep() {
   }
 
   const selected = options.find((t) => t.id === s.styleId) ?? null
+  const customForm = (autoFocus?: boolean) => (
+    <PromptBox size="sm" onSubmit={makeCustom}>
+      {reference && <AttachmentChip icon={<ImageIcon />} name="brand-reference.png" onRemove={() => setReference(false)} className="self-start" />}
+      <div className="flex items-center gap-2">
+        <PromptAttachButton aria-label="Upload a reference" onClick={() => setReference(true)} />
+        <input
+          autoFocus={autoFocus}
+          value={custom}
+          onChange={(e) => setCustom(e.target.value)}
+          placeholder={phone ? "e.g. warm, calm, earthy greens" : "Create your own style or upload your reference"}
+          aria-label="Describe your own style"
+          className="h-10 min-w-0 flex-1 bg-transparent type-body-md text-fg-primary outline-none placeholder:text-fg-tertiary sm:type-body-lg"
+        />
+        <PromptSendButton aria-label="Create style" disabled={making || (!custom.trim() && !reference)} />
+      </div>
+    </PromptBox>
+  )
+
+  if (phone)
+    return (
+      <div className={cn(siteFontVars, "-mx-4 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 pb-6")}>
+        <StyleCarousel
+          options={options}
+          selectedId={s.styleId}
+          onPick={(id) => dispatch({ type: "pickStyle", id })}
+          onShuffle={shuffle}
+          shuffling={shuffling}
+          making={making}
+          customForm={customForm(true)}
+        />
+        <p className="text-center type-caption text-fg-tertiary">Same hero in every option. The full site is built after you confirm.</p>
+      </div>
+    )
 
   return (
     <div className={cn(siteFontVars, "-mx-4 flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 pb-6 lg:mx-0 lg:flex-row lg:gap-9 lg:overflow-visible lg:px-0 lg:pb-0")}>
@@ -103,20 +139,7 @@ export function StyleStep() {
             <OptionCard key={t.id} t={t} selected={s.styleId === t.id} onSelect={() => dispatch({ type: "pickStyle", id: t.id })} />
           ))}
         </div>
-        <PromptBox size="sm" onSubmit={makeCustom}>
-          {reference && <AttachmentChip icon={<ImageIcon />} name="brand-reference.png" onRemove={() => setReference(false)} className="self-start" />}
-          <div className="flex items-center gap-2">
-            <PromptAttachButton aria-label="Upload a reference" onClick={() => setReference(true)} />
-            <input
-              value={custom}
-              onChange={(e) => setCustom(e.target.value)}
-              placeholder="Create your own style or upload your reference"
-              aria-label="Describe your own style"
-              className="h-10 min-w-0 flex-1 bg-transparent type-body-md text-fg-primary outline-none placeholder:text-fg-tertiary sm:type-body-lg"
-            />
-            <PromptSendButton aria-label="Create style" disabled={making || (!custom.trim() && !reference)} />
-          </div>
-        </PromptBox>
+        {customForm()}
       </div>
     </div>
   )
