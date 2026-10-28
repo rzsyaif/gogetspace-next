@@ -36,8 +36,9 @@ export function Messages({ compact }: { compact?: boolean }) {
   const { s } = useGen()
   return (
     <div className={cn("flex flex-col", compact ? "gap-6" : "gap-9")}>
-      {s.msgs.map((m) => (
-        <motion.div key={m.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
+      {s.msgs.map((m, i) => (
+        // the first bubble arrives with the homepage launch animation, so it doesn't fade in again
+        <motion.div key={m.id} initial={i === 0 ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
           <Block m={m} compact={compact} />
         </motion.div>
       ))}

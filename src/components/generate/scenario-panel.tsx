@@ -26,14 +26,17 @@ export function ScenarioPanel() {
   const [pick, setPick] = useState<Scenario>(s.scenario)
 
   return (
-    <div className="fixed bottom-4 left-4 z-[45] flex flex-col items-start gap-2 max-lg:bottom-auto max-lg:top-[18px] max-lg:left-[64px]">
+    <div className={cn(
+        "fixed z-[45] flex flex-col items-start gap-2",
+        s.phase === "create" ? "bottom-[104px] left-3 max-lg:top-auto max-lg:right-3 max-lg:bottom-[156px] max-lg:left-auto max-lg:items-end" : "bottom-4 left-4 max-lg:top-[18px] max-lg:bottom-auto max-lg:left-[64px]",
+      )}>
       <AnimatePresence>
         {open && (
           <motion.div
             initial={{ opacity: 0, y: 8, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.98 }}
-            className="flex max-h-[min(640px,calc(100svh-120px))] w-[320px] flex-col gap-4 overflow-y-auto rounded-xl border border-line-default bg-surface-raised p-4 shadow-soft-lg max-lg:order-last"
+            className={cn("flex max-h-[min(640px,calc(100svh-120px))] w-[320px] flex-col gap-4 overflow-y-auto rounded-xl border border-line-default bg-surface-raised p-4 shadow-soft-lg", s.phase === "plan" && "max-lg:order-last")}
             role="dialog"
             aria-label="Prototype controls"
           >
@@ -90,7 +93,7 @@ export function ScenarioPanel() {
         aria-expanded={open}
         className="flex items-center gap-1.5 rounded-full border border-line-default bg-surface-raised px-3 py-2 type-label-sm text-fg-secondary shadow-soft-sm hover:text-fg-primary"
       >
-        <FlaskConical className="size-4" /> Prototype
+        <FlaskConical className="size-4" /> <span className={cn(s.phase === "create" && "max-lg:sr-only")}>Prototype</span>
         {s.scenario !== "happy" && <span className="rounded-full bg-accent-yellow-subtle px-1.5 text-fg-primary">{SCENARIOS.find((x) => x.id === s.scenario)?.label}</span>}
       </button>
     </div>

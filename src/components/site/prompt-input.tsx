@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type MouseEvent } from "react"
 import { useRouter } from "next/navigation"
+import { LaunchOverlay } from "./launch-overlay"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import { ArrowUp, Plus, Sparkle, X } from "lucide-react"
 import { cn } from "@/lib/cn"
@@ -80,6 +81,8 @@ export function PromptInput({
   const taRef = useRef<HTMLTextAreaElement>(null)
   const keyRef = useRef(100)
   const timers = useRef<number[]>([])
+  const formRef = useRef<HTMLFormElement>(null)
+  const [launch, setLaunch] = useState<{ rect: DOMRect; text: string; href: string } | null>(null)
 
   useEffect(() => {
     const t = timers.current
@@ -123,19 +126,25 @@ export function PromptInput({
   const remove = (key: number) => setAttached((a) => a.filter((x) => x.key !== key))
   const submit = (e?: FormEvent) => {
     e?.preventDefault()
-    if (generating) return
+    if (generating || launch) return
     if (!hasText) return focusInput()
-    setMsg(0)
-    setGenerating(true)
     taRef.current?.blur()
     onSubmit?.({ text, files: attached.map((a) => a.file) })
     if (flowHref) {
+      // hand off to the generation flow with the launch animation
       const note = attached.length ? ` (attached: ${attached.map((a) => a.file.name).join(", ")})` : ""
+      const prompt = text.trim() + note
+      const href = `${flowHref}?q=${encodeURIComponent(prompt)}`
       try {
         sessionStorage.removeItem("gogetspace-generation")
       } catch {}
-      timers.current.push(window.setTimeout(() => router.push(`${flowHref}?q=${encodeURIComponent(text.trim() + note)}`), 1400))
+      router.prefetch(href)
+      if (reduce || !formRef.current) return router.push(href)
+      setLaunch({ rect: formRef.current.getBoundingClientRect(), text: prompt, href })
+      return
     }
+    setMsg(0)
+    setGenerating(true)
   }
   const stop = () => {
     setGenerating(false)
@@ -167,7 +176,8 @@ export function PromptInput({
   const hintText = attached.length > 0 && !hasText ? attachedHint : focused || hasText ? typingHint : hint
 
   return (
-    <form onSubmit={submit} aria-busy={generating} className={cn("relative w-full font-sans", className)}>
+    <form ref={formRef} onSubmit={submit} aria-busy={generating} className={cn("relative w-full font-sans", launch && "invisible", className)}>
+      {launch && <LaunchOverlay from={launch.rect} text={launch.text} onDone={() => router.push(launch.href)} />}
       {/* pulsing glow while generating */}
       <AnimatePresence>
         {generating && (

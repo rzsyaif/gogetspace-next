@@ -35,6 +35,12 @@
 @keyframes bp-sheet-in {
   from { opacity: 0; transform: translateY(48px); }
 }
+@keyframes bp-sheet-out {
+  to { opacity: 0; transform: translateY(64px); }
+}
+@keyframes bp-fade-out {
+  to { opacity: 0; }
+}
 /* "working on it" text shimmer */
 @keyframes bp-shimmer {
   from { background-position: 100% 0; }
