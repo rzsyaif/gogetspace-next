@@ -1,34 +1,8 @@
 import { Check } from "lucide-react"
 import { Button } from "@/components/ui"
 import { cn } from "@/lib/cn"
+import { PLANS } from "@/lib/plans"
 
-const PLANS = [
-  {
-    name: "Free",
-    desc: "A simple site to get found online.",
-    price: "FREE",
-    period: "forever",
-    cta: "Start for Free",
-    features: ["Only homepage", "Hosting and SSL included", "Free .get.space domain"],
-  },
-  {
-    name: "Starter",
-    desc: "A full website for a small practice.",
-    price: "$9",
-    period: "/ month",
-    cta: "Start with Starter",
-    features: ["Everything in Free", "Up to 5 pages", "Connect to custom domain *", "Contact form"],
-  },
-  {
-    name: "Business",
-    desc: "For practices that take bookings online.",
-    price: "$19",
-    period: "/ month",
-    cta: "Start with Business",
-    features: ["Everything in Starter", "Unlimited pages", "Appointment booking", "Priority support"],
-    featured: true,
-  },
-]
 
 export function Pricing() {
   return (
@@ -59,7 +33,7 @@ export function Pricing() {
             </div>
             <p className="-mt-3 type-body-md text-neutral-600">{p.desc}</p>
             <p className="flex items-end gap-2">
-              <span className="type-h2 text-neutral-900">{p.price}</span>
+              <span className="type-h2 text-neutral-900">{p.priceLabel}</span>
               <span className="pb-1.5 type-body-md text-neutral-600">{p.period}</span>
             </p>
             <Button variant={p.featured ? "primary" : "secondary"} className="w-full">

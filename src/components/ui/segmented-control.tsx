@@ -31,7 +31,8 @@ export function SegmentedControl<T extends string | number | boolean>({
   as = "radiogroup",
   className,
 }: {
-  value: T
+  /** null when nothing is selected (e.g. another view has taken over) */
+  value: T | null
   onChange: (value: T) => void
   options: SegmentedOption<T>[]
   /** accessible name of the group */

@@ -10,9 +10,9 @@ const SCREENS = [
   { href: "/", title: "Homepage", desc: "Marketing site with the AI prompt, Pixel Blocks and feature cards.", Icon: House, ready: true },
   { href: "/styleguide", title: "Style guide", desc: "Baseplate tokens and components, in light and dark.", Icon: Palette, ready: true },
   { href: "/generate", title: "Generating", desc: "Prompt → brief → style options → sitemap → building → publish, with edge cases.", Icon: Sparkles, ready: true },
-  { href: "/generate", title: "Editor", desc: "Chat with the agent beside a live preview of the site (first version inside the generation flow).", Icon: MessagesSquare, ready: true },
+  { href: "/sites/bakti-analisa", title: "Editor", desc: "A website on its own: chat with the agent beside the live preview, plus Analytics, Enquiries and Plan.", Icon: MessagesSquare, ready: true },
   { href: "/preview/clinical-clarity", title: "Generated site", desc: "The Bakti Analisa site the agent builds — 11 pages in 9 styles.", Icon: Globe, ready: true },
-  { href: "#", title: "Dashboard", desc: "Sites, domains, billing and account settings.", Icon: LayoutDashboard, ready: false },
+  { href: "/dashboard", title: "Dashboard", desc: "All websites (each with its own plan), domains, billing, inbox and settings.", Icon: LayoutDashboard, ready: true },
 ]
 
 export default function Screens() {

@@ -17,15 +17,27 @@ export function useGen() {
  * Holds the generation flow, plays the scripted agent (timers scaled by speed) and keeps the session in
  * sessionStorage, so a refresh resumes where it was. A new prompt from the homepage starts fresh.
  */
-export function GenProvider({ prompt, children }: { prompt: string | null; children: ReactNode }) {
+export function GenProvider({
+  prompt,
+  storageKey = KEY,
+  initial,
+  children,
+}: {
+  prompt: string | null
+  /** sessionStorage key — the standalone editor keeps one per site */
+  storageKey?: string
+  /** starting state when nothing is saved (the flow starts planning from the prompt) */
+  initial?: () => GenState
+  children: ReactNode
+}) {
   // only rendered in the browser (useSearchParams bails out of prerendering), so storage is available here
-  const [s, dispatch] = useReducer(reducer, prompt, restore)
+  const [s, dispatch] = useReducer(reducer, null, () => restore(prompt, storageKey, initial))
 
   useEffect(() => {
     try {
-      sessionStorage.setItem(KEY, JSON.stringify(s))
+      sessionStorage.setItem(storageKey, JSON.stringify(s))
     } catch {}
-  }, [s])
+  }, [s, storageKey])
 
   usePlanRunner(s, dispatch)
   useBuildRunner(s, dispatch)
@@ -35,14 +47,14 @@ export function GenProvider({ prompt, children }: { prompt: string | null; child
 }
 
 /** resume the saved session unless a different prompt arrived */
-function restore(prompt: string | null): GenState {
+function restore(prompt: string | null, key: string, initial?: () => GenState): GenState {
   let saved: GenState | null = null
   try {
-    const raw = typeof window !== "undefined" ? sessionStorage.getItem(KEY) : null
+    const raw = typeof window !== "undefined" ? sessionStorage.getItem(key) : null
     if (raw) saved = JSON.parse(raw) as GenState
   } catch {}
   if (saved?.v === 2 && (!prompt || prompt === saved.prompt)) return saved
-  return initialState(prompt ?? undefined)
+  return initial ? initial() : initialState(prompt ?? undefined)
 }
 
 /** once the plan is ready, open the brief review by itself (closing it leaves the filled chat) */
