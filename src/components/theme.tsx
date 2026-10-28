@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Monitor, Moon, Sun } from "lucide-react"
-import { cn } from "@/lib/cn"
+import { SegmentedControl } from "@/components/ui"
 
 type Theme = "system" | "light" | "dark"
 const STORAGE_KEY = "gogetspace-theme"
@@ -62,27 +62,17 @@ export function ThemeToggle({ className }: { className?: string }) {
   }, [])
 
   return (
-    <div role="radiogroup" aria-label="Color theme" className={cn("inline-flex gap-1 rounded-full bg-subtle p-1", className)}>
-      {OPTIONS.map(({ value, label, Icon }) => (
-        <button
-          key={value}
-          type="button"
-          role="radio"
-          aria-checked={theme === value}
-          aria-label={label}
-          title={label}
-          onClick={() => {
-            setTheme(value)
-            applyTheme(value)
-          }}
-          className={cn(
-            "grid size-8 place-items-center rounded-full text-fg-secondary transition-colors focus-visible:focus-ring",
-            theme === value ? "bg-surface text-fg-primary shadow-block-sm" : "hover:text-fg-primary",
-          )}
-        >
-          <Icon size={16} aria-hidden />
-        </button>
-      ))}
-    </div>
+    <SegmentedControl
+      label="Color theme"
+      size="sm"
+      iconOnly
+      className={className}
+      value={theme}
+      onChange={(value) => {
+        setTheme(value)
+        applyTheme(value)
+      }}
+      options={OPTIONS.map(({ value, label, Icon }) => ({ value, label, icon: <Icon aria-hidden /> }))}
+    />
   )
 }

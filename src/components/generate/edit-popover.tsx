@@ -3,6 +3,7 @@
 import { useRef, useState, type FormEvent } from "react"
 import { motion } from "motion/react"
 import { ArrowUp, ArrowUpToLine, ImageIcon, PencilLine, Sparkles, Type, Upload, X } from "lucide-react"
+import { IconButton, PromptSendButton } from "@/components/ui"
 import { cn } from "@/lib/cn"
 import type { EditKind, EditRect } from "@/components/bakti-site/edit-bridge"
 
@@ -83,9 +84,9 @@ export function EditPopover({
             <ArrowUpToLine className="size-3.5" /> Parent
           </button>
         )}
-        <button type="button" aria-label="Close" onClick={onClose} className="grid size-7 place-items-center rounded-sm text-fg-tertiary hover:bg-subtle">
-          <X className="size-4" />
-        </button>
+        <IconButton aria-label="Close" size="sm" tone="muted" onClick={onClose}>
+          <X />
+        </IconButton>
       </div>
 
       {sel.kind === "text" && (
@@ -137,9 +138,7 @@ export function EditPopover({
       </div>
       <form onSubmit={send} className="flex items-center gap-2 rounded-md border border-line-strong bg-surface py-1 pr-1 pl-3 focus-within:border-blue-500 focus-within:shadow-[0_0_0_3px_var(--color-blue-100)]">
         <input autoFocus value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder={PLACEHOLDER[sel.kind]} aria-label={PLACEHOLDER[sel.kind]} className="h-9 min-w-0 flex-1 bg-transparent type-body-sm text-fg-primary outline-none placeholder:text-fg-tertiary" />
-        <button type="submit" aria-label={sel.kind === "image" ? "Regenerate" : "Ask the agent"} disabled={!prompt.trim()} className="grid size-8 shrink-0 place-items-center rounded-sm bg-blue-500 text-white disabled:bg-action-disabled disabled:text-fg-disabled">
-          <ArrowUp className="size-4" />
-        </button>
+        <PromptSendButton aria-label={sel.kind === "image" ? "Regenerate" : "Ask the agent"} disabled={!prompt.trim()} className="size-8 rounded-sm" icon={<ArrowUp className="size-4" />} />
       </form>
     </motion.div>
   )

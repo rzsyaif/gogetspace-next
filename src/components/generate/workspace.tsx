@@ -28,7 +28,7 @@ import {
   Tablet,
   X,
 } from "lucide-react"
-import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, Logo, Tooltip } from "@/components/ui"
+import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, IconButton, Logo, SegmentedControl, Tooltip } from "@/components/ui"
 import { cn } from "@/lib/cn"
 import { flatten, type PageNode } from "@/lib/bakti/sitemap"
 import { getTheme } from "@/lib/bakti/themes"
@@ -163,7 +163,7 @@ export function SidePanel({ tab, onBack }: { tab: Exclude<Tab, "agent">; onBack:
     <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-6">
       <div className="flex items-center justify-between">
         <h2 className="type-h5 text-fg-primary">{title}</h2>
-        <button type="button" aria-label="Back to agent" onClick={onBack} className="grid size-8 place-items-center rounded-sm hover:bg-subtle"><X className="size-4" /></button>
+        <IconButton aria-label="Back to agent" onClick={onBack}><X /></IconButton>
       </div>
       {tab === "domain" && (
         <>
@@ -276,9 +276,9 @@ export function PreviewPane({ chatOpen, onShowChat, onToast }: { chatOpen: boole
               </button>
             </Tooltip>
           )}
-          <Segmented value={view} onChange={setView} options={[{ id: "preview", Icon: Globe, label: "Preview" }, { id: "code", Icon: CodeXml, label: "Code" }]} />
+          <SegmentedControl label="View" iconOnly value={view} onChange={setView} options={[{ value: "preview", icon: <Globe />, label: "Preview" }, { value: "code", icon: <CodeXml />, label: "Code" }]} />
           <div className="hidden sm:block">
-            <Segmented value={device} onChange={setDevice} options={DEVICES.map((d) => ({ id: d.id, Icon: d.Icon, label: d.label }))} />
+            <SegmentedControl label="Device size" iconOnly value={device} onChange={setDevice} options={DEVICES.map((d) => ({ value: d.id, icon: <d.Icon />, label: d.label }))} />
           </div>
         </div>
         <PageSelect pages={pages} current={page} statuses={s.pages} onPick={setPageId} onReload={() => setReload((r) => r + 1)} />
@@ -351,23 +351,18 @@ export function PreviewPane({ chatOpen, onShowChat, onToast }: { chatOpen: boole
                     </motion.p>
                   )}
                 </AnimatePresence>
-                <div role="tablist" aria-label="Preview mode" className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 gap-1 rounded-full border border-line-default bg-surface p-1 shadow-soft-md">
-                  {([
-                    { id: false, label: "Preview Mode", Icon: Eye },
-                    { id: true, label: "Edit Mode", Icon: MousePointerClick },
-                  ] as const).map(({ id, label, Icon }) => (
-                    <button
-                      key={label}
-                      type="button"
-                      role="tab"
-                      aria-selected={editMode === id}
-                      onClick={() => setEditMode(id)}
-                      className={cn("flex h-9 items-center gap-1.5 rounded-full px-3.5 type-label-md whitespace-nowrap transition-colors", editMode === id ? "bg-inverse text-fg-inverse" : "text-fg-secondary hover:text-fg-primary")}
-                    >
-                      <Icon className="size-4" /> {label}
-                    </button>
-                  ))}
-                </div>
+                <SegmentedControl
+                  as="tablist"
+                  look="floating"
+                  label="Preview mode"
+                  className="absolute bottom-4 left-1/2 z-10 -translate-x-1/2"
+                  value={editMode}
+                  onChange={setEditMode}
+                  options={[
+                    { value: false, label: "Preview Mode", icon: <Eye /> },
+                    { value: true, label: "Edit Mode", icon: <MousePointerClick /> },
+                  ]}
+                />
               </>
             )}
           </>
@@ -378,29 +373,15 @@ export function PreviewPane({ chatOpen, onShowChat, onToast }: { chatOpen: boole
   )
 }
 
-function Segmented<T extends string>({ value, onChange, options }: { value: T; onChange: (v: T) => void; options: { id: T; Icon: typeof Globe; label: string }[] }) {
-  return (
-    <div role="radiogroup" className="flex gap-1 rounded-full bg-subtle p-1">
-      {options.map(({ id, Icon, label }) => (
-        <Tooltip key={id} content={label}>
-          <button type="button" role="radio" aria-checked={value === id} aria-label={label} onClick={() => onChange(id)} className={cn("grid size-9 place-items-center rounded-full", value === id ? "bg-surface text-fg-primary shadow-block-sm" : "text-fg-tertiary hover:text-fg-primary")}>
-            <Icon className="size-5" />
-          </button>
-        </Tooltip>
-      ))}
-    </div>
-  )
-}
-
 const STATUS_TEXT: Record<PageStatus, string> = { built: "Built", building: "Building…", queued: "Waiting", failed: "Failed", locked: "Needs upgrade", skipped: "Not built" }
 
 function PageSelect({ pages, current, statuses, onPick, onReload }: { pages: (PageNode & { depth: number })[]; current: PageNode; statuses: Record<string, PageStatus>; onPick: (id: string) => void; onReload: () => void }) {
   return (
     <div className="order-last flex w-full items-center gap-2 rounded-md border border-line-strong bg-surface px-2 lg:order-none lg:w-auto lg:min-w-[320px] lg:flex-1">
       <Tooltip content="Reload preview">
-        <button type="button" aria-label="Reload preview" onClick={onReload} className="grid size-8 place-items-center rounded-sm text-fg-secondary hover:bg-subtle">
-          <RefreshCw className="size-4" />
-        </button>
+        <IconButton aria-label="Reload preview" onClick={onReload}>
+          <RefreshCw />
+        </IconButton>
       </Tooltip>
       <DropdownMenu>
         <DropdownMenuTrigger className="flex h-11 min-w-0 flex-1 items-center gap-2 text-left focus-visible:outline-none">

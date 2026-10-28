@@ -2,8 +2,7 @@
 
 import { useEffect, useEffectEvent, useState, type FormEvent } from "react"
 import { Check, Copy, ExternalLink, Globe, Link2, Loader } from "lucide-react"
-import { Button, Dialog, DialogContent, Field, Input } from "@/components/ui"
-import { cn } from "@/lib/cn"
+import { Button, Dialog, DialogContent, Field, Input, RadioCard } from "@/components/ui"
 import { useGen } from "./gen-provider"
 
 type Stage = "signup" | "publish" | "publishing" | "live"
@@ -103,27 +102,17 @@ function ChooseDomain({ onPublish }: { onPublish: () => void }) {
     >
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-2 type-label-md text-fg-primary">Where should it live?</legend>
-        <label className={cn("flex cursor-pointer items-start gap-3 rounded-md border p-3", mode === "free" ? "border-blue-500 bg-accent-blue-subtle/40" : "border-line-default")}>
-          <input type="radio" name="domain" checked={mode === "free"} onChange={() => setMode("free")} className="mt-1 accent-blue-500" />
-          <span className="flex flex-col">
-            <span className="type-label-md text-fg-primary">{s.publish.domain}</span>
-            <span className="type-body-sm text-fg-secondary">Free address, ready instantly. You can add your own domain later.</span>
-          </span>
-        </label>
-        <label className={cn("flex cursor-pointer items-start gap-3 rounded-md border p-3", mode === "own" ? "border-blue-500 bg-accent-blue-subtle/40" : "border-line-default")}>
-          <input type="radio" name="domain" checked={mode === "own"} onChange={() => setMode("own")} className="mt-1 accent-blue-500" />
-          <span className="flex flex-1 flex-col gap-2">
-            <span className="type-label-md text-fg-primary">Use a domain I already own</span>
-            {mode === "own" && (
-              <>
-                <Input value={own} onChange={(e) => setOwn(e.target.value)} placeholder="baktianalisa.my" aria-label="Your domain" leadingIcon={<Link2 />} />
-                <span className="type-body-sm text-fg-secondary">
-                  {own && !ownOk ? "That doesn't look like a domain yet — e.g. baktianalisa.my" : "After publishing we'll show the two DNS records to add at your registrar. It usually connects within an hour."}
-                </span>
-              </>
-            )}
-          </span>
-        </label>
+        <RadioCard name="domain" checked={mode === "free"} onChange={() => setMode("free")} title={s.publish.domain} description="Free address, ready instantly. You can add your own domain later." />
+        <RadioCard name="domain" checked={mode === "own"} onChange={() => setMode("own")} title="Use a domain I already own">
+          {mode === "own" && (
+            <span className="mt-1.5 flex flex-col gap-2">
+              <Input value={own} onChange={(e) => setOwn(e.target.value)} placeholder="baktianalisa.my" aria-label="Your domain" leadingIcon={<Link2 />} />
+              <span className="type-body-sm text-fg-secondary">
+                {own && !ownOk ? "That doesn't look like a domain yet — e.g. baktianalisa.my" : "After publishing we'll show the two DNS records to add at your registrar. It usually connects within an hour."}
+              </span>
+            </span>
+          )}
+        </RadioCard>
       </fieldset>
     </DialogContent>
   )

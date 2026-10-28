@@ -3,7 +3,6 @@
 import { useState } from "react"
 import { AnimatePresence, motion } from "motion/react"
 import {
-  AlertTriangle,
   ArrowUpRight,
   Building2,
   Check,
@@ -20,7 +19,7 @@ import {
   X,
   Zap,
 } from "lucide-react"
-import { Button } from "@/components/ui"
+import { Alert, Badge, Button, Chip, Step, StepList } from "@/components/ui"
 import { cn } from "@/lib/cn"
 import { flatten } from "@/lib/bakti/sitemap"
 import { BUSINESS_MATCHES, SEARCH_QUERY, SEARCH_RESULTS, type ArtifactKey, type Msg, type Run, type Task } from "@/lib/generation/state"
@@ -76,62 +75,31 @@ function Block({ m, compact }: { m: Msg; compact?: boolean }) {
 
 /* ---------------- task list ---------------- */
 
-function TaskIcon({ status }: { status: Task["status"] }) {
-  if (status === "done")
-    return (
-      <span className="grid size-6 shrink-0 place-items-center rounded-full bg-accent-blue-subtle text-blue-600">
-        <Check className="size-3.5" strokeWidth={2.5} />
-      </span>
-    )
-  if (status === "running")
-    return (
-      <span className="grid size-6 shrink-0 place-items-center rounded-full border border-dashed border-blue-500 bg-canvas text-blue-500">
-        <Loader className="size-3.5 animate-[spin_2.4s_linear_infinite]" />
-      </span>
-    )
-  if (status === "failed")
-    return (
-      <span className="grid size-6 shrink-0 place-items-center rounded-full bg-status-error-bg text-status-error-text">
-        <X className="size-3.5" strokeWidth={2.5} />
-      </span>
-    )
-  if (status === "warning")
-    return (
-      <span className="grid size-6 shrink-0 place-items-center rounded-full bg-status-warning-bg text-status-warning-text">
-        <AlertTriangle className="size-3.5" />
-      </span>
-    )
-  return <span className="size-6 shrink-0 rounded-full border border-line-strong" />
-}
-
 function TaskList({ run, children }: { run: Run; children?: (t: Task) => React.ReactNode }) {
   return (
-    <ol className="flex flex-col">
-      {run.tasks.map((t, i) => (
-        <li key={t.id} className="flex flex-col">
-          {i > 0 && <span aria-hidden className={cn("ml-[11.5px] h-3 w-px", t.status === "pending" ? "bg-line-default" : "bg-blue-300")} />}
-          <div className="flex gap-3" aria-current={t.status === "running" ? "step" : undefined}>
-            <TaskIcon status={t.status} />
-            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <p className="flex flex-wrap items-baseline gap-x-2">
-                <span
-                  className={cn(
-                    "type-body-md",
-                    t.status === "running" ? "shimmer-text" : t.status === "pending" ? "text-fg-disabled" : t.status === "failed" ? "text-status-error-text" : "text-fg-tertiary",
-                  )}
-                >
-                  {t.label}
-                </span>
-                {t.duration && <span className="type-body-sm text-fg-secondary tabular-nums">{t.duration}</span>}
-              </p>
-              {t.note && <p className="type-body-sm text-status-warning-text">{t.note}</p>}
-              {t.detail && <p className={cn("type-body-sm", t.status === "failed" ? "text-status-error-text" : "text-fg-tertiary")}>{t.detail}</p>}
-              {children?.(t)}
-            </div>
-          </div>
-        </li>
-      ))}
-    </ol>
+    <StepList>
+      {run.tasks.map((t, i) => {
+        const next = run.tasks[i + 1]
+        return (
+          <Step key={t.id} status={t.status} current={t.status === "running"} connector={next ? (next.status === "pending" ? "idle" : "active") : undefined}>
+            <p className="flex flex-wrap items-baseline gap-x-2">
+              <span
+                className={cn(
+                  "type-body-md",
+                  t.status === "running" ? "shimmer-text" : t.status === "pending" ? "text-fg-disabled" : t.status === "failed" ? "text-status-error-text" : "text-fg-tertiary",
+                )}
+              >
+                {t.label}
+              </span>
+              {t.duration && <span className="type-body-sm text-fg-secondary tabular-nums">{t.duration}</span>}
+            </p>
+            {t.note && <p className="type-body-sm text-status-warning-text">{t.note}</p>}
+            {t.detail && <p className={cn("type-body-sm", t.status === "failed" ? "text-status-error-text" : "text-fg-tertiary")}>{t.detail}</p>}
+            {children?.(t)}
+          </Step>
+        )
+      })}
+    </StepList>
   )
 }
 
@@ -173,16 +141,14 @@ function PlanBlock({ run, compact }: { run: Run; compact?: boolean }) {
           <TaskList run={run}>{(t) => (t.id === "search" && t.status !== "pending" ? <SearchResults task={t} /> : null)}</TaskList>
         )}
         {isCurrent && run.status === "stopped" && (
-          <div className="flex items-center gap-3 rounded-md border border-line-default bg-surface p-3">
-            <p className="flex-1 type-body-sm text-fg-secondary">Stopped. Nothing is lost — pick up where I left off, or send a message to change the plan.</p>
-            <Button size="sm" variant="secondary" leadingIcon={<Play />} onClick={() => dispatch({ type: "resume" })}>Resume</Button>
-          </div>
+          <Alert tone="neutral" size="sm" icon={false} actions={<Button size="sm" variant="secondary" leadingIcon={<Play />} onClick={() => dispatch({ type: "resume" })}>Resume</Button>}>
+            Stopped. Nothing is lost — pick up where I left off, or send a message to change the plan.
+          </Alert>
         )}
         {isCurrent && run.status === "failed" && (
-          <div className="flex items-center gap-3 rounded-md border border-status-error-border bg-status-error-bg p-3">
-            <p className="flex-1 type-body-sm text-status-error-text">I couldn&apos;t finish this step. Your earlier steps are saved.</p>
-            <Button size="sm" variant="secondary" leadingIcon={<RotateCcw />} onClick={() => dispatch({ type: "retryStep" })}>Retry</Button>
-          </div>
+          <Alert tone="error" size="sm" icon={false} actions={<Button size="sm" variant="secondary" leadingIcon={<RotateCcw />} onClick={() => dispatch({ type: "retryStep" })}>Retry</Button>}>
+            I couldn&apos;t finish this step. Your earlier steps are saved.
+          </Alert>
         )}
       </div>
     </div>
@@ -222,9 +188,14 @@ function SearchResults({ task }: { task: Task }) {
 
 /* ---------------- artifacts ---------------- */
 
-export function statusLabel(st: "awaiting" | "confirmed" | "stale") {
+type ArtifactStatus = "awaiting" | "confirmed" | "stale"
+
+export function statusLabel(st: ArtifactStatus) {
   return st === "confirmed" ? "Confirmed" : st === "stale" ? "Needs refresh" : "Awaiting confirmation"
 }
+
+/** text colour for an artifact status caption */
+export const statusText = (st: ArtifactStatus) => (st === "confirmed" ? "text-status-success-text" : st === "stale" ? "text-status-warning-text" : "text-fg-tertiary")
 
 function ArtifactGrid() {
   const { s, dispatch } = useGen()
@@ -236,14 +207,9 @@ function ArtifactGrid() {
           const st = s.artifacts[key]
           return (
             <li key={key} className="flex flex-col justify-between gap-6 rounded-lg border border-line-default bg-subtle p-3 sm:size-[200px]">
-              <span
-                className={cn(
-                  "truncate rounded-[6px] px-1 py-0.5 text-center type-label-sm",
-                  st === "confirmed" ? "bg-status-success-bg text-status-success-text" : st === "stale" ? "bg-status-warning-bg text-status-warning-text" : "bg-muted text-fg-tertiary",
-                )}
-              >
+              <Badge tone={st === "confirmed" ? "success" : st === "stale" ? "warning" : "neutral"} dot={false} className={cn("justify-center truncate rounded-sm", st === "awaiting" && "bg-muted text-fg-tertiary")}>
                 {statusLabel(st)}
-              </span>
+              </Badge>
               <div className="flex flex-col gap-3">
                 <Icon className="size-8 text-fg-secondary" strokeWidth={1.5} />
                 <p className="type-h6 text-fg-secondary">{title}</p>
@@ -276,7 +242,7 @@ function ArtifactList() {
             <Icon className="size-7 shrink-0 text-fg-secondary" strokeWidth={1.5} />
             <span className="flex min-w-0 flex-1 flex-col">
               <span className="truncate type-body-md text-fg-secondary">{title}</span>
-              <span className={cn("type-caption", st === "confirmed" ? "text-status-success-text" : st === "stale" ? "text-status-warning-text" : "text-fg-tertiary")}>{statusLabel(st)}</span>
+              <span className={cn("type-caption", statusText(st))}>{statusLabel(st)}</span>
             </span>
             <Button size="sm" variant="secondary" onClick={() => dispatch({ type: "openReview", step: i })}>
               {st === "confirmed" ? "View" : "Review"}
@@ -304,9 +270,9 @@ function Clarify({ answered }: { answered?: string }) {
       {!answered && (
         <div className="flex flex-wrap gap-2">
           {CLARIFY_CHIPS.map((c) => (
-            <button key={c} type="button" onClick={() => dispatch({ type: "answerClarify", answer: c })} className="rounded-full border border-line-strong bg-surface px-4 py-2 type-body-sm text-fg-primary hover:border-blue-500 hover:text-fg-link">
+            <Chip key={c} onClick={() => dispatch({ type: "answerClarify", answer: c })}>
               {c}
-            </button>
+            </Chip>
           ))}
         </div>
       )}
@@ -352,15 +318,9 @@ function PickBusiness({ picked }: { picked?: string }) {
 
 function Refused() {
   return (
-    <div className="flex gap-3 rounded-lg border border-status-error-border bg-status-error-bg p-4 sm:mr-20">
-      <ShieldAlert className="mt-0.5 size-5 shrink-0 text-status-error-text" />
-      <div className="flex flex-col gap-1">
-        <p className="type-label-md text-status-error-text">I can&apos;t build this one</p>
-        <p className="type-body-sm text-fg-primary">
-          GoGetSpace doesn&apos;t make websites for gambling, vaping or counterfeit goods. If I&apos;ve misunderstood, tell me more about what the business does and I&apos;ll start again.
-        </p>
-      </div>
-    </div>
+    <Alert tone="error" icon={<ShieldAlert />} title="I can’t build this one" className="sm:mr-20">
+      GoGetSpace doesn&apos;t make websites for gambling, vaping or counterfeit goods. If I&apos;ve misunderstood, tell me more about what the business does and I&apos;ll start again.
+    </Alert>
   )
 }
 
@@ -415,15 +375,14 @@ function CreditsOut({ resolved }: { resolved?: "upgrade" | "stop" }) {
   if (resolved)
     return <p className="type-body-sm text-fg-tertiary">{resolved === "upgrade" ? "Credits topped up — carrying on with the build." : "Stopped here. The pages already built are ready to preview and publish."}</p>
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-status-warning-border bg-status-warning-bg p-4">
-      <p className="type-label-md text-status-warning-text">You&apos;ve run out of credits</p>
-      <p className="type-body-sm text-fg-primary">
+    <Alert tone="warning" title="You’ve run out of credits">
+      <p>
         I built {built} {built === 1 ? "page" : "pages"}; {left} still to go. Top up to finish them, or stop here and publish what&apos;s built.
       </p>
-      <div className="flex flex-wrap gap-2">
+      <div className="mt-2 flex flex-wrap gap-2">
         <Button size="sm" onClick={() => dispatch({ type: "creditsUpgrade" })}>Top up credits</Button>
         <Button size="sm" variant="secondary" onClick={() => dispatch({ type: "creditsStop" })}>Stop here</Button>
       </div>
-    </div>
+    </Alert>
   )
 }

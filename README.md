@@ -65,6 +65,19 @@ Button (sm/md/lg/icon × primary/secondary/ghost/destructive, with the lego pres
 Field + Input + Textarea, Select, DropdownMenu, Checkbox, Switch, Tabs, Tooltip, Dialog (modal), Alert, Toast,
 ProgressBar, Card and StudsMedia.
 
+App components built for the generation flow (also on `/styleguide` → App patterns):
+
+- **SegmentedControl** — pill switch for plan, device size, theme, Chat/Preview and Preview/Edit Mode (radio group or
+  tabs; `look="floating"` for bars over content; arrow keys move the selection)
+- **IconButton** — quiet icon-only button for close, reload, zoom and row menus
+- **StepList / Step / StepIndicator** — vertical task list whose markers are joined by one continuous line
+- **PromptBox**, **PromptAttachButton**, **PromptSendButton**, **AttachmentChip** — the chat and "create your own style" boxes
+- **RadioCard** / **RadioDot** — bordered radio choices (publish domain, style options)
+- **Alert** now also has a `neutral` tone, `actions`, a custom or hidden `icon` and a compact `size="sm"`
+
+The marketing homepage prompt (`site/prompt-input.tsx`) keeps its own Figma-matched motion buttons, and the generated
+site (`bakti-site/`) uses its own themed components on purpose.
+
 ```tsx
 import { Button, Field, Input } from "@/components/ui"
 

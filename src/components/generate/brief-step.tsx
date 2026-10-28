@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import { Popover } from "radix-ui"
 import { Check, CircleHelp, Pencil, Plus, Sparkles, Trash2 } from "lucide-react"
-import { Button } from "@/components/ui"
+import { Button, IconButton } from "@/components/ui"
 import { cn } from "@/lib/cn"
 import { countAssumptions, resolveGuess, segments, stripBrackets, type BriefSection } from "@/lib/generation/brief"
 import { useGen } from "./gen-provider"
@@ -178,12 +178,12 @@ function BriefRow({ text, onChange }: { text: string; onChange: (t: string | nul
         )}
       </span>
       <span className="absolute top-0 right-1 flex opacity-0 group-focus-within:opacity-100 group-hover:opacity-100">
-        <button type="button" aria-label="Edit point" onClick={() => { setDraft(stripBrackets(text)); setEditing(true) }} className="grid size-7 place-items-center rounded-sm text-fg-tertiary hover:bg-muted hover:text-fg-primary">
-          <Pencil className="size-4" />
-        </button>
-        <button type="button" aria-label="Remove point" onClick={() => onChange(null)} className="grid size-7 place-items-center rounded-sm text-fg-tertiary hover:bg-muted hover:text-status-error-text">
-          <Trash2 className="size-4" />
-        </button>
+        <IconButton aria-label="Edit point" size="sm" tone="onSubtle" onClick={() => { setDraft(stripBrackets(text)); setEditing(true) }}>
+          <Pencil />
+        </IconButton>
+        <IconButton aria-label="Remove point" size="sm" tone="onSubtle" onClick={() => onChange(null)} className="hover:text-status-error-text">
+          <Trash2 />
+        </IconButton>
       </span>
     </li>
   )

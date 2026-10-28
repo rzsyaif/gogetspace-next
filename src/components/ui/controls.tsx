@@ -93,3 +93,49 @@ export function Switch({
     </div>
   )
 }
+
+/** The round radio marker on its own — for custom radio cards (e.g. style options) that handle selection themselves. */
+export function RadioDot({ checked, className }: { checked: boolean; className?: string }) {
+  return (
+    <span aria-hidden className={cn("grid size-5 shrink-0 place-items-center rounded-full border-2 bg-surface transition-colors", checked ? "border-blue-500" : "border-line-strong", className)}>
+      {checked && <span className="size-2.5 rounded-full bg-blue-500" />}
+    </span>
+  )
+}
+
+/** A bordered choice in a radio group: title, optional description, and extra content shown under it. */
+export function RadioCard({
+  name,
+  checked,
+  onChange,
+  title,
+  description,
+  children,
+  className,
+}: {
+  name: string
+  checked: boolean
+  onChange: () => void
+  title: ReactNode
+  description?: ReactNode
+  children?: ReactNode
+  className?: string
+}) {
+  return (
+    <label
+      className={cn(
+        "flex cursor-pointer items-start gap-3 rounded-md border p-3 transition-colors has-focus-visible:focus-ring",
+        checked ? "border-blue-500 bg-accent-blue-subtle/40" : "border-line-default hover:border-line-strong",
+        className,
+      )}
+    >
+      <input type="radio" name={name} checked={checked} onChange={onChange} className="sr-only" />
+      <RadioDot checked={checked} className="mt-0.5" />
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="type-label-md text-fg-primary">{title}</span>
+        {description && <span className="type-body-sm text-fg-secondary">{description}</span>}
+        {children}
+      </span>
+    </label>
+  )
+}

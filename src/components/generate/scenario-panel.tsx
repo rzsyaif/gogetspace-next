@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { AnimatePresence, motion } from "motion/react"
 import { FlaskConical, RotateCcw, X } from "lucide-react"
-import { Button } from "@/components/ui"
+import { Button, IconButton, SegmentedControl } from "@/components/ui"
 import { cn } from "@/lib/cn"
 import { SCENARIOS, type JumpTarget, type Scenario } from "@/lib/generation/state"
 import { useGen } from "./gen-provider"
@@ -42,7 +42,7 @@ export function ScenarioPanel() {
           >
             <div className="flex items-center justify-between">
               <p className="type-label-md text-fg-primary">Prototype controls</p>
-              <button type="button" aria-label="Close" onClick={() => setOpen(false)} className="grid size-7 place-items-center rounded-sm hover:bg-subtle"><X className="size-4" /></button>
+              <IconButton aria-label="Close" size="sm" onClick={() => setOpen(false)}><X /></IconButton>
             </div>
 
             <section className="flex flex-col gap-2">
@@ -76,13 +76,7 @@ export function ScenarioPanel() {
 
             <section className="flex flex-col gap-2">
               <p className="type-label-sm text-fg-tertiary">SPEED</p>
-              <div className="flex gap-1 rounded-full bg-subtle p-1" role="radiogroup">
-                {[1, 2, 4].map((v) => (
-                  <button key={v} type="button" role="radio" aria-checked={s.speed === v} onClick={() => dispatch({ type: "speed", speed: v })} className={cn("flex-1 rounded-full py-1 type-label-md", s.speed === v ? "bg-surface text-fg-primary shadow-block-sm" : "text-fg-secondary")}>
-                    {v}×
-                  </button>
-                ))}
-              </div>
+              <SegmentedControl label="Speed" size="sm" fill value={s.speed} onChange={(speed) => dispatch({ type: "speed", speed })} options={[1, 2, 4].map((v) => ({ value: v, label: `${v}×` }))} />
             </section>
           </motion.div>
         )}
