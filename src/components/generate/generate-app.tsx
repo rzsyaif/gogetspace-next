@@ -128,7 +128,7 @@ export function Shell({ initialTab = "agent" }: { initialTab?: Tab }) {
       <div className="flex min-h-0 flex-1">
         <AnimatePresence initial={false}>
           {create && wide && (
-            <motion.div key="rail" initial={{ width: 0, opacity: 0 }} animate={{ width: 106, opacity: 1 }} exit={{ width: 0, opacity: 0 }} transition={{ duration: 0.55, ease: EASE }} className="shrink-0 overflow-hidden">
+            <motion.div key="rail" initial={{ width: 0, opacity: 0 }} animate={{ width: 84, opacity: 1 }} exit={{ width: 0, opacity: 0 }} transition={{ duration: 0.55, ease: EASE }} className="shrink-0 overflow-hidden">
               <Rail tab={tab} onTab={(t) => { setTab(t); setChatOpen(true) }} />
             </motion.div>
           )}
