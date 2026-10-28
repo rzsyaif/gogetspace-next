@@ -1,17 +1,21 @@
 "use client"
 
 import { useState, type FormEvent } from "react"
+import { motion } from "motion/react"
 import { ArrowUp, ImageIcon, Loader, Monitor, Plus, RefreshCw, Smartphone, Sparkles, X } from "lucide-react"
 import { cn } from "@/lib/cn"
 import { ALT_THEMES, CUSTOM_THEME, THEMES, type SiteTheme } from "@/lib/bakti/themes"
 import { FONT_STACK, siteFontVars } from "@/components/bakti-site/site-fonts"
 import { useGen } from "./gen-provider"
-import { PreviewFrame } from "./preview-frame"
+import { HeroPreview } from "@/components/bakti-site/hero-preview"
 
-/** Pick one of the proposed looks (or make your own) with a live preview of the real homepage. */
+/**
+ * Pick one of the proposed looks (or make your own). The preview is only the hero, in the same layout for every
+ * option: the hero is generated once and each option is just a token set, so switching costs no generation.
+ */
 export function StyleStep() {
   const { s, dispatch } = useGen()
-  const [device, setDevice] = useState<"desktop" | "mobile">("desktop")
+  const [device, setDevice] = useState<"desktop" | "mobile">(() => (typeof window !== "undefined" && window.innerWidth < 640 ? "mobile" : "desktop"))
   const [shuffling, setShuffling] = useState(false)
   const [custom, setCustom] = useState("")
   const [reference, setReference] = useState(false)
@@ -38,18 +42,51 @@ export function StyleStep() {
     }, 1800 / s.speed)
   }
 
+  const selected = options.find((t) => t.id === s.styleId) ?? null
+
   return (
-    <div className={cn(siteFontVars, "flex min-h-0 flex-1 flex-col gap-6 lg:flex-row lg:gap-9")}>
-      <div className="flex min-h-0 flex-col gap-4 overflow-y-auto pb-6 lg:w-[48%] lg:shrink-0">
+    <div className={cn(siteFontVars, "-mx-4 flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 pb-6 lg:mx-0 lg:flex-row lg:gap-9 lg:overflow-visible lg:px-0 lg:pb-0")}>
+      {/* hero preview — first on phones so the choice is visible right away */}
+      <div className="flex min-w-0 flex-col gap-3 lg:order-last lg:min-h-0 lg:flex-1">
+        <div className="flex items-center justify-between gap-3">
+          <p className="type-label-md text-fg-secondary">{selected ? `Hero preview · ${selected.name}` : "Hero preview"}</p>
+          <div className="hidden rounded-full bg-subtle p-1 sm:flex" role="radiogroup" aria-label="Preview size">
+            {(["desktop", "mobile"] as const).map((d) => (
+              <button key={d} type="button" role="radio" aria-checked={device === d} aria-label={d} onClick={() => setDevice(d)} className={cn("grid size-8 place-items-center rounded-full", device === d ? "bg-surface text-fg-primary shadow-block-sm" : "text-fg-tertiary")}>
+                {d === "desktop" ? <Monitor className="size-4" /> : <Smartphone className="size-4" />}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="relative flex max-h-[420px] min-h-[200px] min-w-0 justify-center overflow-hidden rounded-lg border border-line-default bg-canvas p-3 sm:p-6 lg:max-h-none lg:min-h-0 lg:flex-1 lg:items-start lg:overflow-y-auto">
+          {/* on small screens the hero is clipped to its top so the options stay in reach */}
+          {selected && <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-16 bg-linear-to-t from-canvas to-transparent lg:hidden" aria-hidden />}
+          {selected ? (
+            <motion.div key={`${selected.id}-${device}`} initial={{ opacity: 0.4 }} animate={{ opacity: 1 }} transition={{ duration: 0.25 }} className={cn("w-full overflow-hidden rounded-md border border-line-default shadow-soft-md", device === "mobile" && "max-w-[390px]")}>
+              <HeroPreview theme={selected} viewport={device === "desktop" ? 1280 : 390} />
+            </motion.div>
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-2 p-4 text-center">
+              <Sparkles className="size-7 text-fg-disabled" />
+              <p className="type-h5 text-fg-disabled">Pick a style to preview your hero</p>
+            </div>
+          )}
+        </div>
+        <p className="type-caption text-fg-tertiary">
+          Every option uses the same hero, so you only compare the look. The full site is built after you confirm.
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-4 lg:min-h-0 lg:w-[44%] lg:shrink-0 lg:overflow-y-auto lg:pb-6">
         <div className="flex items-center justify-between gap-3">
           <p className="type-body-sm text-fg-secondary">{options.length} options, based on your brief</p>
           <button type="button" onClick={shuffle} disabled={shuffling} className="flex items-center gap-1.5 rounded-sm px-2 py-1 type-label-md text-fg-link hover:bg-action-ghost-hover disabled:opacity-60">
-            <RefreshCw className={cn("size-4", shuffling && "animate-spin")} /> Show me different options
+            <RefreshCw className={cn("size-4", shuffling && "animate-spin")} /> <span className="max-sm:hidden">Show me different options</span><span className="sm:hidden">More options</span>
           </button>
         </div>
-        <div role="radiogroup" aria-label="Style options" className={cn("grid gap-4 sm:grid-cols-2", shuffling && "pointer-events-none opacity-50")}>
+        <div role="radiogroup" aria-label="Style options" className={cn("-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:px-0 sm:pb-0", shuffling && "pointer-events-none opacity-50")}>
           {making && (
-            <div className="flex min-h-[260px] flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-blue-300 bg-blue-50 p-6 text-center">
+            <div className="flex min-h-[220px] w-[240px] shrink-0 snap-start flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-blue-300 bg-blue-50 p-6 text-center sm:w-auto">
               <Loader className="size-6 animate-spin text-blue-500" />
               <p className="type-label-md text-fg-primary">Creating your style…</p>
               <p className="type-body-sm text-fg-secondary">Reading your description{reference ? " and reference" : ""}</p>
@@ -59,7 +96,7 @@ export function StyleStep() {
             <OptionCard key={t.id} t={t} selected={s.styleId === t.id} onSelect={() => dispatch({ type: "pickStyle", id: t.id })} />
           ))}
         </div>
-        <form onSubmit={makeCustom} className="flex flex-col gap-3 rounded-xl border border-line-strong bg-surface px-5 py-4 shadow-[0_4px_0_0_var(--color-shadow-block)] focus-within:border-blue-500">
+        <form onSubmit={makeCustom} className="flex flex-col gap-3 rounded-xl border border-line-strong bg-surface px-4 py-3 shadow-[0_4px_0_0_var(--color-shadow-block)] focus-within:border-blue-500 sm:px-5 sm:py-4">
           {reference && (
             <span className="flex items-center gap-2 self-start rounded-md border border-line-default bg-subtle py-1 pr-1 pl-2 type-body-sm">
               <ImageIcon className="size-4 text-fg-tertiary" /> brand-reference.png
@@ -75,43 +112,13 @@ export function StyleStep() {
               onChange={(e) => setCustom(e.target.value)}
               placeholder="Create your own style or upload your reference"
               aria-label="Describe your own style"
-              className="h-10 min-w-0 flex-1 bg-transparent type-body-lg text-fg-primary outline-none placeholder:text-fg-tertiary"
+              className="h-10 min-w-0 flex-1 bg-transparent type-body-md text-fg-primary outline-none placeholder:text-fg-tertiary sm:type-body-lg"
             />
             <button type="submit" aria-label="Create style" disabled={making || (!custom.trim() && !reference)} className="grid size-10 shrink-0 place-items-center rounded-md bg-blue-500 text-white shadow-[0_2px_0_0_var(--color-blue-800)] disabled:bg-action-disabled disabled:text-fg-disabled disabled:shadow-none">
               <ArrowUp className="size-5" />
             </button>
           </div>
         </form>
-      </div>
-
-      <div className="flex min-h-[420px] flex-1 flex-col gap-3 lg:min-h-0">
-        <div className="flex items-center justify-between gap-3">
-          <p className="type-label-md text-fg-secondary">{s.styleId ? "Live preview · Homepage" : "Preview"}</p>
-          <div className="flex rounded-full bg-subtle p-1" role="radiogroup" aria-label="Preview size">
-            {(["desktop", "mobile"] as const).map((d) => (
-              <button key={d} type="button" role="radio" aria-checked={device === d} aria-label={d} onClick={() => setDevice(d)} className={cn("grid size-8 place-items-center rounded-full", device === d ? "bg-surface text-fg-primary shadow-block-sm" : "text-fg-tertiary")}>
-                {d === "desktop" ? <Monitor className="size-4" /> : <Smartphone className="size-4" />}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="relative flex min-h-0 flex-1 justify-center overflow-hidden rounded-lg border border-line-default bg-canvas">
-          {s.styleId ? (
-            <PreviewFrame
-              key={device}
-              src={`/preview/${s.styleId}`}
-              viewport={device === "desktop" ? 1280 : 390}
-              title="Homepage preview"
-              className={cn("h-full", device === "desktop" ? "w-full" : "my-4 w-[390px] max-w-full rounded-[28px] border-[6px] border-neutral-900")}
-            />
-          ) : (
-            <div className="flex flex-col items-center justify-center gap-3 p-6 text-center">
-              <Sparkles className="size-8 text-fg-disabled" />
-              <p className="type-h4 text-fg-disabled">Pick a style to preview your homepage</p>
-              <p className="type-body-sm text-fg-tertiary">The preview is the real site, in the style you choose.</p>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   )
@@ -127,7 +134,7 @@ function OptionCard({ t, selected, onSelect }: { t: SiteTheme; selected: boolean
       aria-checked={selected}
       onClick={onSelect}
       className={cn(
-        "flex flex-col overflow-hidden rounded-lg border text-left transition-shadow focus-visible:outline-none focus-visible:focus-ring",
+        "flex w-[240px] shrink-0 snap-start flex-col overflow-hidden rounded-lg border text-left transition-shadow focus-visible:outline-none focus-visible:focus-ring sm:w-auto",
         selected ? "border-blue-500 shadow-[0_0_0_3px_var(--color-blue-100)]" : "border-line-default hover:border-line-strong",
       )}
     >

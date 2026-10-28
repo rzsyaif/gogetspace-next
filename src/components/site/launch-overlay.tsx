@@ -6,7 +6,7 @@ import { motion } from "motion/react"
 import { ArrowUp, Plus, Square } from "lucide-react"
 
 /**
- * Hand-off from the homepage prompt to /generate. The canvas colour washes over the page from the prompt,
+ * Hand-off from the homepage prompt to /generate. The homepage fades into the /generate background (always light),
  * the prompt box glides to where the chat input sits on /generate, and the typed prompt lifts into the first
  * chat bubble — so when the route changes underneath, nothing jumps. Positions mirror the /generate layout.
  */
@@ -18,8 +18,6 @@ export function LaunchOverlay({ from, text, onDone }: { from: DOMRect; text: str
   const box = { width: colW - 32, height: 118, left: colLeft + 16, top: vp.h - (sm ? 32 : 16) - 118 }
   const bubbleTop = 72 + (sm ? 48 : 24)
   const bubbleRight = vp.w - (colLeft + colW - 16)
-  const cx = from.left + from.width / 2
-  const cy = from.top + from.height / 2
 
   const done = useEffectEvent(onDone)
   useEffect(() => {
@@ -28,15 +26,10 @@ export function LaunchOverlay({ from, text, onDone }: { from: DOMRect; text: str
   }, [])
 
   return createPortal(
-    <div className="fixed inset-0 z-[100]" aria-live="polite">
+    <div data-theme="light" className="fixed inset-0 z-[100]" aria-live="polite">
       <span className="sr-only">Starting your website…</span>
-      {/* background change, radiating from the prompt */}
-      <motion.div
-        className="absolute inset-0 bg-canvas"
-        initial={{ clipPath: `circle(0px at ${cx}px ${cy}px)` }}
-        animate={{ clipPath: `circle(${Math.hypot(vp.w, vp.h)}px at ${cx}px ${cy}px)` }}
-        transition={{ duration: 0.7, ease: [0.6, 0, 0.2, 1] }}
-      />
+      {/* the homepage fades out behind the prompt into the /generate background */}
+      <motion.div className="absolute inset-0 bg-canvas" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.45, ease: "easeOut" }} />
       {/* /generate header */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35, duration: 0.3 }} className="absolute inset-x-0 top-0 flex h-[72px] items-center justify-between px-4 sm:px-6">
         <span className="grid size-9 grid-cols-2 place-content-center gap-[5px] rounded-md bg-blue-500 shadow-[0_2px_0_0_var(--color-blue-800)]">
@@ -50,7 +43,7 @@ export function LaunchOverlay({ from, text, onDone }: { from: DOMRect; text: str
         className="absolute flex flex-col justify-between overflow-hidden rounded-xl border-2 border-blue-500 bg-white px-5 py-4 shadow-[0_0_0_4px_var(--color-blue-100),0_4px_0_0_var(--color-blue-800)]"
         initial={{ left: from.left, top: from.top, width: from.width, height: from.height }}
         animate={{ left: box.left, top: box.top, width: box.width, height: box.height, borderColor: "#D1CDC4", boxShadow: "0 0 0 0px #DCE6FF, 0 4px 0 0 #D1CDC4", borderWidth: 1 }}
-        transition={{ duration: 0.75, ease: [0.65, 0, 0.25, 1], delay: 0.1 }}
+        transition={{ duration: 0.75, ease: [0.65, 0, 0.25, 1], delay: 0.18 }}
       >
         <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.55, duration: 0.25 }} className="type-body-lg text-fg-tertiary">
           Queue a follow up…

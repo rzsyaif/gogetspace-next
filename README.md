@@ -94,14 +94,18 @@ Bricolage Grotesque (headings) and Geist / Geist Mono (body, code) are self-host
 
 Typing a prompt on the homepage opens `/generate`. A scripted agent (`src/lib/generation/state.ts`, timers in
 `gen-provider.tsx`) plans the site, then the person reviews three artifacts in a sheet: an editable brief (guesses are
-highlighted until confirmed), style options with a live preview of the real site, and a sitemap (map or list, with
-rename / add / remove and plan limits). "Start Creation" opens the workspace: chat, build progress, credits, and a
+highlighted until confirmed), style options previewed on one hero section, and a sitemap (list and map side by side, with
+rename / add / remove, plan limits and the sections planned for each page). "Start Creation" opens the workspace: chat, build progress, credits, and a
 preview of the generated site with device sizes and a page switcher. Sign-up is asked for only when publishing.
+
+Style step and tokens: the hero (`bakti-site/hero-preview.tsx`) is generated once from the brief with a fixed layout;
+each style option is only a set of ~15 design tokens (palette, fonts, radii) applied as CSS variables. Comparing or
+switching styles costs no generation, and the full site (with its own layouts) is generated once, after confirming.
 
 Product decisions built in: a follow-up sent while planning **restarts the plan**; **sign-up happens at Publish**.
 
-Transitions: sending the homepage prompt plays a hand-off (`site/launch-overlay.tsx`) — the canvas colour spreads from the
-prompt, the box glides to the chat input position and the prompt lifts into the first bubble, then `/generate` takes over
+Transitions: sending the homepage prompt plays a hand-off (`site/launch-overlay.tsx`) — the homepage fades into the light
+`/generate` canvas while the prompt box stays, the box glides to the chat input position and the prompt lifts into the first bubble, then `/generate` takes over
 in the same place. When planning finishes the brief review opens by itself; closing it leaves the filled chat. After
 "Start Creation" one layout (`generate-app.tsx`) animates: the sheet closes, the chat shrinks into the sidebar, the rail
 (logo, tabs, Account) and the preview slide in, and the top bar folds away.
