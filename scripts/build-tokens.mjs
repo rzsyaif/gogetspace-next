@@ -108,17 +108,11 @@ for (const [name, t] of Object.entries(tokens.typeScale)) {
 push("  }")
 push("}")
 push()
-// dark mode: explicit data-theme="dark", or the OS setting unless light is forced
-const dark = semanticBlock("dark").map((l) => "  " + l)
+// dark mode only when chosen: data-theme="dark" (set by the theme script for "Dark", or "System" on a dark OS).
+// Light is the default everywhere — the OS setting alone never switches the app to dark.
 push('[data-theme="dark"] {')
 push("  color-scheme: dark;")
 lines.push(...semanticBlock("dark"))
-push("}")
-push("@media (prefers-color-scheme: dark) {")
-push('  :root:not([data-theme="light"]) {')
-push("    color-scheme: dark;")
-lines.push(...dark)
-push("  }")
 push("}")
 // force light on a subtree (e.g. the marketing site) whatever the page theme
 push('[data-theme="light"] {')
