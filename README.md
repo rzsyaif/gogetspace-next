@@ -55,7 +55,7 @@ Don't edit `tokens.css` by hand — change the JSON (or re-export from Figma) an
 | Heading/H2, Body/Small, Label/Medium … | `type-h2`, `type-body-sm`, `type-label-md`, … |
 | Effect `Block/Medium`, `Soft/Medium`, `Focus/Ring` | `shadow-block-md`, `shadow-soft-md`, `focus-ring` |
 
-Theme: the OS setting is used by default; `<ThemeToggle />` forces light or dark (`data-theme` on `<html>`, saved in `localStorage`).
+Theme: **light by default** on every page. `<ThemeToggle />` switches to Dark, or to System (follows the OS); the choice is saved in `localStorage` and applied as `data-theme` on `<html>` before first paint.
 
 ## Components
 
