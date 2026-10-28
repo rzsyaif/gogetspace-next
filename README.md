@@ -100,6 +100,17 @@ preview of the generated site with device sizes and a page switcher. Sign-up is 
 
 Product decisions built in: a follow-up sent while planning **restarts the plan**; **sign-up happens at Publish**.
 
+Transitions: sending the homepage prompt plays a hand-off (`site/launch-overlay.tsx`) — the canvas colour spreads from the
+prompt, the box glides to the chat input position and the prompt lifts into the first bubble, then `/generate` takes over
+in the same place. When planning finishes the brief review opens by itself; closing it leaves the filled chat. After
+"Start Creation" one layout (`generate-app.tsx`) animates: the sheet closes, the chat shrinks into the sidebar, the rail
+(logo, tabs, Account) and the preview slide in, and the top bar folds away.
+
+Edit Mode: the preview has a Preview Mode / Edit Mode switch. In Edit Mode the site's `EditBridge`
+(`bakti-site/edit-bridge.tsx`, active only inside the preview iframe) outlines what's under the pointer and reports
+clicks; the editor shows a menu: sections → ask the agent; text → edit it in place or ask the agent; images → upload
+your own or regenerate with a prompt. Requests go to the agent chat. Edits live in the preview until it reloads.
+
 The session is kept in `sessionStorage`, so a refresh resumes. The **Prototype** button (bottom-left) replays the flow
 with an edge case (vague prompt, nothing found online, several matches, search down, a failing or slow step, a declined
 request, low or exhausted credits, a page that fails to build), jumps to any stage, and changes the speed.

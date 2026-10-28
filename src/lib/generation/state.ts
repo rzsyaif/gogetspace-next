@@ -93,6 +93,8 @@ export interface GenState {
   queued: string[]
   account: { name: string; email: string } | null
   publish: { status: "idle" | "live"; domain: string }
+  /** plan run whose brief review has already been opened automatically */
+  autoReviewed?: number
   seq: number
 }
 
@@ -193,6 +195,7 @@ export type Action =
   | { type: "answerClarify"; answer: string }
   | { type: "pickBusiness"; id: string }
   | { type: "openReview"; step: number }
+  | { type: "autoReview" }
   | { type: "closeReview" }
   | { type: "reviewStep"; step: number }
   | { type: "editBrief"; brief: BriefSection[] }
@@ -212,6 +215,8 @@ export type Action =
   | { type: "upgradePlan" }
   | { type: "creditsStop" }
   | { type: "signUp"; name: string; email: string }
+  | { type: "signOut" }
+  | { type: "agentNote"; text: string }
   | { type: "published"; domain: string }
   | { type: "jump"; to: JumpTarget; scenario?: Scenario }
 
@@ -370,7 +375,9 @@ export function reducer(s: GenState, a: Action): GenState {
 
     /* ----- review ----- */
     case "openReview":
-      return { ...s, review: { open: true, step: a.step } }
+      return { ...s, autoReviewed: s.planRun, review: { open: true, step: a.step } }
+    case "autoReview":
+      return { ...s, autoReviewed: s.planRun, review: { open: true, step: 0 } }
     case "closeReview":
       return { ...s, review: { ...s.review, open: false } }
     case "reviewStep":
@@ -483,6 +490,10 @@ export function reducer(s: GenState, a: Action): GenState {
     }
     case "signUp":
       return { ...s, account: { name: a.name, email: a.email } }
+    case "signOut":
+      return { ...s, account: null }
+    case "agentNote":
+      return push(s, { type: "agent", text: a.text })
     case "published":
       return { ...s, publish: { status: "live", domain: a.domain } }
 
@@ -513,7 +524,7 @@ function jump(s: GenState, to: JumpTarget): GenState {
   if (to === "generating") return n
   // finish the plan run
   n = updateRun(n, 1, (r) => ({ ...r, status: "done", tasks: r.tasks.map((t) => ({ ...t, status: "done", duration: DURATIONS[t.id], detail: t.id === "brief" ? `Drafted a profile from assumptions, flagging ${countAssumptions(n.brief)} details to confirm` : t.id === "style" ? "Sketched 4 style options, including colors, fonts, and vibe" : t.id === "sitemap" ? `Planned ${flatten(n.sitemap).length} pages, including the structure` : undefined })) }))
-  n = { ...n, searchShown: SEARCH_RESULTS.length }
+  n = { ...n, searchShown: SEARCH_RESULTS.length, autoReviewed: n.planRun }
   n = finishPlan(n)
   if (to === "ready") return n
   if (to === "review-brief") return { ...n, review: { open: true, step: 0 } }

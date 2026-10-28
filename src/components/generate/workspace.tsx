@@ -1,20 +1,24 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
-import Link from "next/link"
+import { useRef, useState } from "react"
 import { AnimatePresence, motion } from "motion/react"
+import Link from "next/link"
 import {
   Check,
   ChevronDown,
+  CircleUser,
+  LogOut,
   CodeXml,
   Cog,
   Database,
   ExternalLink,
+  Eye,
   Globe,
   Link2,
   Loader,
   Lock,
   Monitor,
+  MousePointerClick,
   PanelLeft,
   RefreshCw,
   RotateCcw,
@@ -24,16 +28,15 @@ import {
   Tablet,
   X,
 } from "lucide-react"
-import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, Toast, Tooltip } from "@/components/ui"
+import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, Logo, Tooltip } from "@/components/ui"
 import { cn } from "@/lib/cn"
 import { flatten, type PageNode } from "@/lib/bakti/sitemap"
 import { getTheme } from "@/lib/bakti/themes"
 import type { PageStatus } from "@/lib/generation/state"
 import { useGen } from "./gen-provider"
-import { Messages } from "./chat-blocks"
-import { ChatInput } from "./chat-input"
-import { PreviewFrame } from "./preview-frame"
-import { PublishFlow } from "./publish"
+import { PreviewFrame, type EditEvent } from "./preview-frame"
+import { CLINIC_FRONT, CLINIC_PHOTO, GALLERY_IMAGES } from "@/components/site/assets"
+import { AccountDialog, PublishFlow } from "./publish"
 
 const DEVICES = [
   { id: "desktop", Icon: Monitor, width: 1280, label: "Desktop" },
@@ -41,75 +44,94 @@ const DEVICES = [
   { id: "mobile", Icon: Smartphone, width: 390, label: "Mobile" },
 ] as const
 type Device = (typeof DEVICES)[number]["id"]
-type Tab = "agent" | "domain" | "database" | "settings"
 
-/** The builder after "Start Creation": rail, agent chat and a live preview of the generated site. */
-export function Workspace() {
-  const [tab, setTab] = useState<Tab>("agent")
-  const [chatOpen, setChatOpen] = useState(true)
-  const [mobileView, setMobileView] = useState<"chat" | "preview">("chat")
-  const [toast, setToast] = useState<string | null>(null)
+export type Tab = "agent" | "domain" | "database" | "settings"
 
-  useEffect(() => {
-    if (!toast) return
-    const t = window.setTimeout(() => setToast(null), 2400)
-    return () => window.clearTimeout(t)
-  }, [toast])
+const RAIL: { id: Tab; Icon: typeof Sparkles; label: string }[] = [
+  { id: "agent", Icon: Sparkles, label: "Agent" },
+  { id: "domain", Icon: Link2, label: "Domain" },
+  { id: "database", Icon: Database, label: "Database" },
+  { id: "settings", Icon: Cog, label: "Settings" },
+]
 
+/** Editor rail: logo on top, workspace tabs, Account at the bottom (the editor has no top navbar). */
+export function Rail({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) {
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      {/* phone: switch between chat and preview */}
-      <div className="flex gap-1 border-b border-line-default px-4 pb-3 lg:hidden" role="tablist">
-        {(["chat", "preview"] as const).map((v) => (
-          <button key={v} role="tab" aria-selected={mobileView === v} onClick={() => setMobileView(v)} className={cn("flex-1 rounded-full py-2 type-label-md", mobileView === v ? "bg-inverse text-fg-inverse" : "bg-subtle text-fg-secondary")}>
-            {v === "chat" ? "Chat" : "Preview"}
-          </button>
-        ))}
+    <nav aria-label="Workspace" className="flex h-full w-[106px] flex-col items-center gap-6 px-6 py-5">
+      <Link href="/" aria-label="GoGetSpace home" className="mb-1 rounded-md focus-visible:outline-none focus-visible:focus-ring">
+        <Logo markOnly size={40} />
+      </Link>
+      {RAIL.map(({ id, Icon, label }) => (
+        <button key={id} type="button" onClick={() => onTab(id)} aria-current={tab === id ? "page" : undefined} className="group flex w-[58px] flex-col items-center gap-1.5">
+          <span className={cn("grid w-full place-items-center rounded-lg border p-3", tab === id ? "border-fg-secondary bg-inverse text-fg-inverse" : "border-line-default bg-subtle text-fg-secondary group-hover:bg-muted")}>
+            <Icon className="size-7" strokeWidth={1.75} />
+          </span>
+          <span className={cn("type-label-sm", tab === id ? "text-fg-primary" : "text-fg-tertiary")}>{label}</span>
+        </button>
+      ))}
+      <div className="mt-auto">
+        <AccountButton />
       </div>
-      <div className="flex min-h-0 flex-1">
-        <nav aria-label="Workspace" className="hidden shrink-0 flex-col gap-6 px-6 pt-2 lg:flex">
-          {(
-            [
-              { id: "agent", Icon: Sparkles, label: "Agent" },
-              { id: "domain", Icon: Link2, label: "Domain" },
-              { id: "database", Icon: Database, label: "Database" },
-              { id: "settings", Icon: Cog, label: "Settings" },
-            ] as const
-          ).map(({ id, Icon, label }) => (
-            <button key={id} type="button" onClick={() => { setTab(id); setChatOpen(true) }} aria-current={tab === id ? "page" : undefined} className="group flex w-[58px] flex-col items-center gap-1.5">
-              <span className={cn("grid w-full place-items-center rounded-lg border p-3", tab === id ? "border-fg-secondary bg-inverse text-fg-inverse" : "border-line-default bg-subtle text-fg-secondary group-hover:bg-muted")}>
-                <Icon className="size-7" strokeWidth={1.75} />
-              </span>
-              <span className={cn("type-label-sm", tab === id ? "text-fg-primary" : "text-fg-tertiary")}>{label}</span>
-            </button>
-          ))}
-        </nav>
+    </nav>
+  )
+}
 
-        {chatOpen && (
-          <aside className={cn("min-h-0 w-full shrink-0 flex-col lg:flex lg:w-[400px] min-[1440px]:w-[440px]", mobileView === "chat" ? "flex" : "hidden")}>
-            <div className="flex items-center gap-4 p-4">
-              <ProjectSelect />
-              <Tooltip content="Hide panel">
-                <button type="button" aria-label="Hide panel" onClick={() => setChatOpen(false)} className="hidden size-9 place-items-center rounded-md text-fg-secondary hover:bg-subtle lg:grid">
-                  <PanelLeft className="size-6" />
-                </button>
-              </Tooltip>
-            </div>
-            {tab === "agent" ? <AgentPanel /> : <SidePanel tab={tab} onBack={() => setTab("agent")} />}
-          </aside>
-        )}
+/** Icon button with the account menu (sign-up itself only happens at Publish, or from here) */
+export function AccountButton({ compact }: { compact?: boolean }) {
+  const { s, dispatch } = useGen()
+  const [signup, setSignup] = useState(false)
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger aria-label="Account" className="group flex w-[58px] flex-col items-center gap-1.5 focus-visible:outline-none">
+          <span className={cn("grid place-items-center rounded-full border border-line-default bg-subtle text-fg-secondary group-hover:bg-muted group-focus-visible:focus-ring", compact ? "size-10" : "size-[58px]")}>
+            {s.account ? (
+              <span className={cn("grid place-items-center rounded-full bg-blue-500 font-semibold text-white", compact ? "size-8 text-[13px]" : "size-11 text-[17px]")}>{s.account.name[0]}</span>
+            ) : (
+              <CircleUser className={compact ? "size-5" : "size-7"} strokeWidth={1.75} />
+            )}
+          </span>
+          {!compact && <span className="type-label-sm text-fg-tertiary">Account</span>}
+        </DropdownMenuTrigger>
+        <DropdownMenuContent side={compact ? "bottom" : "right"} align="end" className="w-64">
+          {s.account ? (
+            <>
+              <DropdownMenuLabel>
+                <span className="block type-label-md text-fg-primary normal-case">{s.account.name}</span>
+                <span className="block type-body-sm text-fg-tertiary normal-case">{s.account.email}</span>
+              </DropdownMenuLabel>
+              <DropdownMenuItem asChild>
+                <Link href="/screens">Dashboard</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => dispatch({ type: "signOut" })}>
+                <LogOut className="size-4" /> Sign out
+              </DropdownMenuItem>
+            </>
+          ) : (
+            <>
+              <DropdownMenuLabel>Not signed in</DropdownMenuLabel>
+              <DropdownMenuItem onSelect={() => setSignup(true)}>
+                <CircleUser className="size-4" /> Log in or sign up
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <AccountDialog open={signup} onOpenChange={setSignup} />
+    </>
+  )
+}
 
-        <section aria-label="Preview" className={cn("min-h-0 min-w-0 flex-1 flex-col gap-1 p-1 lg:flex", mobileView === "preview" ? "flex" : "hidden")}>
-          <PreviewPane chatOpen={chatOpen} onShowChat={() => setChatOpen(true)} onToast={setToast} />
-        </section>
-      </div>
-      <AnimatePresence>
-        {toast && (
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 12 }} className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2">
-            <Toast tone="success" message={toast} />
-          </motion.div>
-        )}
-      </AnimatePresence>
+/** Project picker + hide-panel toggle above the chat */
+export function ProjectHeader({ onHide }: { onHide: () => void }) {
+  return (
+    <div className="flex items-center gap-4 p-4">
+      <ProjectSelect />
+      <Tooltip content="Hide panel">
+        <button type="button" aria-label="Hide panel" onClick={onHide} className="hidden size-9 place-items-center rounded-md text-fg-secondary hover:bg-subtle lg:grid">
+          <PanelLeft className="size-6" />
+        </button>
+      </Tooltip>
     </div>
   )
 }
@@ -134,28 +156,7 @@ function ProjectSelect() {
   )
 }
 
-function AgentPanel() {
-  const { s } = useGen()
-  const end = useRef<HTMLDivElement>(null)
-  const count = s.msgs.length
-  const pagesBuilt = Object.values(s.pages).filter((p) => p === "built").length
-  useEffect(() => {
-    end.current?.scrollIntoView({ behavior: "smooth", block: "end" })
-  }, [count, pagesBuilt])
-  return (
-    <>
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-6">
-        <Messages compact />
-        <div ref={end} />
-      </div>
-      <div className="p-4 pt-0">
-        <ChatInput credits />
-      </div>
-    </>
-  )
-}
-
-function SidePanel({ tab, onBack }: { tab: Exclude<Tab, "agent">; onBack: () => void }) {
+export function SidePanel({ tab, onBack }: { tab: Exclude<Tab, "agent">; onBack: () => void }) {
   const { s } = useGen()
   const title = { domain: "Domain", database: "Database", settings: "Settings" }[tab]
   return (
@@ -214,13 +215,15 @@ function SidePanel({ tab, onBack }: { tab: Exclude<Tab, "agent">; onBack: () => 
 
 /* ---------------- preview ---------------- */
 
-function PreviewPane({ chatOpen, onShowChat, onToast }: { chatOpen: boolean; onShowChat: () => void; onToast: (t: string) => void }) {
+export function PreviewPane({ chatOpen, onShowChat, onToast }: { chatOpen: boolean; onShowChat: () => void; onToast: (t: string) => void }) {
   const { s, dispatch } = useGen()
   const [device, setDevice] = useState<Device>(() => (typeof window !== "undefined" && window.innerWidth < 640 ? "mobile" : "desktop"))
   const [view, setView] = useState<"preview" | "code">("preview")
   const [pageId, setPageId] = useState("home")
   const [reload, setReload] = useState(0)
   const [publishing, setPublishing] = useState(false)
+  const [editMode, setEditMode] = useState(false)
+  const imageTurn = useRef(0)
   const pages = flatten(s.sitemap)
   const page = pages.find((p) => p.id === pageId) ?? pages[0]
   const status: PageStatus = s.pages[page.id] ?? "queued"
@@ -235,6 +238,31 @@ function PreviewPane({ chatOpen, onShowChat, onToast }: { chatOpen: boolean; onS
   const onNavigate = (slug: string) => {
     const p = pages.find((x) => x.slug === slug)
     if (p) setPageId(p.id)
+  }
+
+  // edits made on the page in Edit Mode go through the agent chat
+  const onEdit = (e: EditEvent) => {
+    const where = e.target.kind === "text" ? `“${e.target.label}”` : e.target.label
+    if (e.kind === "text-saved") {
+      dispatch({ type: "agentNote", text: `Saved your edit on ${page.title}: “${(e.text ?? "").slice(0, 80)}”.` })
+      onToast("Text saved")
+      return
+    }
+    if (e.kind === "image-uploaded") {
+      dispatch({ type: "agentNote", text: `Replaced the image on ${page.title} with ${e.text}.` })
+      onToast("Image replaced")
+      return
+    }
+    dispatch({ type: "followUp", text: `${where} — ${e.prompt}` })
+    onToast(e.target.kind === "image" ? "Regenerating the image…" : "The agent is on it")
+    if (e.target.kind === "text" && /short/i.test(e.prompt ?? "") && e.target.text) {
+      const words = e.target.text.split(/\s+/)
+      if (words.length > 4) return { replaceText: words.slice(0, Math.max(3, Math.ceil(words.length * 0.6))).join(" ").replace(/[,;:—-]$/, "") + (/[.!?]$/.test(e.target.text.trim()) ? "." : "") }
+    }
+    if (e.target.kind === "image") {
+      const pool = [CLINIC_FRONT, ...GALLERY_IMAGES, CLINIC_PHOTO]
+      return { imageSrc: pool[imageTurn.current++ % pool.length] }
+    }
   }
 
   return (
@@ -303,10 +331,45 @@ function PreviewPane({ chatOpen, onShowChat, onToast }: { chatOpen: boolean; onS
                 reloadKey={reload}
                 title={`${page.title} preview`}
                 onNavigate={onNavigate}
-                className={cn("h-full", device === "desktop" ? "w-full" : "my-4 max-w-full rounded-[28px] border-[6px] border-neutral-900")}
+                editMode={editMode && status === "built"}
+                onEdit={onEdit}
+                className={cn("h-full", device === "desktop" ? "w-full" : cn("my-4 mb-20 max-w-full rounded-[28px] border-[6px] border-neutral-900 max-sm:my-0 max-sm:mb-0 max-sm:rounded-none max-sm:border-0", device === "tablet" ? "w-[832px]" : "w-[402px]"))}
               />
             )}
             {status !== "built" && <PageOverlay page={page} status={status} onRetry={() => dispatch({ type: "retryPage", id: page.id })} />}
+            {anyBuilt && status === "built" && (
+              <>
+                <AnimatePresence>
+                  {editMode && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      className="pointer-events-none absolute bottom-[68px] left-1/2 z-10 -translate-x-1/2 rounded-full bg-inverse/90 px-3 py-1.5 type-label-sm whitespace-nowrap text-fg-inverse shadow-soft-sm"
+                    >
+                      Click a section, text or image to change it
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+                <div role="tablist" aria-label="Preview mode" className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 gap-1 rounded-full border border-line-default bg-surface p-1 shadow-soft-md">
+                  {([
+                    { id: false, label: "Preview Mode", Icon: Eye },
+                    { id: true, label: "Edit Mode", Icon: MousePointerClick },
+                  ] as const).map(({ id, label, Icon }) => (
+                    <button
+                      key={label}
+                      type="button"
+                      role="tab"
+                      aria-selected={editMode === id}
+                      onClick={() => setEditMode(id)}
+                      className={cn("flex h-9 items-center gap-1.5 rounded-full px-3.5 type-label-md whitespace-nowrap transition-colors", editMode === id ? "bg-inverse text-fg-inverse" : "text-fg-secondary hover:text-fg-primary")}
+                    >
+                      <Icon className="size-4" /> {label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </>
         )}
       </div>

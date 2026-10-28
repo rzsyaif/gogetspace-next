@@ -28,7 +28,16 @@ export function PublishFlow({ open, onOpenChange, styleId }: { open: boolean; on
   )
 }
 
-function SignUp({ onDone }: { onDone: () => void }) {
+/** Sign-up on its own (from the Account button) */
+export function AccountDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {open && <SignUp onDone={() => onOpenChange(false)} title="Log in or create your account" />}
+    </Dialog>
+  )
+}
+
+function SignUp({ onDone, title = "Create your account to publish" }: { onDone: () => void; title?: string }) {
   const { dispatch } = useGen()
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
@@ -43,7 +52,7 @@ function SignUp({ onDone }: { onDone: () => void }) {
     onDone()
   }
   return (
-    <DialogContent title="Create your account to publish" description="Your site and everything you've confirmed is saved to the account. It takes a few seconds.">
+    <DialogContent title={title} description="Your site and everything you've confirmed is saved to the account. It takes a few seconds.">
       <Button
         variant="secondary"
         className="w-full"

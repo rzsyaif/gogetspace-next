@@ -30,7 +30,8 @@ export function ReviewSheet() {
   const [creditWarn, setCreditWarn] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const guesses = countAssumptions(s.brief)
-  const readonly = s.phase === "create"
+  // read-only once building — but not while the sheet is closing after "Start Creation"
+  const readonly = s.phase === "create" && s.review.open
 
   const go = (n: number) => dispatch({ type: "reviewStep", step: n })
   const missing = ARTIFACTS.slice(0, 2).filter((a) => s.artifacts[a.key] !== "confirmed")
@@ -80,10 +81,10 @@ export function ReviewSheet() {
   return (
     <D.Root open={s.review.open} onOpenChange={(o) => !o && dispatch({ type: "closeReview" })}>
       <D.Portal>
-        <D.Overlay className="fixed inset-0 z-50 bg-[rgba(30,28,25,0.6)] backdrop-blur-[6px] data-[state=open]:animate-[bp-fade-in_160ms_ease-out]" />
+        <D.Overlay className="fixed inset-0 z-50 bg-[rgba(30,28,25,0.6)] backdrop-blur-[6px] data-[state=open]:animate-[bp-fade-in_160ms_ease-out] data-[state=closed]:animate-[bp-fade-out_260ms_ease-in]" />
         <D.Content
           aria-describedby={undefined}
-          className="fixed inset-x-0 bottom-0 z-50 flex h-[calc(100svh-68px)] flex-col rounded-t-[32px] bg-surface outline-none data-[state=open]:animate-[bp-sheet-in_320ms_cubic-bezier(0.2,0.9,0.3,1)] max-[809px]:h-svh max-[809px]:rounded-none min-[810px]:rounded-t-[48px]"
+          className="fixed inset-x-0 bottom-0 z-50 flex h-[calc(100svh-68px)] flex-col rounded-t-[32px] bg-surface outline-none data-[state=open]:animate-[bp-sheet-in_320ms_cubic-bezier(0.2,0.9,0.3,1)] data-[state=closed]:animate-[bp-sheet-out_280ms_cubic-bezier(0.6,0,0.8,0.2)] max-[809px]:h-svh max-[809px]:rounded-none min-[810px]:rounded-t-[48px]"
           onInteractOutside={(e) => e.preventDefault()}
         >
           <D.Close aria-label="Close review" className="absolute -top-[52px] left-1/2 hidden size-9 -translate-x-1/2 place-items-center rounded-full text-white hover:bg-white/10 focus-visible:outline-none focus-visible:focus-ring min-[810px]:grid">

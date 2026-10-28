@@ -9,6 +9,7 @@ import type { SiteTheme } from "@/lib/bakti/themes"
 import { BUSINESS, LOCATIONS, PACKAGES, TESTS } from "@/lib/bakti/content"
 import { siteFontVars } from "./site-fonts"
 import { FieldLabel, H, SButton, container, inputClass, themeVars } from "./ui"
+import { EditBridge } from "./edit-bridge"
 
 interface SiteCtx {
   base: string
@@ -104,6 +105,7 @@ export function SiteShell({ theme, slug, children }: { theme: SiteTheme; slug: s
           )}
         </header>
 
+        <EditBridge />
         <main className="flex-1">{children}</main>
 
         <footer className="bg-(--s-ink) text-white/80">
