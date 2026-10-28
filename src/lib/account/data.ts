@@ -281,3 +281,48 @@ export const INVOICES: Invoice[] = [
   { id: "INV-2026-0901", date: "1 Sep 2026", siteId: "bakti-analisa", description: "Starter plan · September", amount: 9, status: "paid" },
   { id: "INV-2026-0801", date: "1 Aug 2026", siteId: "bakti-analisa", description: "Starter plan · August", amount: 9, status: "paid" },
 ]
+
+/* ---------------- domains bought through GoGetSpace ---------------- */
+
+export interface OwnedDomain {
+  name: string
+  /** website it points to; null while unused */
+  siteId: string | null
+  expires: string
+  autoRenew: boolean
+}
+
+export const OWNED_DOMAINS: OwnedDomain[] = [
+  { name: "baktianalisa.com", siteId: null, expires: "14 Mar 2027", autoRenew: true },
+  { name: "rahmadental.my", siteId: null, expires: "2 Feb 2027", autoRenew: false },
+]
+
+/** yearly prices by ending, USD */
+export const TLD_PRICES: Record<string, number> = { ".com": 12, ".my": 18, ".com.my": 16, ".clinic": 32, ".co": 26, ".net": 14, ".online": 5 }
+
+/**
+ * Pretend registry lookup: which endings are free for a name. Deterministic, so the same search always
+ * gives the same answer; short or very common names are mostly taken.
+ */
+export function searchDomains(query: string) {
+  const base = query
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, "")
+    .replace(/^www\./, "")
+    .replace(/\..*$/, "")
+    .replace(/[^a-z0-9-]/g, "")
+  if (!base) return []
+  const asked = query.trim().toLowerCase().match(/(\.[a-z.]+)$/)?.[1]
+  let h = 0
+  for (const c of base) h = (h * 31 + c.charCodeAt(0)) >>> 0
+  const common = base.length <= 5
+  return Object.entries(TLD_PRICES)
+    .map(([tld, price], i) => ({
+      name: base + tld,
+      tld,
+      price,
+      available: !(common && (tld === ".com" || tld === ".net")) && ((h >> i) & 7) !== 0,
+    }))
+    .sort((a, b) => (a.tld === asked ? -1 : b.tld === asked ? 1 : 0))
+}

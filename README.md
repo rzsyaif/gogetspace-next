@@ -154,6 +154,10 @@ statuses and invoices in sessionStorage so the dashboard and the editor stay in 
 - `/sites/[id]`: the editor on its own. The rail adds **Analytics**, **Enquiries** and **Plan**, which open full-width
   pages (`components/account`); the logo goes back to the dashboard and the site picker switches websites. Drafts
   that haven't been built show where planning stopped. The editor at the end of `/generate` is the same component.
+- Domains: buy one from Dashboard → Domains (search → duration → payment, optionally pointed at a website). Bought
+  domains that aren't used appear in the editor's Domain tab under "Connect a domain you own" and connect without DNS
+  steps; domains bought elsewhere still go through DNS. The editor's Plan tab shows the plan (8 columns) beside a
+  Custom domain card (4 columns).
 - Upgrades name the website and the charge, apply to that website only, and add an invoice in Billings. Analytics
   history depends on the plan (Free 7 days, Starter 30 days, Business 12 months).
 
