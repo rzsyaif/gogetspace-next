@@ -19,6 +19,7 @@ const iconButtonVariants = cva(
         sm: "size-7 [&_svg]:size-4",
         md: "size-8 [&_svg]:size-4",
         lg: "size-10 [&_svg]:size-5",
+        xl: "size-11 [&_svg]:size-5",
       },
       shape: { square: "rounded-sm", round: "rounded-full" },
       tone: {

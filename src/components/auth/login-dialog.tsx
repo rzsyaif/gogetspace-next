@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
 import { Loader } from "lucide-react"
-import { Button, Dialog, DialogContent, Field, Input } from "@/components/ui"
+import { Button, Dialog, DialogContent, Divider, Field, Input } from "@/components/ui"
 
 export function GoogleMark() {
   return (
@@ -17,20 +17,25 @@ export function GoogleMark() {
 }
 
 /**
- * Log in (or create an account) from the marketing site, then go to the dashboard. Prototype only: any valid
- * email and an 8+ character password work, and Google signs in straight away.
+ * Log in or create an account. Google signs in straight away; email checks the address and an 8+ character
+ * password (prototype: any valid pair works). `onSuccess` runs after `delay` ms, while the button says `busyLabel`.
  */
-export function LoginDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      {open && <LoginForm />}
-    </Dialog>
-  )
-}
-
-function LoginForm() {
-  const router = useRouter()
-  const [mode, setMode] = useState<"login" | "signup">("login")
+export function AuthForm({
+  initialMode = "login",
+  title,
+  description,
+  busyLabel = "Signing you in…",
+  delay = 0,
+  onSuccess,
+}: {
+  initialMode?: "login" | "signup"
+  title?: string
+  description?: string
+  busyLabel?: string
+  delay?: number
+  onSuccess: (account: { name: string; email: string }) => void
+}) {
+  const [mode, setMode] = useState(initialMode)
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [pw, setPw] = useState("")
@@ -39,29 +44,32 @@ function LoginForm() {
   const emailOk = /^\S+@\S+\.\S+$/.test(email)
   const signup = mode === "signup"
 
-  const go = (how: "google" | "email") => {
+  const finish = (how: "google" | "email", account: { name: string; email: string }) => {
     setGoing(how)
-    router.prefetch("/dashboard")
-    window.setTimeout(() => router.push("/dashboard"), 700)
+    window.setTimeout(() => onSuccess(account), delay)
   }
   const submit = (e: FormEvent) => {
     e.preventDefault()
     setTouched(true)
     if ((signup && !name.trim()) || !emailOk || pw.length < 8) return
-    go("email")
+    finish("email", { name: name.trim() || email.split("@")[0], email })
   }
 
   return (
     <DialogContent
-      title={signup ? "Create your account" : "Welcome back"}
-      description={signup ? "Build and publish websites for your business. It takes a few seconds." : "Log in to see your websites, enquiries and plans."}
+      title={title ?? (signup ? "Create your account" : "Welcome back")}
+      description={description ?? (signup ? "Build and publish websites for your business. It takes a few seconds." : "Log in to see your websites, enquiries and plans.")}
     >
-      <Button variant="secondary" className="w-full" leadingIcon={going === "google" ? <Loader className="animate-spin" /> : <GoogleMark />} disabled={going !== null} onClick={() => go("google")}>
+      <Button
+        variant="secondary"
+        className="w-full"
+        leadingIcon={going === "google" ? <Loader className="animate-spin" /> : <GoogleMark />}
+        disabled={going !== null}
+        onClick={() => finish("google", { name: "Kiki", email: "kiki@gmail.com" })}
+      >
         Continue with Google
       </Button>
-      <div className="flex items-center gap-3 type-caption text-fg-tertiary">
-        <span className="h-px flex-1 bg-line-default" /> or with email <span className="h-px flex-1 bg-line-default" />
-      </div>
+      <Divider>or with email</Divider>
       <form onSubmit={submit} noValidate className="flex flex-col gap-4 pb-4">
         {signup && (
           <Field label="Your name" error={touched && !name.trim() ? "Enter your name" : undefined}>
@@ -69,7 +77,7 @@ function LoginForm() {
           </Field>
         )}
         <Field label="Email" error={touched && !emailOk ? "Enter a valid email address" : undefined}>
-          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" autoFocus />
+          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" autoFocus={!signup} />
         </Field>
         <Field
           label="Password"
@@ -79,27 +87,47 @@ function LoginForm() {
           <Input type="password" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete={signup ? "new-password" : "current-password"} />
         </Field>
         {!signup && (
-          <button type="button" className="-mt-2 self-end type-label-sm text-fg-link hover:underline">
+          <Button variant="link" size="sm" className="-mt-2 self-end">
             Forgot password?
-          </button>
+          </Button>
         )}
         <Button type="submit" size="lg" className="w-full" disabled={going !== null} leadingIcon={going === "email" ? <Loader className="animate-spin" /> : undefined}>
-          {going === "email" ? "Opening your dashboard…" : signup ? "Create account" : "Log in"}
+          {going === "email" ? busyLabel : signup ? "Create account" : "Log in"}
         </Button>
         <p className="text-center type-body-sm text-fg-secondary">
           {signup ? "Already have an account?" : "New to GoGetSpace?"}{" "}
-          <button
-            type="button"
+          <Button
+            variant="link"
+            size="sm"
             onClick={() => {
               setMode(signup ? "login" : "signup")
               setTouched(false)
             }}
-            className="type-label-md text-fg-link hover:underline"
           >
             {signup ? "Log in" : "Create an account"}
-          </button>
+          </Button>
         </p>
+        {signup && <p className="text-center type-caption text-fg-tertiary">By continuing you agree to the Terms and Privacy Policy.</p>}
       </form>
     </DialogContent>
+  )
+}
+
+/** Log in from the marketing site, then open the dashboard. */
+export function LoginDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
+  const router = useRouter()
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {open && (
+        <AuthForm
+          busyLabel="Opening your dashboard…"
+          delay={700}
+          onSuccess={() => {
+            router.prefetch("/dashboard")
+            router.push("/dashboard")
+          }}
+        />
+      )}
+    </Dialog>
   )
 }

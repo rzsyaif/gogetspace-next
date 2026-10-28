@@ -80,7 +80,7 @@ export function DashboardHome() {
                       prompt.current?.scrollIntoView({ behavior: "smooth", block: "center" })
                       prompt.current?.querySelector("textarea")?.focus({ preventScroll: true })
                     }}
-                    className="flex h-full min-h-[240px] w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-line-strong p-6 text-center text-fg-secondary transition-colors hover:border-blue-500 hover:text-fg-link focus-visible:outline-none focus-visible:focus-ring"
+                    className="flex h-full min-h-[240px] w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-line-strong p-6 text-center text-fg-secondary transition-colors hover:border-line-focus hover:text-fg-link focus-visible:outline-none focus-visible:focus-ring"
                   >
                     <span className="grid size-12 place-items-center rounded-full bg-subtle">
                       <Plus className="size-6" />

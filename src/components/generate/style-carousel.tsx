@@ -107,7 +107,7 @@ export function StyleCarousel({
               }}
               className={cn(
                 "flex w-[86%] shrink-0 snap-start flex-col overflow-hidden rounded-xl border bg-surface transition-[border-color,box-shadow] focus-visible:outline-none focus-visible:focus-ring",
-                selected ? "border-blue-500 shadow-[0_0_0_3px_var(--color-blue-100)]" : "border-line-default",
+                selected ? "border-line-focus shadow-[0_0_0_3px_var(--color-blue-100)]" : "border-line-default",
               )}
             >
               <div className="flex items-center gap-2.5 border-b border-line-default bg-canvas px-4 py-3">
@@ -136,12 +136,12 @@ export function StyleCarousel({
         <div
           className={cn(
             "flex w-[86%] shrink-0 snap-start flex-col rounded-xl border border-dashed p-4",
-            active === options.length ? "border-blue-500 bg-accent-blue-subtle/40" : "border-line-strong bg-subtle",
+            active === options.length ? "border-line-focus bg-accent-blue-subtle/40" : "border-line-strong bg-subtle",
           )}
         >
           {making ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
-              <Loader className="size-7 animate-spin text-blue-500" />
+              <Loader className="size-7 animate-spin text-fg-brand" />
               <p className="type-label-lg text-fg-primary">Creating your style…</p>
               <p className="type-body-sm text-fg-secondary">It&apos;ll appear as the first card.</p>
             </div>

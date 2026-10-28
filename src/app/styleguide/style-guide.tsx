@@ -14,6 +14,7 @@ import {
   Chip,
   Dialog,
   DialogClose,
+  Divider,
   DialogContent,
   DialogTrigger,
   DropdownMenu,
@@ -26,6 +27,7 @@ import {
   IconButton,
   Input,
   Logo,
+  NavItem,
   ProgressBar,
   PromptAttachButton,
   PromptBox,
@@ -35,6 +37,7 @@ import {
   Select,
   Step,
   StepList,
+  Stepper,
   StudsMedia,
   Switch,
   Tabs,
@@ -47,6 +50,7 @@ import {
   TooltipProvider,
 } from "@/components/ui"
 import { ThemeToggle } from "@/components/theme"
+import { DetailCard } from "@/components/account/panel"
 
 const SEMANTIC: { group: string; items: { name: string; className: string }[] }[] = [
   {
@@ -229,6 +233,7 @@ export function StyleGuide({ palettes }: { palettes: [string, Record<string, str
             <Button asChild variant="secondary">
               <Link href="/">As a link</Link>
             </Button>
+            <Button variant="link">Forgot password?</Button>
           </div>
           <div className="flex flex-wrap items-center gap-4">
             <span className="w-10 type-label-md text-fg-tertiary">quiet</span>
@@ -444,6 +449,25 @@ export function StyleGuide({ palettes }: { palettes: [string, Record<string, str
         </Section>
 
         <Section id="app" title="App patterns">
+          <Stepper
+            label="Example steps"
+            steps={[
+              { title: "Project Brief", caption: "Confirmed", state: "done" },
+              { title: "Design & Style", caption: "Awaiting confirmation", state: "current" },
+              { title: "Sitemap Plan", caption: "Awaiting confirmation", state: "upcoming" },
+            ]}
+          />
+          <div className="grid gap-8 md:grid-cols-3">
+            <nav aria-label="Example navigation" className="flex flex-col gap-0.5">
+              <NavItem icon={<Plus />} label="New Website" raised />
+              <NavItem icon={<Globe />} label="Websites" active />
+              <NavItem icon={<LayoutTemplate />} label="Templates" trailing={<Badge dot={false}>3</Badge>} />
+            </nav>
+            <div className="flex flex-col gap-3">
+              <DetailCard label="Free address" value="bakti-analisa.get.space" trailing={<Badge tone="success">Live</Badge>} />
+              <Divider>or with email</Divider>
+            </div>
+          </div>
           <div className="grid gap-8 md:grid-cols-2">
             <StepList>
               <Step status="done" connector="active">

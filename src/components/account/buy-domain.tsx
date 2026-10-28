@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react"
 import { ArrowLeft, CircleCheck, CreditCard, Loader, Search, ShieldCheck } from "lucide-react"
-import { Badge, Button, Dialog, DialogContent, Field, Input, RadioCard, Select } from "@/components/ui"
+import { Badge, Button, Dialog, DialogContent, Field, Input, RadioCard, Select, Stepper } from "@/components/ui"
 import { cn } from "@/lib/cn"
 import { planInfo } from "@/lib/plans"
 import { ACCOUNT, searchDomains } from "@/lib/account/data"
@@ -79,17 +79,7 @@ function BuyDomain({ onClose, siteId }: { onClose: () => void; siteId?: string }
   return (
     <DialogContent
       title="Buy a domain"
-      description={
-        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          {STEPS.map((s, i) => (
-            <span key={s.id} className={cn("flex items-center gap-1.5 type-label-sm", i === index ? "text-fg-brand" : i < index ? "text-fg-primary" : "text-fg-tertiary")}>
-              <span className={cn("grid size-5 place-items-center rounded-full text-[11px]", i === index ? "bg-blue-500 text-white" : i < index ? "bg-accent-blue-subtle text-fg-link" : "bg-subtle")}>{i + 1}</span>
-              {s.label}
-              {i < STEPS.length - 1 && <span className="ml-1 text-fg-disabled">—</span>}
-            </span>
-          ))}
-        </span>
-      }
+      description="Search, choose how long, and pay. It connects to your website without any DNS steps."
       className="max-w-[560px]"
       footer={
         step === "search" ? (
@@ -110,6 +100,17 @@ function BuyDomain({ onClose, siteId }: { onClose: () => void; siteId?: string }
         )
       }
     >
+      <Stepper
+        label="Buying a domain"
+        className="-mt-2"
+        onSelect={(i) => i < index && !paying && setStep(STEPS[i].id)}
+        steps={STEPS.map((st, i) => ({
+          title: st.label,
+          caption: i === 0 ? pick?.name ?? "Search a name" : i === 1 ? (pick && index > 1 ? `${years} ${years === 1 ? "year" : "years"} · ${usd(total)}` : "1–5 years") : "Card on file",
+          state: i < index ? "done" : i === index ? "current" : "upcoming",
+        }))}
+      />
+
       {step === "search" && (
         <div className="flex flex-col gap-4">
           <form onSubmit={search} className="flex gap-2">

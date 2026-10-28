@@ -2,14 +2,14 @@
 
 import { useState } from "react"
 import { Dialog as D } from "radix-ui"
-import { ArrowLeft, Check, RefreshCw, X } from "lucide-react"
-import { Alert, Button, Dialog, DialogContent, IconButton } from "@/components/ui"
+import { ArrowLeft, RefreshCw, X } from "lucide-react"
+import { Alert, Button, Dialog, DialogContent, IconButton, Stepper, overlayClass } from "@/components/ui"
 import { cn } from "@/lib/cn"
 import { countAssumptions } from "@/lib/generation/brief"
 import { flatten, unlockedIds } from "@/lib/bakti/sitemap"
 import type { ArtifactKey } from "@/lib/generation/state"
 import { useGen } from "./gen-provider"
-import { ARTIFACTS, statusLabel, statusText } from "./chat-blocks"
+import { ARTIFACTS, statusLabel } from "./chat-blocks"
 import { BriefStep } from "./brief-step"
 import { StyleStep } from "./style-step"
 import { SitemapStep } from "./sitemap-step"
@@ -81,7 +81,7 @@ export function ReviewSheet() {
   return (
     <D.Root open={s.review.open} onOpenChange={(o) => !o && dispatch({ type: "closeReview" })}>
       <D.Portal>
-        <D.Overlay className="fixed inset-0 z-50 bg-[rgba(30,28,25,0.6)] backdrop-blur-[6px] data-[state=open]:animate-[bp-fade-in_160ms_ease-out] data-[state=closed]:animate-[bp-fade-out_260ms_ease-in]" />
+        <D.Overlay className={overlayClass} />
         <D.Content
           aria-describedby={undefined}
           className="fixed inset-x-0 bottom-0 z-50 flex h-[calc(100svh-44px)] flex-col rounded-t-[32px] bg-surface outline-none data-[state=open]:animate-[bp-sheet-in_320ms_cubic-bezier(0.2,0.9,0.3,1)] data-[state=closed]:animate-[bp-sheet-out_280ms_cubic-bezier(0.6,0,0.8,0.2)] max-[809px]:h-svh max-[809px]:rounded-none min-[810px]:rounded-t-[48px]"
@@ -137,29 +137,20 @@ export function ReviewSheet() {
                   </Button>
                 )}
               </div>
-              <ol className="hidden flex-1 items-start min-[810px]:flex" aria-label="Review steps">
-                {ARTIFACTS.map((a, i) => {
+              <Stepper
+                label="Review steps"
+                className="hidden flex-1 min-[810px]:flex"
+                onSelect={go}
+                steps={ARTIFACTS.map((a, i) => {
                   const st = s.artifacts[a.key]
-                  const current = i === step
-                  const reached = i <= step || st === "confirmed"
-                  return (
-                    <li key={a.key} className="flex flex-1 items-start">
-                      <button
-                        type="button"
-                        onClick={() => go(i)}
-                        aria-current={current ? "step" : undefined}
-                        className={cn("flex flex-1 flex-col items-start border-t py-3 text-left", reached ? "border-blue-500" : "border-line-default")}
-                      >
-                        <span className={cn("flex items-center gap-1.5 type-label-md", current ? "text-fg-brand" : st === "confirmed" ? "text-fg-primary" : "text-fg-tertiary")}>
-                          {st === "confirmed" && <Check className="size-4 text-status-success-text" />}
-                          {a.title}
-                        </span>
-                        <span className={cn("type-caption", statusText(st))}>{statusLabel(st)}</span>
-                      </button>
-                    </li>
-                  )
+                  return {
+                    title: a.title,
+                    caption: statusLabel(st),
+                    state: i === step ? "current" : st === "confirmed" ? "done" : st === "stale" ? "warning" : "upcoming",
+                    tone: st === "confirmed" ? "success" : st === "stale" ? "warning" : undefined,
+                  }
                 })}
-              </ol>
+              />
               <p className="flex-1 text-center type-label-md text-fg-secondary min-[810px]:hidden">
                 Step {step + 1} of 3
               </p>

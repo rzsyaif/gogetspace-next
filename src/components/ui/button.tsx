@@ -4,7 +4,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/cn"
 
 /**
- * Baseplate Button — Small / Medium / Large × Primary / Secondary / Ghost / Destructive.
+ * Baseplate Button — Small / Medium / Large × Primary / Secondary / Ghost / Link / Destructive.
  * The "lego" block shadow sits under the button; pressing drops the button onto it.
  */
 const buttonVariants = cva(
@@ -26,6 +26,8 @@ const buttonVariants = cva(
           "border border-line-strong bg-action-secondary text-fg-primary [--block-color:var(--color-action-secondary-base)] hover:bg-action-secondary-hover active:bg-action-secondary-pressed",
         ghost:
           "bg-transparent text-fg-brand [--block:0px] [--block-color:transparent] hover:bg-action-ghost-hover active:bg-action-ghost-pressed",
+        /** inline text action, e.g. "Forgot password?" or a link inside a card */
+        link: "bg-transparent text-fg-link underline-offset-4 [--block:0px] [--block-color:transparent] hover:underline",
         destructive:
           "bg-action-destructive text-fg-on-action [--block-color:var(--color-action-destructive-base)] hover:bg-action-destructive-hover active:bg-action-destructive-pressed",
       },
@@ -37,7 +39,11 @@ const buttonVariants = cva(
         "icon-md": "size-11 [--block:4px] [&_svg]:size-5",
       },
     },
-    compoundVariants: [{ variant: "ghost", className: "[--block:0px]" }],
+    compoundVariants: [
+      { variant: "ghost", className: "[--block:0px]" },
+      // links sit in running text: no box, just the label
+      { variant: "link", className: "h-auto px-0 py-0 active:translate-y-0" },
+    ],
     defaultVariants: { variant: "primary", size: "md" },
   },
 )

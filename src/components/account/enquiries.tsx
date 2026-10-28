@@ -98,7 +98,7 @@ export function EnquiriesPanel({ siteId, live = true }: { siteId?: string; live?
                     className={cn("flex w-full flex-col gap-1 px-4 py-3 text-left transition-colors hover:bg-subtle focus-visible:outline-none focus-visible:focus-ring", active && "lg:bg-accent-blue-subtle/50")}
                   >
                     <span className="flex items-center gap-2">
-                      {st === "new" && <span className="size-2 shrink-0 rounded-full bg-blue-500" aria-label="New" />}
+                      {st === "new" && <span className="size-2 shrink-0 rounded-full bg-action-primary" aria-label="New" />}
                       <span className={cn("min-w-0 flex-1 truncate type-body-md", st === "new" ? "font-semibold text-fg-primary" : "text-fg-primary")}>{e.name}</span>
                       <span className="shrink-0 type-caption text-fg-tertiary">{e.received}</span>
                     </span>
