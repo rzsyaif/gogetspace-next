@@ -2,8 +2,10 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { CreditCard, Download, ExternalLink, Globe, Link2, Plus } from "lucide-react"
-import { Alert, Badge, Button, Checkbox, Dialog, DialogContent, Field, Input, Select, Switch } from "@/components/ui"
+import { ChevronDown, CreditCard, Download, ExternalLink, Globe, Link2, Plus, ShoppingCart } from "lucide-react"
+import { useSearchParams } from "next/navigation"
+import { Alert, Badge, Button, Checkbox, Dialog, DialogContent, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Field, Input, Select, Switch } from "@/components/ui"
+import { BuyDomainDialog } from "@/components/account/buy-domain"
 import { cn } from "@/lib/cn"
 import { planInfo } from "@/lib/plans"
 import { ACCOUNT, ENQUIRIES, dailyStats, siteUrl, type Site } from "@/lib/account/data"
@@ -108,19 +110,85 @@ export function WebsitesPage() {
 /* ---------------- Domains ---------------- */
 
 export function DomainsPage() {
-  const { sites } = useAccountState()
+  const { sites, domains } = useAccountState()
+  const params = useSearchParams()
   const [connect, setConnect] = useState(false)
+  const [buy, setBuy] = useState(params.get("buy") === "1")
+  const forSite = params.get("site") ?? undefined
+  const usable = sites.filter((s) => planInfo(s.plan).customDomain)
   return (
     <PanelPage>
       <PanelHeader
         title="Domains"
         description="Every website gets a free .get.space address. Starter and Business plans can also use a domain you own."
         actions={
-          <Button leadingIcon={<Link2 />} onClick={() => setConnect(true)}>
-            Connect a domain
-          </Button>
+          <>
+            <Button variant="secondary" leadingIcon={<Link2 />} onClick={() => setConnect(true)}>
+              Connect one from elsewhere
+            </Button>
+            <Button leadingIcon={<ShoppingCart />} onClick={() => setBuy(true)}>
+              Buy a domain
+            </Button>
+          </>
         }
       />
+
+      <PanelSection title="Domains you own" actions={<span className="type-body-sm text-fg-tertiary">Bought through GoGetSpace</span>}>
+        {domains.length === 0 ? (
+          <p className="type-body-sm text-fg-secondary">None yet. Buy one and it connects to your website without any DNS steps.</p>
+        ) : (
+          <ul className="flex flex-col divide-y divide-line-default">
+            {domains.map((d) => {
+              const site = sites.find((x) => x.id === d.siteId)
+              return (
+                <li key={d.name} className="flex flex-col gap-2 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:gap-4">
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate type-label-lg text-fg-primary">{d.name}</span>
+                    <span className="type-body-sm text-fg-tertiary">
+                      {d.autoRenew ? "Renews" : "Expires"} {d.expires}
+                    </span>
+                  </span>
+                  {site ? (
+                    <Badge tone="success" className="max-w-[260px] truncate">
+                      In use · {site.name}
+                    </Badge>
+                  ) : (
+                    <Badge dot={false}>Unused</Badge>
+                  )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button size="sm" variant="secondary" trailingIcon={<ChevronDown />}>
+                        {site ? "Manage" : "Use on a website"}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-64">
+                      {usable.length > 0 && <DropdownMenuLabel>Point it at</DropdownMenuLabel>}
+                      {usable
+                        .filter((x) => x.id !== d.siteId)
+                        .map((x) => (
+                          <DropdownMenuItem key={x.id} onSelect={() => accountActions.assignDomain(x.id, d.name)}>
+                            <span className="truncate">{x.name}</span>
+                          </DropdownMenuItem>
+                        ))}
+                      {usable.length === 0 && <DropdownMenuLabel>Upgrade a website to Starter to use it</DropdownMenuLabel>}
+                      {site && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem tone="danger" onSelect={() => accountActions.disconnectDomain(site.id)}>
+                            Disconnect from {site.name}
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </PanelSection>
+
+      <h2 className="type-h6 text-fg-primary">Addresses by website</h2>
       <ul className="flex flex-col gap-3">
         {sites.flatMap((s) => [
           <DomainRow key={`${s.id}-free`} site={s} name={s.freeDomain} kind="Free address" status={s.status === "live" ? "Live" : "Ready when you publish"} ok={s.status === "live"} />,
@@ -140,6 +208,7 @@ export function DomainsPage() {
         ])}
       </ul>
       <ConnectDomainDialog open={connect} onOpenChange={setConnect} sites={sites} />
+      <BuyDomainDialog open={buy} onOpenChange={setBuy} siteId={forSite} />
     </PanelPage>
   )
 }
@@ -295,7 +364,7 @@ export function BillingPage() {
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span className="type-label-md text-fg-primary">{inv.description}</span>
                   <span className="truncate type-body-sm text-fg-tertiary">
-                    {inv.date} · {siteName(inv.siteId)} · {inv.id}
+                    {inv.date} · {inv.siteId ? siteName(inv.siteId) : "Domain"} · {inv.id}
                   </span>
                 </span>
                 <Badge tone="success">Paid</Badge>

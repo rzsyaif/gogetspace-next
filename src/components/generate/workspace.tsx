@@ -44,6 +44,7 @@ import { PreviewFrame, type EditEvent } from "./preview-frame"
 import { CLINIC_FRONT, CLINIC_PHOTO, GALLERY_IMAGES } from "@/components/site/assets"
 import { AccountDialog, PublishFlow } from "./publish"
 import { useEditorSite } from "./editor-site"
+import { DomainPanel } from "@/components/account/domain-panel"
 import { useAccountState } from "@/lib/account/store"
 
 const DEVICES = [
@@ -282,7 +283,7 @@ function ProjectSelect() {
   )
 }
 
-export function SidePanel({ tab, onBack }: { tab: "domain" | "database" | "settings"; onBack: () => void }) {
+export function SidePanel({ tab, onBack, onOpenPlan }: { tab: "domain" | "database" | "settings"; onBack: () => void; onOpenPlan: () => void }) {
   const { s } = useGen()
   const title = { domain: "Domain", database: "Database", settings: "Settings" }[tab]
   return (
@@ -291,18 +292,7 @@ export function SidePanel({ tab, onBack }: { tab: "domain" | "database" | "setti
         <h2 className="type-h5 text-fg-primary">{title}</h2>
         <IconButton aria-label="Back to agent" onClick={onBack}><X /></IconButton>
       </div>
-      {tab === "domain" && (
-        <>
-          <div className="flex flex-col gap-1 rounded-md border border-line-default bg-surface p-4">
-            <span className="type-caption text-fg-tertiary">Free address</span>
-            <span className="type-label-md text-fg-primary">{s.publish.domain}</span>
-            <span className={cn("type-caption", s.publish.status === "live" ? "text-status-success-text" : "text-fg-tertiary")}>{s.publish.status === "live" ? "Live" : "Goes live when you publish"}</span>
-          </div>
-          <Button variant="secondary">Connect a domain you own</Button>
-          <Button variant="secondary">Buy a domain</Button>
-          <p className="type-body-sm text-fg-tertiary">Domain management is the next prototype screen.</p>
-        </>
-      )}
+      {tab === "domain" && <DomainPanel onOpenPlan={onOpenPlan} />}
       {tab === "database" && (
         <>
           <p className="type-body-sm text-fg-secondary">Bookings and messages sent from your site land here.</p>

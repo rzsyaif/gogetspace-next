@@ -55,7 +55,7 @@ export function FlowSiteProvider({ children }: { children: ReactNode }) {
         site,
         plan: s.plan,
         setPlan: (plan) => dispatch({ type: "plan", plan }),
-        usage: { pagesBuilt: built, pagesPlanned: pages.length, creditsUsed: s.credits, customDomain: false },
+        usage: { pagesBuilt: built, pagesPlanned: pages.length, creditsUsed: s.credits, customDomain: false, domain: null, freeDomain: s.publish.domain },
       }}
     >
       {children}
@@ -74,7 +74,7 @@ export function AccountSiteProvider({ siteId, children }: { siteId: string; chil
         site,
         plan: site.plan,
         setPlan: (plan) => accountActions.setPlan(site.id, plan),
-        usage: { pagesBuilt: site.pagesBuilt, pagesPlanned: site.pagesPlanned, creditsUsed: site.creditsUsed, customDomain: site.domain?.status === "connected", renews: site.renews },
+        usage: { pagesBuilt: site.pagesBuilt, pagesPlanned: site.pagesPlanned, creditsUsed: site.creditsUsed, customDomain: site.domain?.status === "connected", domain: site.domain, freeDomain: site.freeDomain, renews: site.renews },
       }}
     >
       {children}

@@ -150,7 +150,7 @@ export function Shell({ initialTab = "agent" }: { initialTab?: Tab }) {
               )}
             </AnimatePresence>
             {create && (tab === "domain" || tab === "database" || tab === "settings") ? (
-              <SidePanel tab={tab} onBack={() => setTab("agent")} />
+              <SidePanel tab={tab} onBack={() => setTab("agent")} onOpenPlan={() => setTab("plan")} />
             ) : editor.site.built || flow ? (
               <ChatColumn compact={create} />
             ) : (
