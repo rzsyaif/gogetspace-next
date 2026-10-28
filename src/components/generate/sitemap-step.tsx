@@ -1,10 +1,10 @@
 "use client"
 
 import { useEffect, useRef, useState, type PointerEvent as RPointerEvent } from "react"
-import { CircleCheck, File, House, List, Lock, Map as MapIcon, Maximize, Minus, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react"
+import { CircleCheck, File, House, Lock, Maximize, Minus, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, Tooltip } from "@/components/ui"
 import { cn } from "@/lib/cn"
-import { flatten, unlockedIds, type PageNode, type Plan } from "@/lib/bakti/sitemap"
+import { flatten, sectionsOf, unlockedIds, type PageNode, type Plan } from "@/lib/bakti/sitemap"
 import { useGen } from "./gen-provider"
 
 const PLANS: { id: Plan; label: string; pages: string }[] = [
@@ -21,14 +21,19 @@ const slugify = (t: string) => t.toLowerCase().replace(/&/g, "and").replace(/[^a
 let counter = 0
 const uid = () => `custom-${Date.now().toString(36)}${counter++}`
 
-/** Page plan as a pannable, zoomable map (or a list), with rename / add / remove and plan limits. */
+/**
+ * Page plan: the list (4 of 12 columns) and the pannable, zoomable map (8 of 12) side by side, with rename / add /
+ * remove and plan limits. Pages the plan builds show the sections the agent will generate on them. On small screens
+ * the list comes first and the map follows at a fixed height; the whole step scrolls.
+ */
 export function SitemapStep() {
   const { s, dispatch } = useGen()
-  const [view, setView] = useState<"map" | "list">(() => (typeof window !== "undefined" && window.innerWidth < 810 ? "list" : "map"))
   const [renaming, setRenaming] = useState<string | null>(null)
+  const [active, setActive] = useState<string | null>(null)
   const unlocked = unlockedIds(s.sitemap, s.plan)
   const pages = flatten(s.sitemap)
-  const locked = pages.length - unlocked.size > 0 ? pages.length - Math.min(unlocked.size, pages.length) : 0
+  const locked = Math.max(0, pages.length - unlocked.size)
+  const sectionCount = pages.filter((p) => unlocked.has(p.id)).reduce((n, p) => n + sectionsOf(p).length, 0)
 
   const update = (root: PageNode) => dispatch({ type: "sitemap", sitemap: root })
   const rename = (id: string, title: string) => {
@@ -43,68 +48,90 @@ export function SitemapStep() {
   }
   const remove = (id: string) => update(removeNode(s.sitemap, id))
 
-  const nodeProps = { unlocked, renaming, onRename: rename, onStartRename: setRenaming, onAdd: add, onRemove: remove }
+  const nodeProps = { unlocked, renaming, active, onRename: rename, onStartRename: setRenaming, onAdd: add, onRemove: remove }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4">
-      <div className="flex flex-col gap-3 rounded-md border border-line-default bg-canvas p-3 sm:flex-row sm:items-center">
-        <p className="flex-1 type-body-sm text-fg-secondary">
-          <strong className="text-fg-primary">{pages.length} pages planned.</strong>{" "}
-          {locked > 0
-            ? `${PLANS.find((p) => p.id === s.plan)!.label} builds ${unlocked.size === 1 ? "the homepage" : `${unlocked.size} pages`}; the ${locked} locked ${locked === 1 ? "page is" : "pages are"} kept in the plan and built when you upgrade.`
-            : "Your plan builds every page."}
-        </p>
-        <div role="radiogroup" aria-label="Plan" className="flex rounded-full bg-subtle p-1">
-          {PLANS.map((p) => (
-            <Tooltip key={p.id} content={p.pages}>
-              <button
-                type="button"
-                role="radio"
-                aria-checked={s.plan === p.id}
-                onClick={() => dispatch({ type: "plan", plan: p.id })}
-                className={cn("rounded-full px-3 py-1.5 type-label-md", s.plan === p.id ? "bg-surface text-fg-primary shadow-block-sm" : "text-fg-secondary hover:text-fg-primary")}
+    <div className="-mx-4 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-6 lg:mx-0 lg:grid lg:grid-cols-12 lg:gap-5 lg:overflow-visible lg:px-0 lg:pb-0">
+      {/* list */}
+      <section aria-label="Pages" className="flex shrink-0 flex-col rounded-lg border border-line-default bg-canvas lg:col-span-4 lg:min-h-0 lg:overflow-hidden">
+        <ul className="flex flex-col gap-1.5 p-2 sm:p-3 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
+          {pages.map((p) => {
+            const included = unlocked.has(p.id)
+            const sections = sectionsOf(p)
+            return (
+              <li
+                key={p.id}
+                onPointerEnter={() => setActive(p.id)}
+                onPointerLeave={() => setActive(null)}
+                className={cn("rounded-md border px-3 py-2.5 transition-colors", included ? "border-line-default bg-surface" : "border-transparent bg-subtle", active === p.id && "border-blue-500")}
+                style={{ marginLeft: Math.min(p.depth, 2) * 16 }}
               >
-                {p.label}
-              </button>
-            </Tooltip>
-          ))}
-        </div>
-      </div>
-
-      <div className="relative flex min-h-[360px] flex-1 flex-col overflow-hidden rounded-lg border border-line-default bg-canvas">
-        <div className="absolute top-3 left-3 z-10 flex rounded-full border border-line-default bg-surface p-1 shadow-soft-sm" role="radiogroup" aria-label="View">
-          {(["map", "list"] as const).map((v) => (
-            <button key={v} type="button" role="radio" aria-checked={view === v} onClick={() => setView(v)} className={cn("flex items-center gap-1.5 rounded-full px-3 py-1.5 type-label-md", view === v ? "bg-subtle text-fg-primary" : "text-fg-tertiary")}>
-              {v === "map" ? <MapIcon className="size-4" /> : <List className="size-4" />}
-              {v === "map" ? "Map" : "List"}
-            </button>
-          ))}
-        </div>
-        {view === "map" ? (
-          <MapView root={s.sitemap} nodeProps={nodeProps} />
-        ) : (
-          <ul className="flex flex-col gap-1 overflow-y-auto px-3 pt-16 pb-4 sm:px-6">
-            {pages.map((p) => (
-              <li key={p.id} className="flex items-center gap-3 rounded-md border border-line-default bg-surface px-3 py-2.5" style={{ marginLeft: p.depth * 24 }}>
-                <PageIcon page={p} />
-                <span className="flex min-w-0 flex-1 flex-col">
-                  {renaming === p.id ? (
-                    <RenameInput value={p.title} onDone={(t) => rename(p.id, t)} />
-                  ) : (
-                    <span className="truncate type-label-md text-fg-primary">{p.title}</span>
-                  )}
-                  <span className="truncate type-body-sm text-fg-tertiary">{p.purpose}</span>
-                </span>
-                <StatusIcon included={unlocked.has(p.id)} home={p.id === "home"} />
-                <NodeMenu page={p} {...nodeProps} />
+                <div className="flex items-center gap-2.5">
+                  <PageIcon page={p} muted={!included} />
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    {renaming === p.id ? (
+                      <RenameInput value={p.title} onDone={(t) => rename(p.id, t)} />
+                    ) : (
+                      <span className={cn("truncate type-label-md", included ? "text-fg-primary" : "text-fg-tertiary")}>{p.title}</span>
+                    )}
+                    <span className="truncate type-body-sm text-fg-tertiary">/{p.slug}</span>
+                  </span>
+                  <StatusIcon included={included} home={p.id === "home"} />
+                  <NodeMenu page={p} {...nodeProps} />
+                </div>
+                {included ? (
+                  <ol aria-label={`Sections on ${p.title}`} className="mt-2 flex flex-wrap gap-1 pl-7.5">
+                    {sections.map((sec, i) => (
+                      <li key={sec + i} className="rounded-full bg-subtle px-2 py-0.5 type-label-sm text-fg-secondary">
+                        {sec}
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <p className="mt-1 pl-7.5 type-caption text-fg-tertiary">
+                    {sections.length} sections planned · built when you upgrade
+                  </p>
+                )}
               </li>
+            )
+          })}
+        </ul>
+
+        {/* summary + plan, pinned to the bottom of the list */}
+        <div className="sticky bottom-0 z-10 flex flex-col gap-3 rounded-b-lg border-t border-line-default bg-surface p-3 lg:static">
+          <p className="type-body-sm text-fg-secondary">
+            <strong className="text-fg-primary">
+              {pages.length} {pages.length === 1 ? "page" : "pages"} planned · {sectionCount} sections to build.
+            </strong>{" "}
+            {locked > 0
+              ? `${PLANS.find((p) => p.id === s.plan)!.label} builds ${unlocked.size === 1 ? "the homepage" : `${unlocked.size} pages`}; the ${locked} locked ${locked === 1 ? "page stays" : "pages stay"} in the plan for when you upgrade.`
+              : "Your plan builds every page."}
+          </p>
+          <div role="radiogroup" aria-label="Plan" className="flex rounded-full bg-subtle p-1">
+            {PLANS.map((p) => (
+              <Tooltip key={p.id} content={p.pages}>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={s.plan === p.id}
+                  onClick={() => dispatch({ type: "plan", plan: p.id })}
+                  className={cn("flex-1 rounded-full px-3 py-1.5 type-label-md", s.plan === p.id ? "bg-surface text-fg-primary shadow-block-sm" : "text-fg-secondary hover:text-fg-primary")}
+                >
+                  {p.label}
+                </button>
+              </Tooltip>
             ))}
-          </ul>
-        )}
+          </div>
+        </div>
+      </section>
+
+      {/* map */}
+      <section aria-label="Sitemap" className="relative flex h-[380px] shrink-0 flex-col overflow-hidden rounded-lg border border-line-default bg-canvas lg:col-span-8 lg:h-auto lg:min-h-0">
+        <MapView root={s.sitemap} nodeProps={nodeProps} />
         {pages.length === 1 && (
-          <p className="absolute inset-x-0 bottom-4 text-center type-body-sm text-fg-tertiary">Just a homepage — that&apos;s a perfectly good one-page site.</p>
+          <p className="pointer-events-none absolute inset-x-0 top-4 text-center type-body-sm text-fg-tertiary">Just a homepage — that&apos;s a perfectly good one-page site.</p>
         )}
-      </div>
+      </section>
     </div>
   )
 }
@@ -112,6 +139,7 @@ export function SitemapStep() {
 interface NodeProps {
   unlocked: Set<string>
   renaming: string | null
+  active: string | null
   onRename: (id: string, title: string) => void
   onStartRename: (id: string) => void
   onAdd: (parentId: string) => void
@@ -127,8 +155,10 @@ function MapView({ root, nodeProps }: { root: PageNode; nodeProps: NodeProps }) 
   const fit = () => {
     const v = viewport.current, c = content.current
     if (!v || !c) return
-    const k = Math.min(1, (v.clientWidth - 48) / c.scrollWidth, (v.clientHeight - 96) / c.scrollHeight)
-    setT({ k, x: (v.clientWidth - c.scrollWidth * k) / 2, y: 64 })
+    // fit the whole tree, but on a narrow map keep nodes readable (pan to see the rest), centred on the homepage
+    const fitK = Math.min(1, (v.clientWidth - 48) / c.scrollWidth, (v.clientHeight - 96) / c.scrollHeight)
+    const k = v.clientWidth < 600 ? Math.max(fitK, 0.6) : fitK
+    setT({ k, x: (v.clientWidth - c.scrollWidth * k) / 2, y: Math.max(32, (v.clientHeight - 56 - c.scrollHeight * k) / 2) })
   }
   // fit once on open and whenever the tree changes size a lot
   const count = flatten(root).length
@@ -180,12 +210,23 @@ function TreeNode({ node, ...p }: { node: PageNode } & NodeProps) {
   const included = p.unlocked.has(node.id)
   return (
     <li>
-      <div className={cn("flex w-[264px] items-center gap-1.5 rounded-sm border py-2.5 pr-1.5 pl-4", included ? "border-line-default bg-surface" : "border-line-default bg-subtle")}>
+      <div
+        className={cn(
+          "flex w-[264px] items-center gap-1.5 rounded-sm border py-2.5 pr-1.5 pl-4 transition-shadow",
+          included ? "border-line-default bg-surface" : "border-line-default bg-subtle",
+          p.active === node.id && "border-blue-500 ring-2 ring-blue-500/30",
+        )}
+      >
         <PageIcon page={node} muted={!included} />
         {p.renaming === node.id ? (
           <RenameInput value={node.title} onDone={(t) => p.onRename(node.id, t)} />
         ) : (
-          <span className={cn("line-clamp-2 min-w-0 flex-1 type-label-lg", included ? "text-fg-primary" : "text-fg-tertiary")}>{node.title}</span>
+          <span className="flex min-w-0 flex-1 flex-col">
+            <span className={cn("line-clamp-2 type-label-lg", included ? "text-fg-primary" : "text-fg-tertiary")}>{node.title}</span>
+            <span className="type-caption text-fg-tertiary">
+              {sectionsOf(node).length} sections{included ? "" : " · locked"}
+            </span>
+          </span>
         )}
         <StatusIcon included={included} home={node.id === "home"} />
         <NodeMenu page={node} {...p} />

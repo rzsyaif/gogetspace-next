@@ -16,7 +16,7 @@ import { SitemapStep } from "./sitemap-step"
 
 const COPY: Record<ArtifactKey, { title: string; intro: string }> = {
   brief: { title: "Project Brief", intro: "Click any point to edit it. Highlighted details are my guesses — check them before you confirm." },
-  style: { title: "Design & Style", intro: "Choose how your website looks. The preview on the right is your real homepage." },
+  style: { title: "Design & Style", intro: "Choose how your website looks. Each option restyles the same hero, so you can compare the look side by side." },
   sitemap: { title: "Sitemap Plan", intro: "These are the pages I'll build. Rename, add or remove pages — the homepage always stays." },
 }
 
