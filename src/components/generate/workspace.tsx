@@ -70,16 +70,16 @@ const RAIL: { id: Tab; Icon: typeof Sparkles; label: string }[] = [
 /** Editor rail: logo (back to the dashboard) on top, workspace tabs, Account at the bottom (no top navbar). */
 export function Rail({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) {
   return (
-    <nav aria-label="Workspace" className="flex h-full w-[106px] flex-col items-center gap-3 overflow-y-auto px-6 py-5 [scrollbar-width:none]">
+    <nav aria-label="Workspace" className="flex h-full w-[84px] flex-col items-center gap-3 overflow-y-auto px-2 py-5 [scrollbar-width:none]">
       <Tooltip content="All websites" side="right">
         <Link href="/dashboard" aria-label="Back to the dashboard" className="mb-2 shrink-0 rounded-md focus-visible:outline-none focus-visible:focus-ring">
-          <Logo markOnly size={40} />
+          <Logo markOnly size={36} />
         </Link>
       </Tooltip>
       {RAIL.map(({ id, Icon, label }) => (
-        <button key={id} type="button" onClick={() => onTab(id)} aria-current={tab === id ? "page" : undefined} className="group flex w-[58px] shrink-0 flex-col items-center gap-1 focus-visible:outline-none">
-          <span className={cn("grid w-full place-items-center rounded-lg border p-2.5 group-focus-visible:focus-ring", tab === id ? "border-fg-secondary bg-inverse text-fg-inverse" : "border-line-default bg-subtle text-fg-secondary group-hover:bg-muted")}>
-            <Icon className="size-6" strokeWidth={1.75} />
+        <button key={id} type="button" onClick={() => onTab(id)} aria-current={tab === id ? "page" : undefined} className="group flex shrink-0 flex-col items-center gap-1 focus-visible:outline-none">
+          <span className={cn("grid size-11 place-items-center rounded-md border group-focus-visible:focus-ring", tab === id ? "border-fg-secondary bg-inverse text-fg-inverse" : "border-line-default bg-subtle text-fg-secondary group-hover:bg-muted")}>
+            <Icon className="size-5" strokeWidth={1.75} />
           </span>
           <span className={cn("type-label-sm", tab === id ? "text-fg-primary" : "text-fg-tertiary")}>{label}</span>
         </button>
@@ -191,12 +191,12 @@ export function AccountButton({ compact }: { compact?: boolean }) {
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger aria-label="Account" className="group flex w-[58px] flex-col items-center gap-1.5 focus-visible:outline-none">
-          <span className={cn("grid place-items-center rounded-full border border-line-default bg-subtle text-fg-secondary group-hover:bg-muted group-focus-visible:focus-ring", compact ? "size-10" : "size-[58px]")}>
+        <DropdownMenuTrigger aria-label="Account" className="group flex flex-col items-center gap-1 focus-visible:outline-none">
+          <span className={cn("grid place-items-center rounded-full border border-line-default bg-subtle text-fg-secondary group-hover:bg-muted group-focus-visible:focus-ring", compact ? "size-10" : "size-11")}>
             {s.account ? (
-              <span className={cn("grid place-items-center rounded-full bg-blue-500 font-semibold text-white", compact ? "size-8 text-[13px]" : "size-11 text-[17px]")}>{s.account.name[0]}</span>
+              <span className={cn("grid place-items-center rounded-full bg-blue-500 font-semibold text-white", compact ? "size-8 text-[13px]" : "size-9 text-[14px]")}>{s.account.name[0]}</span>
             ) : (
-              <CircleUser className={compact ? "size-5" : "size-7"} strokeWidth={1.75} />
+              <CircleUser className={compact ? "size-5" : "size-6"} strokeWidth={1.75} />
             )}
           </span>
           {!compact && <span className="type-label-sm text-fg-tertiary">Account</span>}
