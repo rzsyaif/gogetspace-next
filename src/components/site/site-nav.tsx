@@ -7,6 +7,7 @@ import { ChevronDown, Globe, Menu, Server, Sparkles, X } from "lucide-react"
 import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, Logo } from "@/components/ui"
 import { cn } from "@/lib/cn"
 import { focusHeroPrompt } from "./prompt-events"
+import { LoginDialog } from "@/components/auth/login-dialog"
 
 const SOLUTIONS = [
   { title: "AI Website Builder", desc: "Describe your business, get a site", Icon: Sparkles },
@@ -21,6 +22,7 @@ const navItem =
 export function SiteNav() {
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
+  const [login, setLogin] = useState(false)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8)
@@ -92,7 +94,7 @@ export function SiteNav() {
           </li>
         </ul>
         <div className="hidden flex-1 items-center justify-end gap-2 min-[810px]:flex">
-          <Button variant="secondary" size="sm">Log in</Button>
+          <Button variant="secondary" size="sm" onClick={() => setLogin(true)}>Log in</Button>
           <Button size="sm" onClick={focusHeroPrompt}>Start building</Button>
         </div>
 
@@ -127,7 +129,16 @@ export function SiteNav() {
                   </li>
                 </ul>
                 <div className="flex flex-col gap-2">
-                  <Button variant="secondary" className="w-full">Log in</Button>
+                  <Button
+                    variant="secondary"
+                    className="w-full"
+                    onClick={() => {
+                      setOpen(false)
+                      setLogin(true)
+                    }}
+                  >
+                    Log in
+                  </Button>
                   <Button
                     className="w-full"
                     onClick={() => {
@@ -143,6 +154,7 @@ export function SiteNav() {
           )}
         </AnimatePresence>
       </nav>
+      <LoginDialog open={login} onOpenChange={setLogin} />
     </header>
   )
 }
