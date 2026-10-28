@@ -38,6 +38,12 @@
 @keyframes bp-sheet-out {
   to { opacity: 0; transform: translateY(64px); }
 }
+@keyframes bp-drawer-in {
+  from { transform: translateX(var(--drawer-from, 100%)); }
+}
+@keyframes bp-drawer-out {
+  to { transform: translateX(var(--drawer-from, 100%)); }
+}
 @keyframes bp-fade-out {
   to { opacity: 0; }
 }
