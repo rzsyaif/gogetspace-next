@@ -2,9 +2,10 @@
 
 import { useState, type ReactNode } from "react"
 import Link from "next/link"
-import { ArrowRight, Globe, LayoutTemplate, Pencil, Plus, Search, Settings, Sparkles, Trash2 } from "lucide-react"
+import { ArrowRight, Eye, FileText, Globe, LayoutTemplate, Maximize, Minus, Monitor, MoreHorizontal, MousePointerClick, Pencil, Play, Plus, RefreshCw, Search, Settings, Smartphone, Sparkles, Tablet, Trash2, X } from "lucide-react"
 import {
   Alert,
+  AttachmentChip,
   Avatar,
   Badge,
   Button,
@@ -22,10 +23,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   Field,
+  IconButton,
   Input,
   Logo,
   ProgressBar,
+  PromptAttachButton,
+  PromptBox,
+  PromptSendButton,
+  RadioCard,
+  SegmentedControl,
   Select,
+  Step,
+  StepList,
   StudsMedia,
   Switch,
   Tabs,
@@ -108,6 +117,10 @@ export function StyleGuide({ palettes }: { palettes: [string, Record<string, str
   const [alertOpen, setAlertOpen] = useState(true)
   const [progress, setProgress] = useState(50)
   const [selected, setSelected] = useState(1)
+  const [plan, setPlan] = useState("starter")
+  const [device, setDevice] = useState("desktop")
+  const [mode, setMode] = useState(false)
+  const [domain, setDomain] = useState("free")
 
   return (
     <TooltipProvider>
@@ -117,7 +130,7 @@ export function StyleGuide({ palettes }: { palettes: [string, Record<string, str
             <Logo />
           </Link>
           <nav aria-label="Sections" className="hidden items-center gap-1 lg:flex">
-            {["colors", "type", "buttons", "forms", "menus", "feedback", "display"].map((s) => (
+            {["colors", "type", "buttons", "forms", "menus", "feedback", "display", "app"].map((s) => (
               <a key={s} href={`#${s}`} className="rounded-sm px-3 py-1.5 type-label-md capitalize text-fg-secondary hover:bg-subtle hover:text-fg-primary">
                 {s}
               </a>
@@ -217,6 +230,19 @@ export function StyleGuide({ palettes }: { palettes: [string, Record<string, str
               <Link href="/">As a link</Link>
             </Button>
           </div>
+          <div className="flex flex-wrap items-center gap-4">
+            <span className="w-10 type-label-md text-fg-tertiary">quiet</span>
+            <IconButton aria-label="Close" size="xs"><X /></IconButton>
+            <IconButton aria-label="Edit" size="sm" tone="muted"><Pencil /></IconButton>
+            <IconButton aria-label="Reload"><RefreshCw /></IconButton>
+            <IconButton aria-label="More" tone="muted"><MoreHorizontal /></IconButton>
+            <IconButton aria-label="Close" size="lg" shape="round" tone="filled"><X /></IconButton>
+            <span className="flex items-center gap-1 rounded-full border border-line-default bg-surface p-1 shadow-soft-sm">
+              <IconButton aria-label="Zoom out" shape="round"><Minus /></IconButton>
+              <IconButton aria-label="Zoom in" shape="round"><Plus /></IconButton>
+              <IconButton aria-label="Fit to screen" shape="round"><Maximize /></IconButton>
+            </span>
+          </div>
         </Section>
 
         <Section id="forms" title="Forms">
@@ -250,6 +276,17 @@ export function StyleGuide({ palettes }: { palettes: [string, Record<string, str
               <Checkbox label="Select all pages" checked="indeterminate" />
               <Checkbox label="Disabled option" disabled />
             </div>
+            <div className="flex flex-col gap-4">
+              <SegmentedControl label="Plan" value={plan} onChange={setPlan} options={[{ value: "free", label: "Free" }, { value: "starter", label: "Starter", tooltip: "Up to 5 pages" }, { value: "business", label: "Business" }]} />
+              <SegmentedControl label="Device" size="sm" iconOnly value={device} onChange={setDevice} options={[{ value: "desktop", label: "Desktop", icon: <Monitor /> }, { value: "tablet", label: "Tablet", icon: <Tablet /> }, { value: "mobile", label: "Mobile", icon: <Smartphone /> }]} />
+              <span className="rounded-lg bg-subtle p-4">
+                <SegmentedControl as="tablist" look="floating" label="Preview mode" value={mode} onChange={setMode} options={[{ value: false, label: "Preview Mode", icon: <Eye /> }, { value: true, label: "Edit Mode", icon: <MousePointerClick /> }]} />
+              </span>
+            </div>
+            <fieldset className="flex flex-col gap-2">
+              <RadioCard name="sg-domain" checked={domain === "free"} onChange={() => setDomain("free")} title="bakti-analisa.get.space" description="Free address, ready instantly." />
+              <RadioCard name="sg-domain" checked={domain === "own"} onChange={() => setDomain("own")} title="Use a domain I already own" description="We'll show the DNS records to add." />
+            </fieldset>
             <div className="flex flex-col gap-4">
               <Switch label="Publish site automatically" defaultChecked />
               <Switch label="Show cookie banner" />
@@ -330,6 +367,12 @@ export function StyleGuide({ palettes }: { palettes: [string, Record<string, str
               </Alert>
             )}
           </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <Alert tone="neutral" size="sm" icon={false} actions={<Button size="sm" variant="secondary" leadingIcon={<Play />}>Resume</Button>}>
+              Stopped. Nothing is lost — pick up where I left off.
+            </Alert>
+            <Alert tone="warning" size="sm" actions={<Button size="sm">Refresh</Button>}>You changed the brief after confirming this.</Alert>
+          </div>
           <div className="flex flex-wrap items-center gap-4">
             <Toast tone="success" message="Changes saved" action={{ label: "Undo", onClick: () => setToast(true) }} />
             <Toast tone="processing" message="Publishing…" />
@@ -397,6 +440,43 @@ export function StyleGuide({ palettes }: { palettes: [string, Record<string, str
                 </div>
               </Card>
             ))}
+          </div>
+        </Section>
+
+        <Section id="app" title="App patterns">
+          <div className="grid gap-8 md:grid-cols-2">
+            <StepList>
+              <Step status="done" connector="active">
+                <span className="type-body-md text-fg-tertiary">Read your message</span>
+              </Step>
+              <Step status="done" connector="active">
+                <span className="type-body-md text-fg-tertiary">Searched the web</span>
+                <span className="type-body-sm text-fg-tertiary">Found 6 results for Bakti Analisa</span>
+              </Step>
+              <Step status="warning" connector="active">
+                <span className="type-body-md text-fg-tertiary">Checked your files</span>
+                <span className="type-body-sm text-status-warning-text">One file couldn’t be read</span>
+              </Step>
+              <Step status="running" current connector="idle">
+                <span className="type-body-md shimmer-text">Drafting the brief</span>
+              </Step>
+              <Step status="pending">
+                <span className="type-body-md text-fg-disabled">Planning the pages</span>
+              </Step>
+            </StepList>
+            <div className="flex flex-col gap-4">
+              <PromptBox onSubmit={(e) => e.preventDefault()}>
+                <span className="flex gap-2">
+                  <AttachmentChip icon={<FileText />} name="Price list 2026.pdf" onRemove={() => {}} />
+                </span>
+                <input aria-label="Message" placeholder="Ask for a change…" className="bg-transparent type-body-lg outline-none placeholder:text-fg-tertiary" />
+                <span className="flex items-center gap-2">
+                  <PromptAttachButton />
+                  <span className="flex-1 type-body-sm text-fg-tertiary">Add photos or documents</span>
+                  <PromptSendButton />
+                </span>
+              </PromptBox>
+            </div>
           </div>
         </Section>
       </main>

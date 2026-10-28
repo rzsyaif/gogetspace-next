@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { AnimatePresence, motion } from "motion/react"
-import { Logo, Toast, TooltipProvider } from "@/components/ui"
+import { Logo, SegmentedControl, Toast, TooltipProvider } from "@/components/ui"
 import { cn } from "@/lib/cn"
 import { GenProvider, useGen } from "./gen-provider"
 import { Messages } from "./chat-blocks"
@@ -67,7 +67,7 @@ function Shell() {
     return () => window.clearTimeout(t)
   }, [toast])
 
-  const sidebar = xl ? 440 : 400
+  const sidebar = xl ? 380 : 340
   const chatWidth = !create || !wide ? "100%" : chatOpen ? sidebar : 0
 
   return (
@@ -92,13 +92,19 @@ function Shell() {
       {create && !wide && (
         <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 border-b border-line-default px-4 py-3">
           <Link href="/" aria-label="GoGetSpace home"><Logo markOnly size={32} /></Link>
-          <div className="flex flex-1 gap-1 rounded-full bg-subtle p-1" role="tablist">
-            {(["chat", "preview"] as const).map((v) => (
-              <button key={v} role="tab" aria-selected={mobileView === v} onClick={() => setMobileView(v)} className={cn("flex-1 rounded-full py-1.5 type-label-md", mobileView === v ? "bg-surface text-fg-primary shadow-block-sm" : "text-fg-secondary")}>
-                {v === "chat" ? "Chat" : "Preview"}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl
+            as="tablist"
+            label="Editor view"
+            size="sm"
+            fill
+            className="flex-1"
+            value={mobileView}
+            onChange={setMobileView}
+            options={[
+              { value: "chat", label: "Chat" },
+              { value: "preview", label: "Preview" },
+            ]}
+          />
           <AccountButton compact />
         </motion.div>
       )}
@@ -119,7 +125,7 @@ function Shell() {
           transition={{ duration: 0.6, ease: EASE }}
           className={cn("flex min-h-0 shrink-0 flex-col overflow-hidden", create && !wide && mobileView !== "chat" && "hidden")}
         >
-          <div className={cn("flex min-h-0 flex-1 flex-col", create && wide && "min-w-[400px]")}>
+          <div className={cn("flex min-h-0 flex-1 flex-col", create && wide && "min-w-[340px]")}>
             <AnimatePresence initial={false}>
               {create && (
                 <motion.div key="project" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} transition={{ delay: 0.3, duration: 0.35 }}>

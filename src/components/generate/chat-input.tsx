@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react"
 import { AnimatePresence, motion } from "motion/react"
-import { ArrowUp, FileText, Plus, Square, X } from "lucide-react"
+import { FileText, Square } from "lucide-react"
+import { AttachmentChip, Button, PromptAttachButton, PromptBox, PromptSendButton } from "@/components/ui"
 import { cn } from "@/lib/cn"
 import { useGen } from "./gen-provider"
 
@@ -59,16 +60,13 @@ export function ChatInput({ className, credits }: { className?: string; credits?
           <span className={cn("flex-1 type-label-md", s.credits >= 90 ? "text-status-warning-text" : "text-fg-secondary")}>{s.credits}% used credits</span>
         </div>
       )}
-      <form onSubmit={send} className="relative flex flex-col gap-4 rounded-xl border border-line-strong bg-surface px-5 py-4 shadow-[0_4px_0_0_var(--color-shadow-block)] focus-within:border-blue-500 focus-within:shadow-[0_0_0_4px_var(--color-blue-100),0_4px_0_0_var(--color-blue-800)]">
+      <PromptBox onSubmit={send}>
         <AnimatePresence initial={false}>
           {files.length > 0 && (
             <motion.ul initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="flex flex-wrap gap-2 overflow-hidden">
               {files.map((f) => (
-                <li key={f} className="flex items-center gap-1.5 rounded-md border border-line-default bg-subtle py-1 pr-1 pl-2 type-body-sm">
-                  <FileText className="size-4 text-fg-tertiary" /> {f}
-                  <button type="button" aria-label={`Remove ${f}`} onClick={() => setFiles((x) => x.filter((y) => y !== f))} className="grid size-6 place-items-center rounded-sm hover:bg-muted">
-                    <X className="size-3.5" />
-                  </button>
+                <li key={f}>
+                  <AttachmentChip icon={<FileText />} name={f} onRemove={() => setFiles((x) => x.filter((y) => y !== f))} />
                 </li>
               ))}
             </motion.ul>
@@ -85,35 +83,17 @@ export function ChatInput({ className, credits }: { className?: string; credits?
           className="block max-h-42 min-h-7 w-full resize-none bg-transparent type-body-lg text-fg-primary outline-none placeholder:text-fg-tertiary"
         />
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            aria-label="Attach files"
-            disabled={files.length >= DEMO_FILES.length}
-            onClick={() => setFiles((f) => [...f, DEMO_FILES.find((d) => !f.includes(d))!])}
-            className="grid size-10 shrink-0 place-items-center rounded-md bg-subtle text-fg-secondary hover:bg-muted disabled:opacity-50"
-          >
-            <Plus className="size-5" />
-          </button>
+          <PromptAttachButton disabled={files.length >= DEMO_FILES.length} onClick={() => setFiles((f) => [...f, DEMO_FILES.find((d) => !f.includes(d))!])} />
           <span className={cn("min-w-0 flex-1 truncate type-body-sm", hint ? "text-fg-link" : "text-fg-tertiary")}>{hint ?? "Add photos or documents"}</span>
           {planRunning && !hasText ? (
-            <button type="button" onClick={() => dispatch({ type: "stop" })} className="flex h-10 shrink-0 items-center gap-1.5 rounded-md border border-line-strong bg-surface px-3 type-label-md text-fg-primary shadow-[0_2px_0_0_var(--color-shadow-block)] active:translate-y-0.5 active:shadow-none">
-              <Square className="size-3.5 fill-current" /> Stop
-            </button>
+            <Button size="sm" variant="secondary" leadingIcon={<Square className="size-3.5! fill-current" />} onClick={() => dispatch({ type: "stop" })}>
+              Stop
+            </Button>
           ) : (
-            <button
-              type="submit"
-              aria-label="Send"
-              disabled={!hasText || blocked}
-              className={cn(
-                "grid size-10 shrink-0 place-items-center rounded-md transition-colors",
-                hasText && !blocked ? "bg-blue-500 text-white shadow-[0_2px_0_0_var(--color-blue-800)] active:translate-y-0.5 active:shadow-none" : "bg-action-disabled text-fg-disabled",
-              )}
-            >
-              <ArrowUp className="size-5" />
-            </button>
+            <PromptSendButton disabled={!hasText || blocked} />
           )}
         </div>
-      </form>
+      </PromptBox>
     </div>
   )
 }
