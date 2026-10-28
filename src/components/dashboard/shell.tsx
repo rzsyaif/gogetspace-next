@@ -18,6 +18,8 @@ import {
   DropdownMenuTrigger,
   IconButton,
   Logo,
+  NavItem,
+  iconButtonVariants,
   Tooltip,
   TooltipProvider,
 } from "@/components/ui"
@@ -93,9 +95,9 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate
   return (
     <nav aria-label="Account" className="flex min-h-0 flex-1 flex-col">
       <div className="flex flex-col gap-0.5 p-2">
-        <NavItem href={NEW_SITE_HREF} icon={<Plus />} label="New Website" collapsed={collapsed} raised onNavigate={onNavigate} />
-        <NavItem href="/dashboard/websites" icon={<Globe />} label="Websites" collapsed={collapsed} active={path === "/dashboard/websites"} onNavigate={onNavigate} />
-        <NavItem href="/dashboard/domains" icon={<Link2 />} label="Domains" collapsed={collapsed} active={path === "/dashboard/domains"} onNavigate={onNavigate} />
+        <SideItem href={NEW_SITE_HREF} icon={<Plus />} label="New Website" collapsed={collapsed} raised onNavigate={onNavigate} />
+        <SideItem href="/dashboard/websites" icon={<Globe />} label="Websites" collapsed={collapsed} active={path === "/dashboard/websites"} onNavigate={onNavigate} />
+        <SideItem href="/dashboard/domains" icon={<Link2 />} label="Domains" collapsed={collapsed} active={path === "/dashboard/domains"} onNavigate={onNavigate} />
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto p-2">
@@ -106,8 +108,8 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate
       </div>
 
       <div className="flex flex-col gap-0.5 p-2">
-        <NavItem href="/dashboard/billing" icon={<WalletMinimal />} label="Billings" collapsed={collapsed} active={path === "/dashboard/billing"} onNavigate={onNavigate} />
-        <NavItem href="/dashboard/settings" icon={<Cog />} label="Settings" collapsed={collapsed} active={path === "/dashboard/settings"} onNavigate={onNavigate} />
+        <SideItem href="/dashboard/billing" icon={<WalletMinimal />} label="Billings" collapsed={collapsed} active={path === "/dashboard/billing"} onNavigate={onNavigate} />
+        <SideItem href="/dashboard/settings" icon={<Cog />} label="Settings" collapsed={collapsed} active={path === "/dashboard/settings"} onNavigate={onNavigate} />
       </div>
 
       <div className={cn("flex items-center p-2", collapsed ? "flex-col gap-1" : "justify-between")}>
@@ -118,13 +120,15 @@ function SidebarNav({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate
   )
 }
 
-function NavItem({
+/** ui NavItem with a tooltip when the sidebar is collapsed */
+function SideItem({
   href,
   icon,
   label,
   collapsed,
   active,
   raised,
+  trailing,
   onNavigate,
 }: {
   href: string
@@ -133,30 +137,16 @@ function NavItem({
   collapsed?: boolean
   active?: boolean
   raised?: boolean
+  trailing?: ReactNode
   onNavigate?: () => void
 }) {
-  const link = (
-    <Link
-      href={href}
-      onClick={onNavigate}
-      aria-current={active ? "page" : undefined}
-      aria-label={collapsed ? label : undefined}
-      className={cn(
-        "flex items-center gap-3 rounded-sm p-2 type-body-sm text-fg-primary transition-colors focus-visible:outline-none focus-visible:focus-ring [&_svg]:size-6 [&_svg]:shrink-0",
-        collapsed && "justify-center",
-        raised ? "border border-line-default bg-surface shadow-block-sm hover:bg-subtle" : active ? "bg-muted" : "hover:bg-subtle",
-      )}
-    >
-      {icon}
-      {!collapsed && label}
-    </Link>
-  )
+  const item = <NavItem href={href} onClick={onNavigate} icon={icon} label={label} collapsed={collapsed} active={active} raised={raised} trailing={trailing} aria-label={collapsed ? label : undefined} />
   return collapsed ? (
     <Tooltip content={label} side="right">
-      {link}
+      {item}
     </Tooltip>
   ) : (
-    link
+    item
   )
 }
 
@@ -166,7 +156,7 @@ export function SiteMark({ site, className }: { site: Site; className?: string }
   return (
     <span
       aria-hidden
-      className={cn("grid size-6 shrink-0 place-items-center rounded-[6px] bg-muted type-label-sm text-fg-tertiary", color && "text-white", className)}
+      className={cn("grid size-6 shrink-0 place-items-center rounded-[6px] bg-muted type-label-sm text-fg-tertiary ", color && "text-fg-on-action", className)}
       style={color ? { backgroundColor: color } : undefined}
     >
       {site.name[0]}
@@ -184,29 +174,16 @@ export function StatusBadge({ site }: { site: Site }) {
 
 function SiteItem({ site, collapsed, onNavigate }: { site: Site; collapsed?: boolean; onNavigate?: () => void }) {
   const path = usePathname()
-  const link = (
-    <Link
+  return (
+    <SideItem
       href={`/sites/${site.id}`}
-      onClick={onNavigate}
-      aria-current={path === `/sites/${site.id}` ? "page" : undefined}
-      aria-label={collapsed ? site.name : undefined}
-      className={cn("flex items-center gap-3 rounded-sm p-2 type-body-sm text-fg-primary hover:bg-subtle focus-visible:outline-none focus-visible:focus-ring", collapsed && "justify-center")}
-    >
-      <SiteMark site={site} />
-      {!collapsed && (
-        <>
-          <span className="min-w-0 flex-1 truncate">{site.name}</span>
-          <StatusBadge site={site} />
-        </>
-      )}
-    </Link>
-  )
-  return collapsed ? (
-    <Tooltip content={site.name} side="right">
-      {link}
-    </Tooltip>
-  ) : (
-    link
+      icon={<SiteMark site={site} />}
+      label={site.name}
+      collapsed={collapsed}
+      active={path === `/sites/${site.id}`}
+      trailing={<StatusBadge site={site} />}
+      onNavigate={onNavigate}
+    />
   )
 }
 
@@ -214,7 +191,7 @@ function AccountMenu() {
   const router = useRouter()
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger aria-label="Account" className="grid size-10 place-items-center rounded-full hover:bg-subtle focus-visible:outline-none focus-visible:focus-ring">
+      <DropdownMenuTrigger aria-label="Account" className={iconButtonVariants({ size: "lg", shape: "round" })}>
         <Avatar name={ACCOUNT.name} className="size-6 border border-line-default text-[10px]" />
       </DropdownMenuTrigger>
       <DropdownMenuContent side="top" align="start" className="w-64">
@@ -244,11 +221,11 @@ function InboxButton({ active, onNavigate }: { active?: boolean; onNavigate?: ()
         onClick={onNavigate}
         aria-label={unread ? `Inbox, ${unread} new enquiries` : "Inbox"}
         aria-current={active ? "page" : undefined}
-        className={cn("relative grid size-10 place-items-center rounded-full text-fg-primary hover:bg-subtle focus-visible:outline-none focus-visible:focus-ring", active && "bg-muted")}
+        className={cn(iconButtonVariants({ size: "lg", shape: "round" }), "relative text-fg-primary [&_svg]:size-6", active && "bg-muted")}
       >
-        <Inbox className="size-6" />
+        <Inbox />
         {unread > 0 && (
-          <span className="absolute top-1 right-1 grid min-w-4 place-items-center rounded-full bg-blue-500 px-1 text-[10px] leading-4 font-semibold text-white">{unread}</span>
+          <span className="absolute top-1 right-1 grid min-w-4 place-items-center rounded-full bg-action-primary px-1 text-[10px] leading-4 font-semibold text-fg-on-action">{unread}</span>
         )}
       </Link>
     </Tooltip>

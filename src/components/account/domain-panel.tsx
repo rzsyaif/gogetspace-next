@@ -7,6 +7,7 @@ import { Alert, Badge, Button, Field, Input, RadioCard } from "@/components/ui"
 import { planInfo } from "@/lib/plans"
 import { accountActions, useAccountState } from "@/lib/account/store"
 import { useEditorSite } from "@/components/generate/editor-site"
+import { DetailCard, PanelSection } from "./panel"
 
 /**
  * The editor's Domain tab: the free address, the connected domain, and "Connect a domain you own" — which
@@ -38,29 +39,19 @@ export function DomainPanel({ onOpenPlan }: { onOpenPlan: () => void }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1 rounded-md border border-line-default bg-surface p-4">
-        <span className="type-caption text-fg-tertiary">Free address</span>
-        <span className="type-label-md text-fg-primary">{site.freeDomain}</span>
-        <span className={live ? "type-caption text-status-success-text" : "type-caption text-fg-tertiary"}>{live ? "Live" : "Goes live when you publish"}</span>
-      </div>
+      <DetailCard label="Free address" value={site.freeDomain} trailing={live ? <Badge tone="success">Live</Badge> : undefined} meta={live ? undefined : "Goes live when you publish"} />
 
       {connected && (
-        <div className="flex flex-col gap-2 rounded-md border border-line-default bg-surface p-4">
-          <span className="type-caption text-fg-tertiary">Your domain</span>
-          <span className="flex items-center gap-2">
-            <span className="min-w-0 flex-1 truncate type-label-md text-fg-primary">{connected.name}</span>
-            <Badge tone={connected.status === "connected" ? "success" : "warning"}>{connected.status === "connected" ? "Connected" : "Waiting for DNS"}</Badge>
-          </span>
-          {connected.status === "pending" && <span className="type-caption text-fg-tertiary">Add an A record (76.76.21.21) and a CNAME for www (cname.get.space) where you bought it.</span>}
-          <Button
-            size="sm"
-            variant="ghost"
-            className="self-start"
-            onClick={() => (mode === "site" ? accountActions.disconnectDomain(site.id) : setDraftDomain(null))}
-          >
+        <DetailCard
+          label="Your domain"
+          value={connected.name}
+          trailing={<Badge tone={connected.status === "connected" ? "success" : "warning"}>{connected.status === "connected" ? "Connected" : "Waiting for DNS"}</Badge>}
+          meta={connected.status === "pending" ? "Add an A record (76.76.21.21) and a CNAME for www (cname.get.space) where you bought it." : undefined}
+        >
+          <Button size="sm" variant="link" className="mt-1 self-start" onClick={() => (mode === "site" ? accountActions.disconnectDomain(site.id) : setDraftDomain(null))}>
             Disconnect
           </Button>
-        </div>
+        </DetailCard>
       )}
 
       {!open ? (
@@ -72,10 +63,10 @@ export function DomainPanel({ onOpenPlan }: { onOpenPlan: () => void }) {
           {site.name} is on the Free plan, so it uses {site.freeDomain}.
         </Alert>
       ) : (
-        <div className="flex flex-col gap-4 rounded-md border border-line-default bg-surface p-4">
+        <PanelSection title="Connect a domain you own" className="gap-4 p-4 sm:p-4">
           {unused.length > 0 && (
             <fieldset className="flex flex-col gap-2">
-              <legend className="mb-1 type-label-md text-fg-primary">Domains you own</legend>
+              <legend className="mb-1 type-label-md text-fg-secondary">Bought through GoGetSpace</legend>
               {unused.map((d) => (
                 <RadioCard
                   key={d.name}
@@ -109,7 +100,7 @@ export function DomainPanel({ onOpenPlan }: { onOpenPlan: () => void }) {
           <Button variant="ghost" size="sm" className="self-start" onClick={() => setOpen(false)}>
             Cancel
           </Button>
-        </div>
+        </PanelSection>
       )}
 
       <Button asChild variant="ghost" leadingIcon={<ShoppingCart />} className="self-start">

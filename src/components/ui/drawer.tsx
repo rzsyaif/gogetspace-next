@@ -5,6 +5,7 @@ import { Dialog as D } from "radix-ui"
 import { X } from "lucide-react"
 import { cn } from "@/lib/cn"
 import { IconButton } from "./icon-button"
+import { overlayClass } from "./dialog"
 
 export const Drawer = D.Root
 export const DrawerTrigger = D.Trigger
@@ -29,7 +30,7 @@ export function DrawerContent({
 }) {
   return (
     <D.Portal>
-      <D.Overlay className="fixed inset-0 z-50 bg-overlay-scrim data-[state=closed]:animate-[bp-fade-out_200ms_ease-in] data-[state=open]:animate-[bp-fade-in_160ms_ease-out]" />
+      <D.Overlay className={overlayClass} />
       <D.Content
         aria-describedby={undefined}
         style={{ "--drawer-from": side === "right" ? "100%" : "-100%" } as React.CSSProperties}

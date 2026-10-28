@@ -1,9 +1,9 @@
 "use client"
 
-import { useEffect, useEffectEvent, useState, type FormEvent } from "react"
+import { useEffect, useEffectEvent, useState } from "react"
 import { Check, Copy, ExternalLink, Globe, Link2, Loader } from "lucide-react"
-import { GoogleMark } from "@/components/auth/login-dialog"
-import { Button, Dialog, DialogContent, Field, Input, RadioCard } from "@/components/ui"
+import { AuthForm } from "@/components/auth/login-dialog"
+import { Button, Dialog, DialogContent, Input, RadioCard } from "@/components/ui"
 import { useGen } from "./gen-provider"
 
 type Stage = "signup" | "publish" | "publishing" | "live"
@@ -39,48 +39,16 @@ export function AccountDialog({ open, onOpenChange }: { open: boolean; onOpenCha
 
 function SignUp({ onDone, title = "Create your account to publish" }: { onDone: () => void; title?: string }) {
   const { dispatch } = useGen()
-  const [name, setName] = useState("")
-  const [email, setEmail] = useState("")
-  const [pw, setPw] = useState("")
-  const [touched, setTouched] = useState(false)
-  const emailOk = /^\S+@\S+\.\S+$/.test(email)
-  const submit = (e: FormEvent) => {
-    e.preventDefault()
-    setTouched(true)
-    if (!name.trim() || !emailOk || pw.length < 8) return
-    dispatch({ type: "signUp", name: name.trim(), email })
-    onDone()
-  }
   return (
-    <DialogContent title={title} description="Your site and everything you've confirmed is saved to the account. It takes a few seconds.">
-      <Button
-        variant="secondary"
-        className="w-full"
-        leadingIcon={<GoogleMark />}
-        onClick={() => {
-          dispatch({ type: "signUp", name: "Kiki", email: "kiki@gmail.com" })
-          onDone()
-        }}
-      >
-        Continue with Google
-      </Button>
-      <div className="flex items-center gap-3 type-caption text-fg-tertiary">
-        <span className="h-px flex-1 bg-line-default" /> or with email <span className="h-px flex-1 bg-line-default" />
-      </div>
-      <form onSubmit={submit} noValidate className="flex flex-col gap-4 pb-4">
-        <Field label="Your name" error={touched && !name.trim() ? "Enter your name" : undefined}>
-          <Input value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />
-        </Field>
-        <Field label="Email" error={touched && !emailOk ? "Enter a valid email address" : undefined}>
-          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
-        </Field>
-        <Field label="Password" helper="At least 8 characters" error={touched && pw.length < 8 ? "Use at least 8 characters" : undefined}>
-          <Input type="password" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" />
-        </Field>
-        <Button type="submit" size="lg" className="w-full">Create account & continue</Button>
-        <p className="text-center type-caption text-fg-tertiary">By continuing you agree to the Terms and Privacy Policy.</p>
-      </form>
-    </DialogContent>
+    <AuthForm
+      initialMode="signup"
+      title={title}
+      description="Your site and everything you've confirmed is saved to the account. It takes a few seconds."
+      onSuccess={(account) => {
+        dispatch({ type: "signUp", ...account })
+        onDone()
+      }}
+    />
   )
 }
 

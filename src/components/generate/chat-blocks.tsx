@@ -351,9 +351,9 @@ function BuildBlock({ run }: { run: Run }) {
                     {(st === "locked" || st === "skipped") && <Lock className="size-4" />}
                     <span className="flex-1 truncate">{p.title}</span>
                     {st === "failed" && (
-                      <button type="button" onClick={() => dispatch({ type: "retryPage", id: p.id })} className="type-label-sm text-fg-link hover:underline">
+                      <Button variant="link" size="sm" className="type-label-sm" onClick={() => dispatch({ type: "retryPage", id: p.id })}>
                         Retry
-                      </button>
+                      </Button>
                     )}
                     {st === "locked" && <span className="type-caption">Upgrade</span>}
                     {st === "skipped" && <span className="type-caption">Not built</span>}

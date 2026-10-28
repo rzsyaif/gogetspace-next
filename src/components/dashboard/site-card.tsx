@@ -38,9 +38,11 @@ export function SiteCard({ site, newEnquiries }: { site: Site; newEnquiries: num
         <div className="flex flex-col gap-1">
           <h3 className="line-clamp-1 type-h6 text-fg-primary">{site.name}</h3>
           {live ? (
-            <a href={`https://${siteUrl(site)}`} target="_blank" rel="noreferrer" className="self-start type-body-sm text-fg-link hover:underline">
-              {siteUrl(site)}
-            </a>
+            <Button asChild variant="link" size="sm" className="self-start type-body-sm">
+              <a href={`https://${siteUrl(site)}`} target="_blank" rel="noreferrer">
+                {siteUrl(site)}
+              </a>
+            </Button>
           ) : (
             <p className="type-body-sm text-fg-tertiary">{site.freeDomain} · not published</p>
           )}
@@ -49,9 +51,11 @@ export function SiteCard({ site, newEnquiries }: { site: Site; newEnquiries: num
             {live && ` · ${week.toLocaleString("en")} visitors this week`}
           </p>
           {newEnquiries > 0 && (
-            <Link href={`/sites/${site.id}?tab=enquiries`} className="self-start type-body-sm text-fg-link hover:underline">
-              {newEnquiries} new {newEnquiries === 1 ? "enquiry" : "enquiries"}
-            </Link>
+            <Button asChild variant="link" size="sm" className="self-start type-body-sm">
+              <Link href={`/sites/${site.id}?tab=enquiries`}>
+                {newEnquiries} new {newEnquiries === 1 ? "enquiry" : "enquiries"}
+              </Link>
+            </Button>
           )}
         </div>
         <div className="flex gap-2">

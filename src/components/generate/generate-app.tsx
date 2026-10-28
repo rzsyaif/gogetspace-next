@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { AnimatePresence, motion } from "motion/react"
-import { Logo, SegmentedControl, Toast, TooltipProvider } from "@/components/ui"
+import { Button, Logo, SegmentedControl, Toast, TooltipProvider } from "@/components/ui"
 import { cn } from "@/lib/cn"
 import { useMedia } from "@/lib/use-media"
 import { GenProvider, useGen } from "./gen-provider"
@@ -91,7 +91,9 @@ export function Shell({ initialTab = "agent" }: { initialTab?: Tab }) {
           <Logo markOnly size={36} />
         </Link>
         {s.account ? <AccountButton compact /> : (
-          <a href="#" tabIndex={create ? -1 : 0} className="rounded-sm px-2 py-1 type-label-md text-fg-link hover:underline">Log in</a>
+          <Button asChild variant="link" size="sm">
+            <a href="#" tabIndex={create ? -1 : 0}>Log in</a>
+          </Button>
         )}
       </motion.header>
 

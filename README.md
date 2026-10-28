@@ -76,6 +76,13 @@ App components built for the generation flow (also on `/styleguide` → App patt
 - **PromptBox**, **PromptAttachButton**, **PromptSendButton**, **AttachmentChip** — the chat and "create your own style" boxes
 - **Drawer** — side panel (phone menus in the editor and the dashboard)
 - **RadioCard** / **RadioDot** — bordered radio choices (publish domain, style options)
+- **Stepper** — horizontal stepper (review sheet footer, Buy a domain); reached steps can be clickable
+- **NavItem** — sidebar/menu row used by the dashboard sidebar and the editor's phone menu
+- **Divider** — rule with an optional centred label ("or")
+- **Button `variant="link"`** — inline text action (Forgot password?, Disconnect, Retry)
+- **DetailCard** (`account/panel.tsx`) — label / value / badge card for settings, domain and database rows
+- **AuthForm** (`auth/login-dialog.tsx`) — one log-in / sign-up form shared by the homepage login and publish flow
+- Every modal and drawer overlay uses `overlayClass` from `ui/dialog.tsx` (scrim + background blur)
 - **Alert** now also has a `neutral` tone, `actions`, a custom or hidden `icon` and a compact `size="sm"`
 
 The marketing homepage prompt (`site/prompt-input.tsx`) keeps its own Figma-matched motion buttons, and the generated

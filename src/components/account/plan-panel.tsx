@@ -126,7 +126,7 @@ export function PlanPanel({
         {PLANS.map((p) => {
           const isCurrent = p.id === plan
           return (
-            <li key={p.id} className={cn("flex flex-col gap-5 rounded-xl border bg-surface p-6", isCurrent ? "border-2 border-blue-500" : "border-line-default")}>
+            <li key={p.id} className={cn("flex flex-col gap-5 rounded-xl border bg-surface p-6", isCurrent ? "border-2 border-line-focus" : "border-line-default")}>
               <div className="flex items-center gap-2">
                 <h3 className="flex-1 type-h5 text-fg-primary">{p.name}</h3>
                 {isCurrent && <Badge tone="brand">Current</Badge>}

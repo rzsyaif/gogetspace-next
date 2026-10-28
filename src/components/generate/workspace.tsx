@@ -34,7 +34,7 @@ import {
   Tablet,
   X,
 } from "lucide-react"
-import { Avatar, Button, Drawer, DrawerContent, DrawerTrigger, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, IconButton, Logo, SegmentedControl, Tooltip } from "@/components/ui"
+import { Avatar, Badge, Button, Drawer, DrawerContent, DrawerTrigger, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, IconButton, Logo, NavItem, SegmentedControl, Tooltip, iconButtonVariants } from "@/components/ui"
 import { cn } from "@/lib/cn"
 import { flatten, type PageNode } from "@/lib/bakti/sitemap"
 import { getTheme } from "@/lib/bakti/themes"
@@ -45,6 +45,8 @@ import { CLINIC_FRONT, CLINIC_PHOTO, GALLERY_IMAGES } from "@/components/site/as
 import { AccountDialog, PublishFlow } from "./publish"
 import { useEditorSite } from "./editor-site"
 import { DomainPanel } from "@/components/account/domain-panel"
+import { DetailCard } from "@/components/account/panel"
+import { planInfo } from "@/lib/plans"
 import { useAccountState } from "@/lib/account/store"
 
 const DEVICES = [
@@ -154,30 +156,16 @@ export function MobileNav({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void })
             )
           }
         >
-          <nav aria-label="Workspace" className="flex flex-col gap-1">
+          <nav aria-label="Workspace" className="flex flex-col gap-0.5">
             {RAIL.map(({ id, Icon, label }) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => pick(id)}
-                aria-current={tab === id ? "page" : undefined}
-                className={cn(
-                  "flex h-12 items-center gap-3 rounded-md px-3 type-label-lg transition-colors focus-visible:outline-none focus-visible:focus-ring",
-                  tab === id ? "bg-inverse text-fg-inverse" : "text-fg-primary hover:bg-subtle",
-                )}
-              >
-                <Icon className="size-5" strokeWidth={1.75} />
-                {label}
-              </button>
+              <NavItem key={id} onClick={() => pick(id)} active={tab === id} icon={<Icon strokeWidth={1.75} />} label={label} />
             ))}
           </nav>
           <div className="my-3 border-t border-line-default" />
-          <Link href="/dashboard" className="flex h-12 items-center gap-3 rounded-md px-3 type-label-lg text-fg-primary hover:bg-subtle focus-visible:outline-none focus-visible:focus-ring">
-            <LayoutGrid className="size-5" strokeWidth={1.75} /> All websites
-          </Link>
-          <Link href="/dashboard?new=1" className="flex h-12 items-center gap-3 rounded-md px-3 type-label-lg text-fg-primary hover:bg-subtle focus-visible:outline-none focus-visible:focus-ring">
-            <Plus className="size-5" strokeWidth={1.75} /> New website
-          </Link>
+          <div className="flex flex-col gap-0.5">
+            <NavItem href="/dashboard" icon={<LayoutGrid strokeWidth={1.75} />} label="All websites" />
+            <NavItem href="/dashboard?new=1" icon={<Plus strokeWidth={1.75} />} label="New website" />
+          </div>
         </DrawerContent>
       </Drawer>
       <AccountDialog open={signup} onOpenChange={setSignup} />
@@ -195,7 +183,7 @@ export function AccountButton({ compact }: { compact?: boolean }) {
         <DropdownMenuTrigger aria-label="Account" className="group flex flex-col items-center gap-1 focus-visible:outline-none">
           <span className={cn("grid place-items-center rounded-full border border-line-default bg-subtle text-fg-secondary group-hover:bg-muted group-focus-visible:focus-ring", compact ? "size-10" : "size-11")}>
             {s.account ? (
-              <span className={cn("grid place-items-center rounded-full bg-blue-500 font-semibold text-white", compact ? "size-8 text-[13px]" : "size-9 text-[14px]")}>{s.account.name[0]}</span>
+              <Avatar name={s.account.name.split(" ")[0]} size="sm" className={cn("bg-action-primary text-fg-on-action", compact ? "size-8" : "size-9")} />
             ) : (
               <CircleUser className={compact ? "size-5" : "size-6"} strokeWidth={1.75} />
             )}
@@ -237,9 +225,9 @@ export function ProjectHeader({ onHide }: { onHide: () => void }) {
     <div className="flex items-center gap-4 p-4">
       <ProjectSelect />
       <Tooltip content="Hide panel">
-        <button type="button" aria-label="Hide panel" onClick={onHide} className="hidden size-9 place-items-center rounded-md text-fg-secondary hover:bg-subtle lg:grid">
-          <PanelLeft className="size-6" />
-        </button>
+        <IconButton aria-label="Hide panel" size="lg" onClick={onHide} className="max-lg:hidden [&_svg]:size-6">
+          <PanelLeft />
+        </IconButton>
       </Tooltip>
     </div>
   )
@@ -302,29 +290,25 @@ export function SidePanel({ tab, onBack, onOpenPlan }: { tab: "domain" | "databa
             { k: "Clinic account requests", v: 0 },
             { k: "Corporate quotes", v: 0 },
           ].map((r) => (
-            <div key={r.k} className="flex items-center justify-between rounded-md border border-line-default bg-surface p-4">
-              <span className="type-label-md text-fg-primary">{r.k}</span>
-              <span className="rounded-full bg-subtle px-2 type-label-sm text-fg-secondary">{r.v}</span>
-            </div>
+            <DetailCard key={r.k} label="Collected" value={r.k} trailing={<Badge dot={false}>{r.v}</Badge>} />
           ))}
           {s.publish.status !== "live" && <p className="type-body-sm text-fg-tertiary">Nothing yet — publish the site to start collecting.</p>}
         </>
       )}
-      {tab === "settings" && (
-        <div className="flex flex-col gap-3">
-          {[
-            ["Site name", "Bakti Analisa"],
-            ["Language", "English (Bahasa Malaysia next)"],
-            ["Style", getTheme(s.styleId).name],
-            ["Plan", s.plan[0].toUpperCase() + s.plan.slice(1)],
-          ].map(([k, v]) => (
-            <div key={k} className="flex flex-col gap-0.5 rounded-md border border-line-default bg-surface p-4">
-              <span className="type-caption text-fg-tertiary">{k}</span>
-              <span className="type-body-md text-fg-primary">{v}</span>
-            </div>
-          ))}
-        </div>
-      )}
+      {tab === "settings" && <SiteSettings />}
+    </div>
+  )
+}
+
+function SiteSettings() {
+  const { s } = useGen()
+  const { site, plan } = useEditorSite()
+  return (
+    <div className="flex flex-col gap-3">
+      <DetailCard label="Site name" value={site.name} />
+      <DetailCard label="Language" value="English (Bahasa Malaysia next)" />
+      <DetailCard label="Style" value={site.built ? getTheme(s.styleId).name : "Not chosen yet"} />
+      <DetailCard label="Plan" value={planInfo(plan).name} />
     </div>
   )
 }
@@ -387,9 +371,9 @@ export function PreviewPane({ chatOpen, onShowChat, onToast }: { chatOpen: boole
         <div className="flex items-center gap-3 lg:flex-1">
           {!chatOpen && (
             <Tooltip content="Show panel">
-              <button type="button" aria-label="Show panel" onClick={onShowChat} className="hidden size-9 place-items-center rounded-md text-fg-secondary hover:bg-subtle lg:grid">
-                <PanelLeft className="size-6" />
-              </button>
+              <IconButton aria-label="Show panel" size="lg" onClick={onShowChat} className="max-lg:hidden [&_svg]:size-6">
+                <PanelLeft />
+              </IconButton>
             </Tooltip>
           )}
           <SegmentedControl label="View" iconOnly value={view} onChange={setView} options={[{ value: "preview", icon: <Globe />, label: "Preview" }, { value: "code", icon: <CodeXml />, label: "Code" }]} />
@@ -400,26 +384,28 @@ export function PreviewPane({ chatOpen, onShowChat, onToast }: { chatOpen: boole
         <PageSelect pages={pages} current={page} statuses={s.pages} onPick={setPageId} onReload={() => setReload((r) => r + 1)} />
         <div className="ml-auto flex items-center gap-2 sm:gap-4 lg:ml-0 lg:flex-1 lg:justify-end">
           {live && (
-            <span className="hidden items-center gap-1.5 rounded-full bg-status-success-bg px-3 py-1 type-label-sm text-status-success-text xl:flex">
-              <span className="size-2 rounded-full bg-status-success-solid" /> Live
-            </span>
+            <Badge tone="success" className="max-xl:hidden">
+              Live
+            </Badge>
           )}
           <Tooltip content="Copy preview link">
-            <button
-              type="button"
+            <IconButton
               aria-label="Share preview"
+              size="xl"
+              shape="round"
+              tone="filled"
               onClick={() => {
                 navigator.clipboard?.writeText(window.location.origin + src).catch(() => {})
                 onToast("Preview link copied")
               }}
-              className="hidden size-11 place-items-center rounded-full bg-subtle text-fg-secondary hover:bg-muted sm:grid"
+              className="max-sm:hidden"
             >
-              <Share2 className="size-5" />
-            </button>
+              <Share2 />
+            </IconButton>
           </Tooltip>
           <Tooltip content="Open in a new tab">
-            <a href={src} target="_blank" rel="noreferrer" aria-label="Open preview in a new tab" className="hidden size-11 place-items-center rounded-full bg-subtle text-fg-secondary hover:bg-muted sm:grid">
-              <ExternalLink className="size-5" />
+            <a href={src} target="_blank" rel="noreferrer" aria-label="Open preview in a new tab" className={cn(iconButtonVariants({ size: "xl", shape: "round", tone: "filled" }), "max-sm:hidden")}>
+              <ExternalLink />
             </a>
           </Tooltip>
           {buildDone ? (

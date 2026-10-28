@@ -43,3 +43,18 @@ export function PanelEmpty({ icon, title, text, action }: { icon: ReactNode; tit
 export function PanelPage({ children, className }: { children: ReactNode; className?: string }) {
   return <div className={cn("mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-4 py-6 sm:px-8 lg:py-10", className)}>{children}</div>
 }
+
+/** Small bordered card with a caption over a value (side panels: address, setting, count). */
+export function DetailCard({ label, value, meta, trailing, children, className }: { label: string; value: ReactNode; meta?: ReactNode; trailing?: ReactNode; children?: ReactNode; className?: string }) {
+  return (
+    <div className={cn("flex flex-col gap-1 rounded-md border border-line-default bg-surface p-4", className)}>
+      <span className="type-caption text-fg-tertiary">{label}</span>
+      <span className="flex items-center gap-2">
+        <span className="min-w-0 flex-1 truncate type-label-md text-fg-primary">{value}</span>
+        {trailing}
+      </span>
+      {meta && <span className="type-caption text-fg-tertiary">{meta}</span>}
+      {children}
+    </div>
+  )
+}

@@ -5,6 +5,10 @@ import { Dialog as D } from "radix-ui"
 import { X } from "lucide-react"
 import { cn } from "@/lib/cn"
 
+/** Dimmed, blurred backdrop shared by every modal surface (dialogs, drawers, the review sheet). */
+export const overlayClass =
+  "fixed inset-0 z-50 bg-overlay-scrim backdrop-blur-[6px] data-[state=open]:animate-[bp-fade-in_160ms_ease-out] data-[state=closed]:animate-[bp-fade-out_200ms_ease-in]"
+
 export const Dialog = D.Root
 export const DialogTrigger = D.Trigger
 export const DialogClose = D.Close
@@ -25,7 +29,7 @@ export function DialogContent({
 }) {
   return (
     <D.Portal>
-      <D.Overlay className="fixed inset-0 z-50 bg-overlay-scrim data-[state=open]:animate-[bp-fade-in_160ms_ease-out]" />
+      <D.Overlay className={overlayClass} />
       <D.Content
         className={cn(
           "fixed left-1/2 top-1/2 z-50 flex max-h-[calc(100dvh-32px)] w-[calc(100vw-32px)] max-w-[480px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-auto",
