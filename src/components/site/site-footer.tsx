@@ -17,7 +17,7 @@ const LANGUAGES = [
 export function SiteFooter() {
   return (
     <footer className="flex w-full justify-center px-4 pb-4">
-      <div className="flex w-full max-w-[1680px] justify-center rounded-[32px] border border-neutral-200 bg-white px-6 py-12 min-[810px]:rounded-[40px] min-[810px]:px-12 min-[810px]:py-16 min-[1440px]:rounded-[48px] min-[1440px]:px-16 min-[1440px]:py-24">
+      <div className="flex w-full max-w-[1680px] justify-center rounded-[32px] border border-neutral-200 bg-white px-6 shadow-block-lg py-12 min-[810px]:rounded-[40px] min-[810px]:px-12 min-[810px]:py-16 min-[1440px]:rounded-[48px] min-[1440px]:px-16 min-[1440px]:py-24">
         <div className="flex w-full max-w-[1200px] flex-col gap-10 min-[810px]:gap-12 min-[1440px]:flex-row min-[1440px]:gap-6">
           <div className="flex flex-col items-start gap-6 min-[1440px]:w-[384px]">
             <Logo />

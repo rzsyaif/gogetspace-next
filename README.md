@@ -95,7 +95,11 @@ Bricolage Grotesque (headings) and Geist / Geist Mono (body, code) are self-host
 
 ## Homepage
 
-`src/app/page.tsx` composes the sections in `src/components/site`. The page is always light (`data-theme="light"`).
+`src/app/page.tsx` composes the sections in `src/components/site`. The closing call-to-action and footer sit on the Figma footer
+background (`site/footer-background.tsx`): the colour wash in `public/images/footer-bg.svg` with Figma's Pixelate
+shader on top, via the Figma shader runtime in `src/lib/shader-runtime` and the shader in `src/lib/custom-effects`
+(both copied as exported; lint skips them). The shader needs WebGPU + HTML-in-Canvas; other browsers show the wash
+without the pixel pattern. The page is always light (`data-theme="light"`).
 
 - **Pixel Blocks** (`pixel-blocks.tsx`): canvas falling-blocks game behind the hero. Clicking drops the next piece at the cursor.
   When the visitor focuses a prompt input, the board dissolves; it rebuilds when they cancel or scroll away (`prompt-events.ts`).
