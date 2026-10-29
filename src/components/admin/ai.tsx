@@ -5,8 +5,8 @@ import Link from "next/link"
 import { Badge, Button, SegmentedControl, Select, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/components/ui"
 import { AreaChart, BarList, StatTile } from "@/components/account/charts"
 import { PanelHeader, PanelPage, PanelSection } from "@/components/account/panel"
-import { planInfo } from "@/lib/plans"
-import { AI_DAILY, AI_MODELS, AI_STEPS, GENERATIONS, costPerGeneration, fmtDay, mrrOf, minutesLabel, stepCost, usd } from "@/lib/admin/data"
+import { PLANS, planInfo } from "@/lib/plans"
+import { AI_DAILY, AI_MODELS, AI_STEPS, GENERATIONS, PRICES_CHECKED, costPerGeneration, firstBuildCost, fmtDay, mrrOf, minutesLabel, stepBreakdown, stepCost, usd, type AIStep } from "@/lib/admin/data"
 import { adminActions, showToast, useAdmin } from "@/lib/admin/store"
 import { PlanBadge } from "./common"
 import { SiteActions } from "./sites"
@@ -60,47 +60,11 @@ export function AIUsagePage() {
         </PanelSection>
         <PanelSection title="Cost by model">
           <BarList rows={byModel} format={(v) => usd(v)} />
-          <p className="type-caption text-fg-tertiary">Sample prices per million tokens. Images are priced per image (3 per run).</p>
+          <p className="type-caption text-fg-tertiary">Anthropic list prices, no caching or batch discount. Images use a placeholder price.</p>
         </PanelSection>
       </div>
 
-      <PanelSection title="Model routing" actions={<span className="type-caption text-fg-tertiary">Applies to new generations</span>}>
-        <Table>
-          <TableHead>
-            <tr>
-              <TableHeaderCell>Step</TableHeaderCell>
-              <TableHeaderCell className="w-[240px]">Model</TableHeaderCell>
-              <TableHeaderCell align="right">Cost per run</TableHeaderCell>
-              <TableHeaderCell align="right">Share of runs</TableHeaderCell>
-            </tr>
-          </TableHead>
-          <TableBody>
-            {AI_STEPS.map((s) => (
-              <TableRow key={s.id}>
-                <TableCell>
-                  <span className="flex flex-col">
-                    <span className="type-label-md">{s.label}</span>
-                    <span className="type-caption text-fg-tertiary">{s.help}</span>
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <Select
-                    value={routing[s.id]}
-                    onValueChange={(v) => {
-                      adminActions.setRouting(s.id, v, { step: s.label, from: modelName(routing[s.id]), to: modelName(v) })
-                      showToast(`${s.label} now uses ${modelName(v)}`)
-                    }}
-                    options={AI_MODELS.filter((m) => m.kind === s.kind).map((m) => ({ value: m.id, label: m.name }))}
-                    className="h-10"
-                  />
-                </TableCell>
-                <TableCell align="right">{usd(stepCost(s, routing[s.id]), true)}</TableCell>
-                <TableCell align="right">{Math.round(s.share * 100)}%</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </PanelSection>
+      <CostPerRun routing={routing} modelName={modelName} />
 
       <section id="top-spenders" className="flex scroll-mt-6 flex-col gap-4">
         <h2 className="type-h6 text-fg-primary">Highest credit use this month</h2>
@@ -212,5 +176,137 @@ export function AIUsagePage() {
         </Table>
       </PanelSection>
     </PanelPage>
+  )
+}
+
+/** per-run amounts are fractions of a cent, so show enough digits to compare models */
+const exact = (n: number) => (n === 0 ? "$0" : n < 0.01 ? `$${n.toFixed(4)}` : `$${n.toFixed(3)}`)
+const price = (n: number) => (n < 1 ? `$${n.toFixed(2)}` : `$${n}`)
+const tokens = (n: number) => (n >= 1000 ? `${(n / 1000).toLocaleString("en", { maximumFractionDigits: 1 })}K` : String(n))
+/** pages built the first time on each plan (Business: the 11-page Bakti Analisa sitemap) */
+const BUILD_PAGES: Record<string, number> = { free: 1, starter: 5, business: 11 }
+
+/**
+ * Model routing with the cost of one run of each step: tokens in × input price + tokens out × output price.
+ * Below it, what a whole first build costs on each plan, so the price of a model switch is visible.
+ */
+function CostPerRun({ routing, modelName }: { routing: Record<AIStep, string>; modelName: (id: string) => string }) {
+  return (
+    <>
+      <PanelSection title="Model routing and cost per run" actions={<span className="type-caption text-fg-tertiary">Changes apply to new runs</span>}>
+        <Table>
+          <TableHead>
+            <tr>
+              <TableHeaderCell>Step</TableHeaderCell>
+              <TableHeaderCell className="w-[260px]">Model</TableHeaderCell>
+              <TableHeaderCell align="right">Tokens in</TableHeaderCell>
+              <TableHeaderCell align="right">Tokens out</TableHeaderCell>
+              <TableHeaderCell align="right">Input cost</TableHeaderCell>
+              <TableHeaderCell align="right">Output cost</TableHeaderCell>
+              <TableHeaderCell align="right">Per run</TableHeaderCell>
+            </tr>
+          </TableHead>
+          <TableBody>
+            {AI_STEPS.map((s) => {
+              const b = stepBreakdown(s, routing[s.id])
+              return (
+                <TableRow key={s.id}>
+                  <TableCell>
+                    <span className="flex flex-col">
+                      <span className="type-label-md">{s.label}</span>
+                      <span className="type-caption text-fg-tertiary">{s.help}</span>
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <Select
+                      value={routing[s.id]}
+                      onValueChange={(v) => {
+                        adminActions.setRouting(s.id, v, { step: s.label, from: modelName(routing[s.id]), to: modelName(v) })
+                        showToast(`${s.label} now uses ${modelName(v)} · ${exact(stepCost(s, v))} per run`)
+                      }}
+                      options={AI_MODELS.filter((m) => m.kind === s.kind).map((m) => ({ value: m.id, label: `${m.name} · ${exact(stepCost(s, m.id))}` }))}
+                      className="h-10"
+                    />
+                  </TableCell>
+                  {s.kind === "image" ? (
+                    <>
+                      <TableCell align="right" className="text-fg-tertiary">
+                        {s.images} images
+                      </TableCell>
+                      <TableCell align="right" className="text-fg-tertiary">
+                        —
+                      </TableCell>
+                      <TableCell align="right" className="text-fg-tertiary">
+                        —
+                      </TableCell>
+                      <TableCell align="right" className="text-fg-secondary">
+                        {s.images} × {exact(b.total / (s.images ?? 1))}
+                      </TableCell>
+                    </>
+                  ) : (
+                    <>
+                      <TableCell align="right">{tokens(s.avgIn)}</TableCell>
+                      <TableCell align="right">{tokens(s.avgOut)}</TableCell>
+                      <TableCell align="right" className="text-fg-secondary">
+                        {exact(b.input)}
+                      </TableCell>
+                      <TableCell align="right" className="text-fg-secondary">
+                        {exact(b.output)}
+                      </TableCell>
+                    </>
+                  )}
+                  <TableCell align="right" className="type-label-md">
+                    {exact(b.total)}
+                  </TableCell>
+                </TableRow>
+              )
+            })}
+          </TableBody>
+        </Table>
+        <p className="type-caption text-fg-tertiary">
+          Per run = tokens in × input price + tokens out × output price (prices per million tokens). Token counts are averages per run. List prices without prompt
+          caching or the Batch API — caching the system prompt and brief would bring input costs down.
+        </p>
+      </PanelSection>
+
+      <div className="grid gap-6 xl:grid-cols-3">
+        <PanelSection title="Cost of a first build" className="xl:col-span-2">
+          <ul className="grid gap-3 sm:grid-cols-3">
+            {PLANS.map((p) => {
+              const pages = BUILD_PAGES[p.id]
+              const cost = firstBuildCost(routing, pages)
+              return (
+                <li key={p.id} className="flex flex-col gap-1 rounded-md border border-line-default p-4">
+                  <span className="flex items-center gap-2">
+                    <PlanBadge plan={p.id} />
+                    <span className="type-caption text-fg-tertiary">
+                      {pages} {pages === 1 ? "page" : "pages"}
+                    </span>
+                  </span>
+                  <span className="type-h4 text-fg-primary tabular-nums">{exact(cost)}</span>
+                  <span className="type-caption text-fg-tertiary">{p.price ? `${Math.round((cost / p.price) * 100)}% of the first month (${usd(p.price)})` : "Not paid back — Free plan"}</span>
+                </li>
+              )
+            })}
+          </ul>
+          <p className="type-caption text-fg-tertiary">
+            Brief, style and sitemap once; then a page build, images and a safety scan for every page. Editor changes come on top: {exact(stepCost(AI_STEPS.find((x) => x.id === "edit")!, routing.edit))} each.
+          </p>
+        </PanelSection>
+        <PanelSection title="Model prices" actions={<span className="type-caption text-fg-tertiary">Checked {PRICES_CHECKED}</span>}>
+          <dl className="flex flex-col gap-3">
+            {AI_MODELS.map((m) => (
+              <div key={m.id} className="flex flex-col">
+                <span className="flex items-baseline justify-between gap-3">
+                  <dt className="type-label-md text-fg-primary">{m.name}</dt>
+                  <dd className="type-body-sm text-fg-primary tabular-nums">{m.kind === "image" ? `${exact(m.perImage ?? 0)} / image` : `${price(m.input)} in · ${price(m.output)} out`}</dd>
+                </span>
+                <span className="type-caption text-fg-tertiary">{m.kind === "image" ? m.source : "per million tokens · prompts up to 100K tokens"}</span>
+              </div>
+            ))}
+          </dl>
+        </PanelSection>
+      </div>
+    </>
   )
 }
