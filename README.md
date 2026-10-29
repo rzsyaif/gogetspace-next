@@ -76,6 +76,7 @@ App components built for the generation flow (also on `/styleguide` → App patt
 - **PromptBox**, **PromptAttachButton**, **PromptSendButton**, **AttachmentChip** — the chat and "create your own style" boxes
 - **Drawer** — side panel (phone menus in the editor and the dashboard)
 - **RadioCard** / **RadioDot** — bordered radio choices (publish domain, style options)
+- **Table** (`Table`, `TableHead`, `TableBody`, `TableRow`, `TableHeaderCell`, `TableCell`, `TableEmpty`) — bordered data table that scrolls sideways on phones
 - **Stepper** — horizontal stepper (review sheet footer, Buy a domain); reached steps can be clickable
 - **NavItem** — sidebar/menu row used by the dashboard sidebar and the editor's phone menu
 - **Divider** — rule with an optional centred label ("or")
@@ -167,6 +168,32 @@ statuses and invoices in sessionStorage so the dashboard and the editor stay in 
   Custom domain card (4 columns).
 - Upgrades name the website and the charge, apply to that website only, and add an invoice in Billings. Analytics
   history depends on the plan (Free 7 days, Starter 30 days, Business 12 months).
+
+## Admin console
+
+`/admin` is the internal console for the GoGetSpace team (`components/admin`, sample data in `src/lib/admin/data.ts`,
+changes kept in sessionStorage by `src/lib/admin/store.ts`). Every action asks for a reason where it touches a client
+and writes an entry to the audit log.
+
+- **Overview** — MRR, paying websites, new clients, AI cost, and a "needs attention" list (failed payments, abuse
+  reports, domains stuck on DNS, SSL/renewal issues, websites over their credit allowance, degraded services)
+- **Clients** and **Clients → one client** — search/filter; per client: websites (credits, failed builds, plan),
+  billing, domains, activity, internal notes; log in as the client, password reset, suspend, schedule deletion
+- **Websites** — every site with status, plan, credits and failed builds; change plan, grant credits, re-run failed
+  builds, unpublish or republish
+- **Billing** — MRR by plan, subscriptions, payments (refund), failed payments (retry, email the client)
+- **Domains** — bought here vs connected from elsewhere; re-check DNS, email the DNS steps, re-issue SSL, renew
+- **AI usage** — generations, success rate, cost by step and model, **model routing per step**, top credit users,
+  recent generations
+- **Moderation** — visitor reports and safety-scan findings (phishing, impersonation, health claims); dismiss,
+  unpublish, suspend
+- **System** — service status, generation queue, recent errors, sent emails
+- **Plans & features** — price, pages, credits, analytics history and custom domain per plan; free-website limit per
+  account (still undecided); feature flags
+- **Team & roles** — members, roles, two-factor, and a permissions matrix
+- **Audit log** — searchable, filter by person, CSV export
+
+Press <kbd>/</kbd> anywhere in the console to search clients, websites, domains and payment IDs.
 
 ## Project layout
 
