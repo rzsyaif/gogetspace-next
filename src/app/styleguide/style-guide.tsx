@@ -57,6 +57,8 @@ import {
 } from "@/components/ui"
 import { ThemeToggle } from "@/components/theme"
 import { DetailCard } from "@/components/account/panel"
+import { CodeBlock, CodePanel } from "./code"
+import { INSTALL, SETUP, SNIPPETS } from "./snippets"
 
 const SEMANTIC: { group: string; items: { name: string; className: string }[] }[] = [
   {
@@ -122,7 +124,7 @@ function Section({ id, title, children }: { id: string; title: string; children:
   )
 }
 
-export function StyleGuide({ palettes }: { palettes: [string, Record<string, string>][] }) {
+export function StyleGuide({ palettes, sources }: { palettes: [string, Record<string, string>][]; sources: Record<string, string> }) {
   const [toast, setToast] = useState(false)
   const [alertOpen, setAlertOpen] = useState(true)
   const [progress, setProgress] = useState(50)
@@ -140,7 +142,7 @@ export function StyleGuide({ palettes }: { palettes: [string, Record<string, str
             <Logo />
           </Link>
           <nav aria-label="Sections" className="hidden items-center gap-1 lg:flex">
-            {["colors", "type", "buttons", "forms", "menus", "feedback", "display", "app"].map((s) => (
+            {["setup", "colors", "type", "buttons", "forms", "menus", "feedback", "display", "app"].map((s) => (
               <a key={s} href={`#${s}`} className="rounded-sm px-3 py-1.5 type-label-md capitalize text-fg-secondary hover:bg-subtle hover:text-fg-primary">
                 {s}
               </a>
@@ -155,9 +157,29 @@ export function StyleGuide({ palettes }: { palettes: [string, Record<string, str
           <Badge tone="brand" className="self-start">Baseplate by GoGetSpace</Badge>
           <h1 className="type-h1">Style guide</h1>
           <p className="max-w-2xl type-body-lg text-fg-secondary">
-            Tokens and components generated from the Figma library. Switch the theme in the header to check dark mode.
+            Tokens and components generated from the Figma library. Switch the theme in the header to check dark mode. Every
+            component has a Code panel: copy its usage, or the whole source file to build with it elsewhere.
           </p>
         </div>
+
+        <Section id="setup" title="Setup">
+          <p className="max-w-3xl type-body-md text-fg-secondary">
+            The components are React + Tailwind CSS v4 with Radix for behaviour. To use them in another project, install the packages, add these four files,
+            then copy the components you need from the Code panels below (they import each other from <code className="font-mono text-[13px]">@/components/ui</code>
+            , so keep that path or update the imports).
+          </p>
+          <CodeBlock label="Terminal" code={INSTALL} maxHeight={96} />
+          <div className="grid gap-4 lg:grid-cols-2">
+            {SETUP.map((f) => (
+              <div key={f.file} className="flex min-w-0 flex-col gap-2">
+                <p className="type-body-sm text-fg-secondary">
+                  <code className="font-mono text-[13px] text-fg-primary">{f.file}</code> — {f.note}
+                </p>
+                <CodeBlock label={f.file} code={sources[f.file] ?? ""} maxHeight={260} copyLabel="Copy file" />
+              </div>
+            ))}
+          </div>
+        </Section>
 
         <Section id="colors" title="Colors">
           <div className="flex flex-col gap-3">
@@ -254,6 +276,7 @@ export function StyleGuide({ palettes }: { palettes: [string, Record<string, str
               <IconButton aria-label="Fit to screen" shape="round"><Maximize /></IconButton>
             </span>
           </div>
+          <CodePanel items={SNIPPETS.buttons} sources={sources} />
         </Section>
 
         <Section id="forms" title="Forms">
@@ -304,6 +327,7 @@ export function StyleGuide({ palettes }: { palettes: [string, Record<string, str
               <Switch label="Disabled" disabled />
             </div>
           </div>
+          <CodePanel items={SNIPPETS.forms} sources={sources} />
         </Section>
 
         <Section id="menus" title="Menus, tabs and dialogs">
@@ -365,6 +389,7 @@ export function StyleGuide({ palettes }: { palettes: [string, Record<string, str
             <TabsContent value="style" className="type-body-md text-fg-secondary">Clinical Clarity — Plus Jakarta Sans and Inter.</TabsContent>
             <TabsContent value="settings" className="type-body-md text-fg-secondary">Domain, SEO and integrations.</TabsContent>
           </Tabs>
+          <CodePanel items={SNIPPETS.menus} sources={sources} />
         </Section>
 
         <Section id="feedback" title="Feedback">
@@ -401,6 +426,7 @@ export function StyleGuide({ palettes }: { palettes: [string, Record<string, str
               </Button>
             </div>
           </div>
+          <CodePanel items={SNIPPETS.feedback} sources={sources} />
         </Section>
 
         <Section id="display" title="Badges, chips, avatars and cards">
@@ -452,6 +478,7 @@ export function StyleGuide({ palettes }: { palettes: [string, Record<string, str
               </Card>
             ))}
           </div>
+          <CodePanel items={SNIPPETS.display} sources={sources} />
         </Section>
 
         <Section id="app" title="App patterns">
@@ -533,6 +560,7 @@ export function StyleGuide({ palettes }: { palettes: [string, Record<string, str
               </PromptBox>
             </div>
           </div>
+          <CodePanel items={SNIPPETS.app} sources={sources} />
         </Section>
       </main>
     </TooltipProvider>
