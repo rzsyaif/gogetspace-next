@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { CreditCard, Globe2, ShieldAlert, ShieldX, Sparkles, Timer, Zap } from "lucide-react"
+import { CreditCard, Globe2, MessageSquareWarning, ShieldX, Sparkles, Timer, Zap } from "lucide-react"
 import { Button, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/components/ui"
 import { AreaChart, BarList, StatTile } from "@/components/account/charts"
 import { PanelHeader, PanelPage, PanelSection } from "@/components/account/panel"
@@ -12,7 +12,7 @@ import { AttentionRow, ClientCell, ClientStatusBadge, PlanBadge } from "./common
 
 /** The first screen: revenue, growth, AI cost, and what needs someone today. */
 export function AdminOverview() {
-  const { clients, sites, subscriptions, payments, domains, reports, routing } = useAdmin()
+  const { clients, sites, subscriptions, payments, domains, feedback, routing } = useAdmin()
   const mrr = mrrOf(subscriptions)
   const history = mrrHistory(subscriptions)
   const lastMonth = history[history.length - 2].value
@@ -29,7 +29,9 @@ export function AdminOverview() {
   const dnsStuck = domains.filter((d) => d.health === "pending_dns" && (d.waitingHours ?? 0) >= 48)
   const ssl = domains.filter((d) => d.health === "ssl_error")
   const expiring = domains.filter((d) => d.health === "expiring" && !d.autoRenew)
-  const openReports = reports.filter((r) => r.status === "open")
+  const recentBad = feedback.filter((f) => f.rating === "bad" && (f.at ? true : f.hoursAgo < 24 * 14))
+  const recent = feedback.filter((f) => f.at || f.hoursAgo < 24 * 30)
+  const goodShare = recent.filter((f) => f.rating === "good").length / Math.max(1, recent.length)
   const overAllowance = sites.filter((s) => s.credits > planInfo(s.plan).credits + s.bonusCredits)
   const degraded = SERVICES.filter((s) => s.status !== "operational")
   const clientOf = (id: string) => clients.find((c) => c.id === id)!
@@ -60,8 +62,15 @@ export function AdminOverview() {
                 action="Review"
               />
             )}
-            {openReports.length > 0 && (
-              <AttentionRow tone="error" icon={<ShieldAlert />} title={`${openReports.length} open abuse ${openReports.length === 1 ? "report" : "reports"}`} text={openReports.map((r) => r.reason).join(" · ")} href="/admin/moderation" action="Review" />
+            {recentBad.length > 0 && (
+              <AttentionRow
+                tone="error"
+                icon={<MessageSquareWarning />}
+                title={`${recentBad.length} “Bad” ${recentBad.length === 1 ? "rating" : "ratings"} after a first build · 14 days`}
+                text={recentBad.map((f) => `${f.siteName}: ${f.tags.join(", ")}`).join("  ·  ")}
+                href="/admin/feedback?rating=bad"
+                action="Read"
+              />
             )}
             {dnsStuck.length > 0 && (
               <AttentionRow icon={<Timer />} title={`${dnsStuck.length} domains waiting for DNS over 2 days`} text={dnsStuck.map((d) => `${d.name} · ${d.waitingHours} h`).join(" · ")} href="/admin/domains?filter=pending_dns" action="Help" />
@@ -95,7 +104,7 @@ export function AdminOverview() {
             <Metric label="Generation success · 7 days" value={`${(success * 100).toFixed(1)}%`} />
             <Metric label="Cost per generation" value={usd(perGen, true)} />
             <Metric label="AI cost vs revenue" value={`${Math.round((aiCost / Math.max(1, mrr)) * 100)}%`} />
-            <Metric label="Live websites" value={String(sites.filter((s) => s.status === "live").length)} />
+            <Metric label="Rated Good · 30 days" value={`${Math.round(goodShare * 100)}%`} />
           </dl>
           <Button asChild variant="link" className="self-start">
             <Link href="/admin/ai">Open AI usage</Link>

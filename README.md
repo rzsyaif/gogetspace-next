@@ -124,7 +124,7 @@ Typing a prompt on the homepage opens `/generate`. A scripted agent (`src/lib/ge
 `gen-provider.tsx`) plans the site, then the person reviews three artifacts in a sheet: an editable brief (guesses are
 highlighted until confirmed), style options previewed on one hero section, and a sitemap (list and map side by side, with
 rename / add / remove, plan limits and the sections planned for each page). "Start Creation" opens the workspace: chat, build progress, credits, and a
-preview of the generated site with device sizes and a page switcher. Sign-up is asked for only when publishing.
+preview of the generated site with device sizes and a page switcher. Sign-up is asked for only when publishing. When the first build finishes, a feedback card in the chat asks how it turned out (Good / Fine / Bad + why) and whether we may contact them for research.
 
 Style step and tokens: the hero (`bakti-site/hero-preview.tsx`) is generated once from the brief with a fixed layout;
 each style option is only a set of ~15 design tokens (palette, fonts, radii) applied as CSS variables. Comparing or
@@ -175,8 +175,8 @@ statuses and invoices in sessionStorage so the dashboard and the editor stay in 
 changes kept in sessionStorage by `src/lib/admin/store.ts`). Every action asks for a reason where it touches a client
 and writes an entry to the audit log.
 
-- **Overview** — MRR, paying websites, new clients, AI cost, and a "needs attention" list (failed payments, abuse
-  reports, domains stuck on DNS, SSL/renewal issues, websites over their credit allowance, degraded services)
+- **Overview** — MRR, paying websites, new clients, AI cost, and a "needs attention" list (failed payments, recent
+  "Bad" ratings, domains stuck on DNS, SSL/renewal issues, websites over their credit allowance, degraded services)
 - **Clients** and **Clients → one client** — search/filter; per client: websites (credits, failed builds, plan),
   billing, domains, activity, internal notes; log in as the client, password reset, suspend, schedule deletion
 - **Websites** — every site with status, plan, credits and failed builds; change plan, grant credits, re-run failed
@@ -185,8 +185,10 @@ and writes an entry to the audit log.
 - **Domains** — bought here vs connected from elsewhere; re-check DNS, email the DNS steps, re-issue SSL, renew
 - **AI usage** — generations, success rate, cost by step and model, **model routing per step**, top credit users,
   recent generations
-- **Moderation** — visitor reports and safety-scan findings (phishing, impersonation, health claims); dismiss,
-  unpublish, suspend
+- **Feedback** — answers from the card shown after the first build in `/generate` (Good / Fine / Bad, a follow-up
+  on why, optional comment, and "you can contact me for research"): rating split, trend, top reasons per rating, every
+  answer, and a research-participant status per person with a CSV export. Answers sent from the builder show up here
+  straight away (same browser tab)
 - **System** — service status, generation queue, recent errors, sent emails
 - **Plans & features** — price, pages, credits, analytics history and custom domain per plan; free-website limit per
   account (still undecided); feature flags

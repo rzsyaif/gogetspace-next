@@ -1,6 +1,6 @@
 /**
  * Sample data for the internal admin console: every client, their websites, subscriptions, payments, domains,
- * AI usage, abuse reports, the team and system health. Everything here is made up for the prototype and
+ * AI usage, feedback after the first build, the team and system health. Everything here is made up for the prototype and
  * generated deterministically, so numbers stay the same between renders.
  */
 import { PLANS, planInfo, type Plan } from "@/lib/plans"
@@ -390,88 +390,137 @@ export const GENERATIONS: Generation[] = (() => {
   })
 })()
 
-/* ---------------- moderation ---------------- */
+/* ---------------- feedback after the first build ---------------- */
 
-export type ReportReason = "Phishing" | "Impersonation" | "Unsupported health claims" | "Spam" | "Copyright"
-export type ReportStatus = "open" | "actioned" | "dismissed"
-export interface AbuseReport {
+export type Rating = "good" | "fine" | "bad"
+export type ResearchStatus = "new" | "invited" | "scheduled" | "done" | "declined"
+
+export interface Feedback {
   id: string
-  siteId: string
-  reason: ReportReason
-  source: "Public report" | "Safety scan"
+  /** hours ago when seeded; live answers carry a timestamp instead */
   hoursAgo: number
-  detail: string
-  /** what the page actually says */
-  excerpt: string
-  status: ReportStatus
-  reporter?: string
+  at?: number
+  clientId: string | null
+  /** who answered: the client's name, or what they typed before signing up */
+  name: string
+  email: string | null
+  siteName: string
+  siteId: string | null
+  rating: Rating
+  /** follow-up answers (what they liked / what went wrong) */
+  tags: string[]
+  comment: string
+  /** said yes to "Can we contact you for research?" */
+  research: boolean
+  researchStatus: ResearchStatus
 }
 
-export const REPORTS: AbuseReport[] = [
-  {
-    id: "rep_311",
-    siteId: "doktor-irfan-online",
-    reason: "Impersonation",
-    source: "Public report",
-    hoursAgo: 340,
-    detail: "Claims to be a registered doctor; the MMC number on the page belongs to someone else.",
-    excerpt: "Dr. Irfan (MMC 48213) — online consultation and prescriptions in 10 minutes.",
-    status: "actioned",
-    reporter: "Malaysian Medical Council liaison",
+export const RATING: Record<Rating, { label: string; tone: "success" | "warning" | "error"; question: string; tags: string[] }> = {
+  good: {
+    label: "Good",
+    tone: "success",
+    question: "What did you like most?",
+    tags: ["The design", "The writing", "Page structure", "How fast it was", "It understood my business"],
   },
-  {
-    id: "rep_318",
-    siteId: "fauzi-medical-centre",
-    reason: "Unsupported health claims",
-    source: "Safety scan",
-    hoursAgo: 5,
-    detail: "Draft page promises a cure for diabetes. Not published yet — the scan runs on drafts that have a preview link.",
-    excerpt: "Our herbal IV therapy reverses type 2 diabetes in 14 days, guaranteed.",
-    status: "open",
+  fine: {
+    label: "Fine",
+    tone: "warning",
+    question: "What would make it better?",
+    tags: ["The design", "The writing", "Missing information", "Images", "Too generic"],
   },
-  {
-    id: "rep_320",
-    siteId: "klinik-pratama-bandung",
-    reason: "Phishing",
-    source: "Safety scan",
-    hoursAgo: 2,
-    detail: "A form on the draft asks for internet-banking username and password to 'verify insurance'.",
-    excerpt: "Masukkan ID dan kata sandi BCA KlikPay Anda untuk verifikasi asuransi.",
-    status: "open",
+  bad: {
+    label: "Bad",
+    tone: "error",
+    question: "What went wrong?",
+    tags: ["Doesn't look like my business", "Wrong or made-up details", "The design", "The writing", "Missing pages", "Too slow"],
   },
-  {
-    id: "rep_316",
-    siteId: "ng-skin-and",
-    reason: "Unsupported health claims",
-    source: "Safety scan",
-    hoursAgo: 30,
-    detail: "Before/after claims for a skin-whitening injection.",
-    excerpt: "Glutathione drip: 3 shades fairer after one session, 100% safe.",
-    status: "open",
-  },
-  {
-    id: "rep_309",
-    siteId: "smile-studio-dental",
-    reason: "Copyright",
-    source: "Public report",
-    hoursAgo: 410,
-    detail: "Reporter says the team photos are theirs. The client swapped them for stock images.",
-    excerpt: "Meet our team (photo grid)",
-    status: "dismissed",
-    reporter: "brightsmile.sg",
-  },
-  {
-    id: "rep_319",
-    siteId: "kumar-and-co",
-    reason: "Spam",
-    source: "Public report",
-    hoursAgo: 20,
-    detail: "Reporter says the contact page lists their phone number by mistake.",
-    excerpt: "Call us: +60 3-2161 ••••",
-    status: "open",
-    reporter: "Visitor via report link",
-  },
-]
+}
+
+const COMMENTS: Record<Rating, string[]> = {
+  good: [
+    "Honestly better than the agency quote I got. The services page is exactly how I explain it to patients.",
+    "Loved that it found our address and opening hours by itself.",
+    "",
+    "Clean and professional. My partner thought we paid for it.",
+    "",
+  ],
+  fine: [
+    "Looks nice but the photos don't look like Malaysia at all.",
+    "Good start. It used 'clinic' when we're a pharmacy in a few places.",
+    "",
+    "I wanted to see the price list on the homepage.",
+  ],
+  bad: [
+    "It said we've been open since 1998 — we opened in 2019. Had to fix a lot of text.",
+    "The colours are nothing like our signboard. Wanted our green.",
+    "Took too long and then the Corporate page failed.",
+  ],
+}
+
+export const FEEDBACK: Feedback[] = (() => {
+  const r = rng(404)
+  const out: Feedback[] = []
+  // one answer per built website, roughly in the order they were built
+  const built = ADMIN_SITES.filter((s) => s.status !== "draft" || s.generations > 15)
+  built.forEach((site, i) => {
+    if (r() < 0.22) return // didn't answer
+    const client = CLIENTS.find((c) => c.id === site.clientId)!
+    const roll = r()
+    const rating: Rating = roll < 0.55 ? "good" : roll < 0.83 ? "fine" : "bad"
+    const pool = RATING[rating].tags
+    const tags = pool.filter(() => r() < 0.35).slice(0, 3)
+    if (tags.length === 0) tags.push(pool[Math.floor(r() * pool.length)])
+    const research = r() < 0.45
+    out.push({
+      id: `fb_${700 + i}`,
+      hoursAgo: Math.max(1, site.createdAgo * 24 - Math.floor(r() * 20)),
+      clientId: client.id,
+      name: client.name,
+      email: client.email,
+      siteName: site.name,
+      siteId: site.id,
+      rating,
+      tags,
+      comment: COMMENTS[rating][Math.floor(r() * COMMENTS[rating].length)],
+      research,
+      researchStatus: !research ? "new" : site.createdAgo > 60 ? (r() < 0.6 ? "done" : "scheduled") : site.createdAgo > 20 ? "invited" : "new",
+    })
+  })
+  // most first builds come from people who haven't signed up yet
+  const DRAFTS = ["Klinik Mesra", "Poliklinik Seri Iskandar", "Chong Dental", "Ramesh & Co", "Apotek Sejahtera", "Siew Physio", "Klinik Pergigian Aman", "Harun Legal", "Bright Eyes Optometry", "Klinik Kesihatan Wanita", "Tay Accounting", "Pusat Fisioterapi Ceria"]
+  for (let i = 0; i < 96; i++) {
+    const roll = r()
+    const hoursAgo = Math.floor(Math.pow(r(), 1.15) * 110 * 24) + 2
+    // quality improves over the quarter: fewer "Bad" answers in recent weeks
+    const badCut = 0.1 + (hoursAgo / (110 * 24)) * 0.14
+    const rating: Rating = roll < badCut ? "bad" : roll < badCut + 0.3 ? "fine" : "good"
+    const pool = RATING[rating].tags
+    const tags = pool.filter(() => r() < 0.3).slice(0, 3)
+    if (tags.length === 0) tags.push(pool[Math.floor(r() * pool.length)])
+    const research = r() < 0.3
+    const draft = DRAFTS[Math.floor(r() * DRAFTS.length)]
+    out.push({
+      id: `fb_${600 + i}`,
+      hoursAgo,
+      clientId: null,
+      name: "Not signed up",
+      email: research ? `${draft.toLowerCase().replace(/[^a-z]+/g, "")}@gmail.com` : null,
+      siteName: `${draft} (draft)`,
+      siteId: null,
+      rating,
+      tags,
+      comment: r() < 0.3 ? COMMENTS[rating][Math.floor(r() * COMMENTS[rating].length)] : "",
+      research,
+      researchStatus: !research ? "new" : hoursAgo > 40 * 24 ? "done" : hoursAgo > 14 * 24 ? (r() < 0.5 ? "scheduled" : "invited") : "new",
+    })
+  }
+  // two recent ones worth reading
+  out.push(
+    { id: "fb_690", hoursAgo: 3, clientId: null, name: "Not signed up", email: "drsharifah.clinic@gmail.com", siteName: "Klinik Sharifah (draft)", siteId: null, rating: "fine", tags: ["Images", "Too generic"], comment: "Would sign up if I could use my own photos first.", research: true, researchStatus: "new" },
+    { id: "fb_691", hoursAgo: 26, clientId: null, name: "Not signed up", email: null, siteName: "Tan Legal (draft)", siteId: null, rating: "bad", tags: ["Wrong or made-up details"], comment: "Made up two partners who don't exist.", research: false, researchStatus: "new" },
+  )
+  return out.sort((a, b) => a.hoursAgo - b.hoursAgo)
+})()
 
 /* ---------------- team, roles and audit ---------------- */
 

@@ -12,18 +12,18 @@ import {
   ME,
   PAYMENTS,
   PLAN_SETTINGS_SEED,
-  REPORTS,
+  FEEDBACK,
   SUBSCRIPTIONS,
   TEAM,
   type AIStep,
   type AdminDomain,
   type AdminSite,
-  type AbuseReport,
   type AuditEntry,
   type Client,
   type Payment,
   type PlanSettings,
-  type ReportStatus,
+  type Feedback,
+  type ResearchStatus,
   type Role,
   type Subscription,
   type TeamMember,
@@ -40,7 +40,7 @@ export interface AdminState {
   subscriptions: Subscription[]
   payments: Payment[]
   domains: AdminDomain[]
-  reports: AbuseReport[]
+  feedback: Feedback[]
   routing: Record<AIStep, string>
   plans: PlanSettings[]
   /** free websites allowed per account; null = no limit (still undecided) */
@@ -51,7 +51,7 @@ export interface AdminState {
   audit: AuditEntry[]
 }
 
-const KEY = "gogetspace-admin"
+const KEY = "gogetspace-admin-v2"
 const SEED: AdminState = {
   v: 1,
   clients: CLIENTS,
@@ -59,7 +59,7 @@ const SEED: AdminState = {
   subscriptions: SUBSCRIPTIONS,
   payments: PAYMENTS,
   domains: ADMIN_DOMAINS,
-  reports: REPORTS,
+  feedback: FEEDBACK,
   routing: DEFAULT_ROUTING,
   plans: PLAN_SETTINGS_SEED,
   freeSiteLimit: null,
@@ -102,6 +102,15 @@ function subscribe(l: () => void) {
 
 export function useAdmin() {
   return useSyncExternalStore(subscribe, read, () => SEED)
+}
+
+/**
+ * Answers from the feedback card after a first build land here, so the admin Feedback page shows them straight
+ * away (both live in this browser tab in the prototype).
+ */
+export function submitFeedback(f: Omit<Feedback, "id" | "hoursAgo" | "at" | "researchStatus">) {
+  const s = read()
+  write({ ...s, feedback: [{ ...f, id: `fb_${Date.now()}`, hoursAgo: 0, at: Date.now(), researchStatus: "new" }, ...s.feedback] })
 }
 
 /* ---------------- toast ---------------- */
@@ -242,10 +251,11 @@ export const adminActions = {
     const s = read()
     write(log({ ...s, domains: s.domains.map((d) => (d.name === name ? { ...d, health: "active" } : d)) }, "Re-issued SSL certificate", name))
   },
-  setReportStatus(id: string, status: ReportStatus, note?: string) {
+  setResearchStatus(id: string, status: ResearchStatus) {
     const s = read()
-    const r = s.reports.find((x) => x.id === id)
-    write(log({ ...s, reports: s.reports.map((x) => (x.id === id ? { ...x, status } : x)) }, status === "dismissed" ? "Dismissed report" : status === "open" ? "Reopened report" : "Actioned report", r ? siteName(s, r.siteId) : id, note || `${id}${r ? ` · ${r.reason}` : ""}`))
+    const f = s.feedback.find((x) => x.id === id)
+    const label = { new: "Reset research status", invited: "Invited to research", scheduled: "Scheduled research call", done: "Finished research call", declined: "Marked research as declined" }[status]
+    write(log({ ...s, feedback: s.feedback.map((x) => (x.id === id ? { ...x, researchStatus: status } : x)) }, label, f?.email ?? f?.name ?? id, f ? f.siteName : undefined))
   },
   setRouting(step: AIStep, model: string, labels: { step: string; from: string; to: string }) {
     const s = read()
