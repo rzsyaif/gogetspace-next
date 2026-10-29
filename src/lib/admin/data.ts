@@ -310,37 +310,66 @@ export const DOMAIN_HEALTH: Record<DomainHealth, { label: string; tone: "success
 export interface AIModel {
   id: string
   name: string
-  /** USD per 1M input / output tokens; images priced per image */
+  /** USD per 1M input / output tokens (list price, prompts up to 100K tokens); images priced per image */
   input: number
   output: number
   perImage?: number
   kind: "text" | "image"
+  /** where the price comes from */
+  source: string
 }
 
+/** Anthropic list prices, checked 29 Oct 2026 (platform.claude.com pricing). No caching or batch discount applied. */
+export const PRICES_CHECKED = "29 Oct 2026"
 export const AI_MODELS: AIModel[] = [
-  { id: "opus", name: "Claude Opus 5.5", input: 5, output: 25, kind: "text" },
-  { id: "sonnet", name: "Claude Sonnet 5.5", input: 3, output: 15, kind: "text" },
-  { id: "haiku", name: "Claude Haiku 5.5", input: 1, output: 5, kind: "text" },
-  { id: "image", name: "Image model", input: 0, output: 0, perImage: 0.04, kind: "image" },
+  { id: "opus", name: "Claude Opus 5.5", input: 4, output: 20, kind: "text", source: "Anthropic list price" },
+  { id: "sonnet", name: "Claude Sonnet 5.5", input: 2, output: 10, kind: "text", source: "Anthropic list price" },
+  { id: "haiku", name: "Claude Haiku 5.5", input: 0.1, output: 0.5, kind: "text", source: "Anthropic list price" },
+  { id: "image", name: "Image model", input: 0, output: 0, perImage: 0.04, kind: "image", source: "Placeholder — set your image provider's price" },
 ]
 
 export type AIStep = "brief" | "style" | "sitemap" | "page" | "edit" | "images" | "scan"
-export const AI_STEPS: { id: AIStep; label: string; help: string; kind: "text" | "image"; share: number; avgIn: number; avgOut: number }[] = [
-  { id: "brief", label: "Project brief", help: "Turns the first prompt into a brief", kind: "text", share: 0.06, avgIn: 2_000, avgOut: 800 },
-  { id: "style", label: "Design & style", help: "Four style options and hero previews", kind: "text", share: 0.12, avgIn: 5_000, avgOut: 3_000 },
-  { id: "sitemap", label: "Sitemap plan", help: "Pages and sections for the plan", kind: "text", share: 0.07, avgIn: 4_000, avgOut: 1_500 },
-  { id: "page", label: "Page build", help: "Writes each page's copy and layout", kind: "text", share: 0.44, avgIn: 12_000, avgOut: 6_000 },
-  { id: "edit", label: "Editor chat", help: "Changes asked for in the editor", kind: "text", share: 0.22, avgIn: 10_000, avgOut: 2_000 },
-  { id: "images", label: "Images", help: "Hero and section images", kind: "image", share: 0.05, avgIn: 0, avgOut: 0 },
-  { id: "scan", label: "Safety scan", help: "Checks published pages for risky claims", kind: "text", share: 0.04, avgIn: 6_000, avgOut: 300 },
+export interface AIStepInfo {
+  id: AIStep
+  label: string
+  help: string
+  kind: "text" | "image"
+  /** share of all runs, for the usage totals */
+  share: number
+  /** tokens per run: what we send (system prompt, brief, context) and what comes back */
+  avgIn: number
+  avgOut: number
+  /** images per run, for image steps */
+  images?: number
+  /** how many times the step runs in a first build, per page or once */
+  perBuild: "once" | "per page" | "none"
+}
+export const AI_STEPS: AIStepInfo[] = [
+  { id: "brief", label: "Project brief", help: "Turns the first prompt + web search into a brief", kind: "text", share: 0.06, avgIn: 6_000, avgOut: 1_500, perBuild: "once" },
+  { id: "style", label: "Design & style", help: "Four style options and their hero previews", kind: "text", share: 0.12, avgIn: 5_000, avgOut: 4_000, perBuild: "once" },
+  { id: "sitemap", label: "Sitemap plan", help: "Pages and sections for the plan", kind: "text", share: 0.07, avgIn: 6_000, avgOut: 1_500, perBuild: "once" },
+  { id: "page", label: "Page build", help: "Writes one page's copy and layout", kind: "text", share: 0.44, avgIn: 12_000, avgOut: 6_000, perBuild: "per page" },
+  { id: "edit", label: "Editor chat", help: "One change asked for in the editor", kind: "text", share: 0.22, avgIn: 10_000, avgOut: 2_000, perBuild: "none" },
+  { id: "images", label: "Images", help: "Hero and section images for one page", kind: "image", share: 0.05, avgIn: 0, avgOut: 0, images: 3, perBuild: "per page" },
+  { id: "scan", label: "Safety scan", help: "Checks one page for risky claims before publishing", kind: "text", share: 0.04, avgIn: 6_000, avgOut: 300, perBuild: "per page" },
 ]
 
 export const DEFAULT_ROUTING: Record<AIStep, string> = { brief: "haiku", style: "sonnet", sitemap: "sonnet", page: "opus", edit: "sonnet", images: "image", scan: "haiku" }
 
-export function stepCost(step: (typeof AI_STEPS)[number], modelId: string) {
+/** one run's cost split into input and output (images: per image) */
+export function stepBreakdown(step: AIStepInfo, modelId: string) {
   const m = AI_MODELS.find((x) => x.id === modelId)!
-  if (m.kind === "image") return (m.perImage ?? 0) * 3
-  return (step.avgIn * m.input + step.avgOut * m.output) / 1_000_000
+  if (m.kind === "image") return { input: 0, output: (m.perImage ?? 0) * (step.images ?? 1), total: (m.perImage ?? 0) * (step.images ?? 1) }
+  const input = (step.avgIn * m.input) / 1_000_000
+  const output = (step.avgOut * m.output) / 1_000_000
+  return { input, output, total: input + output }
+}
+
+export const stepCost = (step: AIStepInfo, modelId: string) => stepBreakdown(step, modelId).total
+
+/** what the agent spends building a whole site the first time (plan, style, sitemap, then every page) */
+export function firstBuildCost(routing: Record<AIStep, string>, pages: number) {
+  return AI_STEPS.reduce((n, s) => n + stepCost(s, routing[s.id]) * (s.perBuild === "once" ? 1 : s.perBuild === "per page" ? pages : 0), 0)
 }
 
 /** generations per day for the last 30 days, oldest first */
