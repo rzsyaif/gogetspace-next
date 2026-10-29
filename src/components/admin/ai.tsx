@@ -150,7 +150,7 @@ export function AIUsagePage() {
             })}
           </TableBody>
         </Table>
-        <p className="type-caption text-fg-tertiary">Free websites above 100% usually mean someone regenerating over and over — check Moderation before granting more.</p>
+        <p className="type-caption text-fg-tertiary">Free websites above 100% usually mean someone regenerating over and over — check their feedback and failed builds before granting more.</p>
       </section>
 
       <PanelSection title="Recent generations">

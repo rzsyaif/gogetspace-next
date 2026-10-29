@@ -5,6 +5,10 @@ import { AnimatePresence, motion } from "motion/react"
 import {
   ArrowUpRight,
   Building2,
+  CircleCheck,
+  Frown,
+  Meh,
+  Smile,
   Check,
   ChevronDown,
   FileText,
@@ -19,10 +23,13 @@ import {
   X,
   Zap,
 } from "lucide-react"
-import { Alert, Badge, Button, Chip, Step, StepList } from "@/components/ui"
+import { Alert, Badge, Button, Checkbox, Chip, Field, Input, Step, StepList, Textarea } from "@/components/ui"
 import { cn } from "@/lib/cn"
 import { flatten } from "@/lib/bakti/sitemap"
-import { BUSINESS_MATCHES, SEARCH_QUERY, SEARCH_RESULTS, type ArtifactKey, type Msg, type Run, type Task } from "@/lib/generation/state"
+import { BUSINESS_MATCHES, SEARCH_QUERY, SEARCH_RESULTS, type ArtifactKey, type FeedbackAnswer, type Msg, type Run, type Task } from "@/lib/generation/state"
+import { RATING, type Rating } from "@/lib/admin/data"
+import { submitFeedback } from "@/lib/admin/store"
+import { useEditorSite } from "./editor-site"
 import { useGen } from "./gen-provider"
 
 export const ARTIFACTS: { key: ArtifactKey; title: string; Icon: typeof FileText }[] = [
@@ -70,6 +77,8 @@ function Block({ m, compact }: { m: Msg; compact?: boolean }) {
       return <BuildBlock run={s.runs[m.runId]} />
     case "credits-out":
       return <CreditsOut resolved={m.resolved} />
+    case "feedback":
+      return <FeedbackCard id={m.id} answer={m.answer} compact={compact} />
   }
 }
 
@@ -384,5 +393,127 @@ function CreditsOut({ resolved }: { resolved?: "upgrade" | "stop" }) {
         <Button size="sm" variant="secondary" onClick={() => dispatch({ type: "creditsStop" })}>Stop here</Button>
       </div>
     </Alert>
+  )
+}
+
+/* ---------------- feedback after the first build ---------------- */
+
+const RATINGS: { value: Rating; Icon: typeof Smile }[] = [
+  { value: "good", Icon: Smile },
+  { value: "fine", Icon: Meh },
+  { value: "bad", Icon: Frown },
+]
+
+/**
+ * Asked once, right after the first build: Good / Fine / Bad, a follow-up based on the answer, and whether we may
+ * contact them for research. Answers go to the admin console's Feedback page.
+ */
+function FeedbackCard({ id, answer, compact }: { id: string; answer?: FeedbackAnswer | "skipped"; compact?: boolean }) {
+  const { s, dispatch } = useGen()
+  const { site } = useEditorSite()
+  const [rating, setRating] = useState<Rating | null>(null)
+  const [tags, setTags] = useState<string[]>([])
+  const [comment, setComment] = useState("")
+  const [research, setResearch] = useState(false)
+  const [email, setEmail] = useState("")
+  const emailOk = !!s.account || /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())
+
+  if (answer === "skipped") return null
+  if (answer)
+    return (
+      <p className="flex items-start gap-2 type-body-sm text-fg-secondary">
+        <CircleCheck className="mt-0.5 size-4 shrink-0 text-status-success-text" />
+        <span>
+          Thanks for the feedback — you rated it <span className="text-fg-primary">{RATING[answer.rating].label}</span>.
+          {answer.research ? " Our research team will email you to find a time." : ""}
+        </span>
+      </p>
+    )
+
+  const send = () => {
+    if (!rating) return
+    const a: FeedbackAnswer = { rating, tags, comment: comment.trim(), research, email: s.account?.email ?? (email.trim() || null) }
+    submitFeedback({
+      clientId: null,
+      name: s.account?.name ?? "Not signed up",
+      email: a.email,
+      siteName: site.name,
+      siteId: null,
+      rating: a.rating,
+      tags: a.tags,
+      comment: a.comment,
+      research: a.research,
+    })
+    dispatch({ type: "feedback", id, answer: a })
+  }
+
+  return (
+    <section aria-label="Rate your website" className={cn("flex flex-col gap-4 rounded-lg border border-line-default bg-surface p-4 shadow-[0_2px_0_0_var(--color-shadow-block)] sm:p-5", !compact && "sm:mr-20")}>
+      <div className="flex flex-col gap-1">
+        <h3 className="type-label-lg text-fg-primary">How did your website turn out?</h3>
+        <p className="type-body-sm text-fg-secondary">Takes a few seconds, and helps us build better sites for practices like yours.</p>
+      </div>
+      <div role="radiogroup" aria-label="Rating" className="flex flex-wrap gap-2">
+        {RATINGS.map(({ value, Icon }) => (
+          <Chip
+            key={value}
+            role="radio"
+            aria-checked={rating === value}
+            aria-pressed={undefined}
+            selected={rating === value}
+            icon={<Icon />}
+            onClick={() => {
+              if (rating !== value) setTags([])
+              setRating(value)
+            }}
+          >
+            {RATING[value].label}
+          </Chip>
+        ))}
+      </div>
+
+      {rating && (
+        <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} className="flex flex-col gap-4">
+          <fieldset className="flex flex-col gap-2">
+            <legend className="mb-2 type-label-md text-fg-primary">{RATING[rating].question}</legend>
+            <div className="flex flex-wrap gap-2">
+              {RATING[rating].tags.map((t) => (
+                <Chip key={t} selected={tags.includes(t)} onClick={() => setTags((x) => (x.includes(t) ? x.filter((y) => y !== t) : [...x, t]))} className="h-8 px-2.5 type-body-sm">
+                  {t}
+                </Chip>
+              ))}
+            </div>
+          </fieldset>
+          <Field label="Anything else? (optional)">
+            <Textarea
+              rows={2}
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder={rating === "bad" ? "e.g. the opening hours are wrong" : rating === "fine" ? "e.g. I'd like our own photos" : "e.g. the services page is spot on"}
+            />
+          </Field>
+          <Checkbox
+            label="You can contact me for research"
+            description="A 20-minute video call about how you use GoGetSpace, at a time that suits you. We'll send an RM50 voucher as thanks."
+            checked={research}
+            onCheckedChange={(c) => setResearch(c === true)}
+          />
+          {research && !s.account && (
+            <Field label="Email" helper={email && !emailOk ? "That doesn't look like an email yet" : "Only used to set up the call"}>
+              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@yourpractice.com" autoComplete="email" />
+            </Field>
+          )}
+        </motion.div>
+      )}
+
+      <div className="flex flex-wrap items-center gap-3">
+        <Button size="sm" disabled={!rating || (research && !emailOk)} onClick={send}>
+          Send feedback
+        </Button>
+        <Button size="sm" variant="ghost" onClick={() => dispatch({ type: "feedback", id, answer: "skipped" })}>
+          Not now
+        </Button>
+      </div>
+    </section>
   )
 }

@@ -5,14 +5,13 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import {
   Activity,
-  ArrowLeft,
   Globe,
   LayoutDashboard,
   Link2,
   Menu,
   ScrollText,
   Search,
-  ShieldAlert,
+  MessageSquareHeart,
   SlidersHorizontal,
   Sparkles,
   UserCog,
@@ -103,7 +102,7 @@ function MobileBar() {
   )
 }
 
-const GROUPS: { label?: string; items: { href: string; label: string; icon: ReactNode; badge?: "reports" | "past_due" | "system" | "dns" }[] }[] = [
+const GROUPS: { label?: string; items: { href: string; label: string; icon: ReactNode; badge?: "research" | "past_due" | "system" | "dns" }[] }[] = [
   { items: [{ href: "/admin", label: "Overview", icon: <LayoutDashboard /> }] },
   {
     label: "Customers",
@@ -123,7 +122,7 @@ const GROUPS: { label?: string; items: { href: string; label: string; icon: Reac
     label: "Platform",
     items: [
       { href: "/admin/ai", label: "AI usage", icon: <Sparkles /> },
-      { href: "/admin/moderation", label: "Moderation", icon: <ShieldAlert />, badge: "reports" },
+      { href: "/admin/feedback", label: "Feedback", icon: <MessageSquareHeart />, badge: "research" },
       { href: "/admin/system", label: "System", icon: <Activity />, badge: "system" },
     ],
   },
@@ -139,9 +138,9 @@ const GROUPS: { label?: string; items: { href: string; label: string; icon: Reac
 
 function AdminNav({ onNavigate }: { onNavigate?: () => void }) {
   const path = usePathname()
-  const { reports, subscriptions, domains } = useAdmin()
+  const { feedback, subscriptions, domains } = useAdmin()
   const counts = {
-    reports: reports.filter((r) => r.status === "open").length,
+    research: feedback.filter((f) => f.research && f.researchStatus === "new").length,
     past_due: subscriptions.filter((s) => s.status === "past_due").length,
     dns: domains.filter((d) => d.health !== "active").length,
     system: SERVICES.filter((s) => s.status !== "operational").length,
@@ -166,7 +165,7 @@ function AdminNav({ onNavigate }: { onNavigate?: () => void }) {
                   className="[&_svg]:size-5"
                   trailing={
                     n > 0 ? (
-                      <Badge tone={it.badge === "reports" || it.badge === "system" ? "error" : "warning"} dot={false} aria-label={`${n} need attention`}>
+                      <Badge tone={it.badge === "system" ? "error" : it.badge === "research" ? "brand" : "warning"} dot={false} aria-label={it.badge === "research" ? `${n} open to research, not invited yet` : `${n} need attention`}>
                         {it.badge === "system" ? "Degraded" : n}
                       </Badge>
                     ) : undefined
@@ -177,8 +176,7 @@ function AdminNav({ onNavigate }: { onNavigate?: () => void }) {
           </div>
         ))}
       </div>
-      <div className="flex flex-col gap-1 border-t border-line-default p-2">
-        <NavItem href="/dashboard" icon={<ArrowLeft />} label="Client dashboard" onClick={onNavigate} className="[&_svg]:size-5" />
+      <div className="flex flex-col border-t border-line-default p-2">
         <div className="flex items-center gap-3 p-2">
           <Avatar name={ME.name} size="sm" />
           <span className="flex min-w-0 flex-1 flex-col">

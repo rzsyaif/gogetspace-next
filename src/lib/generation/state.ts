@@ -62,6 +62,16 @@ export type Msg =
   | { id: string; type: "refused" }
   | { id: string; type: "build"; runId: number }
   | { id: string; type: "credits-out"; resolved?: "upgrade" | "stop" }
+  /** "How did it turn out?" card after the first build; `answer` once sent or skipped */
+  | { id: string; type: "feedback"; answer?: FeedbackAnswer | "skipped" }
+
+export interface FeedbackAnswer {
+  rating: "good" | "fine" | "bad"
+  tags: string[]
+  comment: string
+  research: boolean
+  email: string | null
+}
 
 export type ArtifactStatus = "awaiting" | "confirmed" | "stale"
 export type ArtifactKey = "brief" | "style" | "sitemap"
@@ -218,6 +228,7 @@ export type Action =
   | { type: "signOut" }
   | { type: "agentNote"; text: string }
   | { type: "published"; domain: string }
+  | { type: "feedback"; id: string; answer: FeedbackAnswer | "skipped" }
   | { type: "jump"; to: JumpTarget; scenario?: Scenario; plan?: Plan }
 
 export type JumpTarget = "generating" | "ready" | "review-brief" | "review-style" | "review-sitemap" | "creating" | "built" | "published"
@@ -496,6 +507,8 @@ export function reducer(s: GenState, a: Action): GenState {
       return push(s, { type: "agent", text: a.text })
     case "published":
       return { ...s, publish: { status: "live", domain: a.domain } }
+    case "feedback":
+      return { ...s, msgs: s.msgs.map((m) => (m.id === a.id && m.type === "feedback" ? { ...m, answer: a.answer } : m)) }
 
     case "jump":
       return jump(a.scenario ? { ...s, scenario: a.scenario } : s, a.to, a.plan)
@@ -515,6 +528,8 @@ function finishBuild(s: GenState): GenState {
   text += " Have a look around the preview, then publish when you're happy."
   let n = push(s, { type: "agent", text })
   for (const q of s.queued) n = push(n, { type: "agent", text: `Done — I've applied your note: “${q}”.` })
+  // ask how it went once, after the first build only
+  if (!n.msgs.some((m) => m.type === "feedback")) n = push(n, { type: "feedback" })
   return { ...n, queued: [] }
 }
 
@@ -553,5 +568,7 @@ export { nextId }
 export function siteState(opts: { prompt: string; plan: Plan; live: boolean; built: boolean; account: { name: string; email: string }; domain: string; credits: number }): GenState {
   const base = initialState(opts.prompt, "happy")
   const n = opts.built ? reducer(base, { type: "jump", to: opts.live ? "published" : "built", plan: opts.plan }) : reducer(base, { type: "jump", to: "ready" })
-  return { ...n, plan: opts.plan, credits: opts.credits, account: opts.account, publish: { status: opts.live ? "live" : "idle", domain: opts.domain } }
+  // existing websites were rated (or skipped) back when they were first built
+  const msgs = n.msgs.map((m) => (m.type === "feedback" ? { ...m, answer: "skipped" as const } : m))
+  return { ...n, msgs, plan: opts.plan, credits: opts.credits, account: opts.account, publish: { status: opts.live ? "live" : "idle", domain: opts.domain } }
 }
