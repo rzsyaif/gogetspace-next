@@ -2,11 +2,11 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Check, CreditCard } from "lucide-react"
-import { Alert, Badge, Button, Dialog, DialogContent, ProgressBar } from "@/components/ui"
+import { CalendarClock, Check, CreditCard } from "lucide-react"
+import { Alert, Badge, Button, Dialog, ProgressBar } from "@/components/ui"
 import { cn } from "@/lib/cn"
 import { PLANS, PLAN_RANK, planInfo, type Plan } from "@/lib/plans"
-import { ACCOUNT } from "@/lib/account/data"
+import { PlanChangeDialog } from "./plan-change"
 import { PanelHeader, PanelSection } from "./panel"
 
 export interface PlanUsage {
@@ -28,22 +28,24 @@ export function PlanPanel({
   siteName,
   plan,
   usage,
+  billing,
   onChange,
   onManageDomain,
 }: {
   siteName: string
   plan: Plan
   usage: PlanUsage
-  onChange: (p: Plan) => void
+  billing: { billed: boolean; scheduled?: { plan: Plan; on: string }; schedule: (p: Plan) => void; cancelScheduled: () => void }
+  /** switch now; `charge` is what the upgrade cost today */
+  onChange: (p: Plan, charge?: number) => void
   /** open the editor's Domain tab */
   onManageDomain: () => void
 }) {
   const [pick, setPick] = useState<Plan | null>(null)
-  const [done, setDone] = useState<Plan | null>(null)
+  const [done, setDone] = useState<{ plan: Plan; text: string } | null>(null)
   const current = planInfo(plan)
   const pageLimit = current.pages === Infinity ? usage.pagesPlanned : Math.min(current.pages, usage.pagesPlanned)
-  const target = pick ? planInfo(pick) : null
-  const upgrade = pick ? PLAN_RANK[pick] > PLAN_RANK[plan] : false
+  const scheduled = billing.scheduled
 
   return (
     <div className="flex flex-col gap-6">
@@ -61,9 +63,34 @@ export function PlanPanel({
         }
       />
 
-      {done && (
-        <Alert tone="success" size="sm" title={`${siteName} is now on ${planInfo(done).name}`} onDismiss={() => setDone(null)}>
-          {PLAN_RANK[done] > 0 ? "New pages and features are ready to use — ask the agent to build the pages that were waiting." : "The change applies at the end of the current billing period."}
+      {done && done.plan === plan && (
+        <Alert tone="success" size="sm" title={done.text} onDismiss={() => setDone(null)}>
+          {PLAN_RANK[done.plan] > 0
+              ? "New pages and features are ready to use — ask the agent to build the pages that were waiting."
+              : "Your website is on Free now."}
+        </Alert>
+      )}
+
+      {scheduled && (
+        <Alert
+          tone="warning"
+          size="sm"
+          icon={<CalendarClock />}
+          title={`Moves to ${planInfo(scheduled.plan).name} on ${scheduled.on}`}
+          actions={
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                billing.cancelScheduled()
+                setDone(null)
+              }}
+            >
+              Keep {current.name}
+            </Button>
+          }
+        >
+          {siteName} keeps {current.name} until then{planInfo(scheduled.plan).price ? `, then it's ${planInfo(scheduled.plan).priceLabel} a month` : " and isn't charged after that"}.
         </Alert>
       )}
 
@@ -130,14 +157,15 @@ export function PlanPanel({
               <div className="flex items-center gap-2">
                 <h3 className="flex-1 type-h5 text-fg-primary">{p.name}</h3>
                 {isCurrent && <Badge tone="brand">Current</Badge>}
+                {scheduled?.plan === p.id && <Badge tone="warning">From {scheduled.on.replace(/ \d{4}$/, "")}</Badge>}
               </div>
               <p className="-mt-3 type-body-sm text-fg-secondary">{p.desc}</p>
               <p className="flex items-end gap-2">
                 <span className="type-h3 text-fg-primary">{p.priceLabel}</span>
                 <span className="pb-1 type-body-sm text-fg-secondary">{p.period}</span>
               </p>
-              <Button variant={isCurrent ? "secondary" : PLAN_RANK[p.id] > PLAN_RANK[plan] ? "primary" : "secondary"} disabled={isCurrent} onClick={() => setPick(p.id)}>
-                {isCurrent ? "Current plan" : PLAN_RANK[p.id] > PLAN_RANK[plan] ? `Upgrade to ${p.name}` : `Switch to ${p.name}`}
+              <Button variant={isCurrent ? "secondary" : PLAN_RANK[p.id] > PLAN_RANK[plan] ? "primary" : "secondary"} disabled={isCurrent || scheduled?.plan === p.id} onClick={() => setPick(p.id)}>
+                {isCurrent ? "Current plan" : scheduled?.plan === p.id ? "Scheduled" : PLAN_RANK[p.id] > PLAN_RANK[plan] ? `Upgrade to ${p.name}` : `Switch to ${p.name}`}
               </Button>
               <ul className="flex flex-col gap-2.5">
                 {p.features.map((f) => (
@@ -155,28 +183,25 @@ export function PlanPanel({
       </ul>
 
       <Dialog open={pick !== null} onOpenChange={(o) => !o && setPick(null)}>
-        {target && (
-          <DialogContent
-            title={upgrade ? `Upgrade ${siteName} to ${target.name}?` : `Switch ${siteName} to ${target.name}?`}
-            description={
-              upgrade
-                ? `${target.priceLabel} a month, charged to ${ACCOUNT.card.brand} •••• ${ACCOUNT.card.last4}. It starts today; this month you only pay the difference. Your other websites keep their own plans.`
-                : `${siteName} keeps ${current.name} until the end of this billing period, then moves to ${target.name}.${target.pages < usage.pagesBuilt ? ` Only ${target.pages === 1 ? "the homepage stays" : `${target.pages} pages stay`} published.` : ""}`
-            }
-            footer={
-              <>
-                <Button variant="secondary" onClick={() => setPick(null)}>Cancel</Button>
-                <Button
-                  onClick={() => {
-                    onChange(target.id)
-                    setDone(target.id)
-                    setPick(null)
-                  }}
-                >
-                  {upgrade ? `Upgrade for ${target.priceLabel}/mo` : `Switch to ${target.name}`}
-                </Button>
-              </>
-            }
+        {pick && (
+          <PlanChangeDialog
+            siteName={siteName}
+            from={plan}
+            to={pick}
+            usage={usage}
+            billed={billing.billed}
+            onCancel={() => setPick(null)}
+            onConfirm={(q) => {
+              const name = planInfo(pick).name
+              if (q.startsNow) {
+                onChange(pick, q.dueToday)
+                setDone({ plan: pick, text: `${siteName} is now on ${name}` })
+              } else {
+                billing.schedule(pick)
+                setDone(null)
+              }
+              setPick(null)
+            }}
           />
         )}
       </Dialog>

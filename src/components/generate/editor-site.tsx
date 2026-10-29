@@ -16,8 +16,10 @@ export interface EditorSite {
   mode: "flow" | "site"
   site: Site
   plan: Plan
-  setPlan: (p: Plan) => void
+  setPlan: (p: Plan, charge?: number) => void
   usage: PlanUsage
+  /** how plan changes are billed: "site" pays monthly per website; a site still being created pays at publish */
+  billing: { billed: boolean; scheduled?: { plan: Plan; on: string }; schedule: (p: Plan) => void; cancelScheduled: () => void }
 }
 
 const Ctx = createContext<EditorSite | null>(null)
@@ -56,6 +58,7 @@ export function FlowSiteProvider({ children }: { children: ReactNode }) {
         plan: s.plan,
         setPlan: (plan) => dispatch({ type: "plan", plan }),
         usage: { pagesBuilt: built, pagesPlanned: pages.length, creditsUsed: s.credits, customDomain: false, domain: null, freeDomain: s.publish.domain },
+        billing: { billed: false, schedule: (plan) => dispatch({ type: "plan", plan }), cancelScheduled: () => {} },
       }}
     >
       {children}
@@ -73,8 +76,14 @@ export function AccountSiteProvider({ siteId, children }: { siteId: string; chil
         mode: "site",
         site,
         plan: site.plan,
-        setPlan: (plan) => accountActions.setPlan(site.id, plan),
+        setPlan: (plan, charge) => accountActions.setPlan(site.id, plan, charge),
         usage: { pagesBuilt: site.pagesBuilt, pagesPlanned: site.pagesPlanned, creditsUsed: site.creditsUsed, customDomain: site.domain?.status === "connected", domain: site.domain, freeDomain: site.freeDomain, renews: site.renews },
+        billing: {
+          billed: true,
+          scheduled: site.scheduledPlan,
+          schedule: (plan) => accountActions.schedulePlan(site.id, plan),
+          cancelScheduled: () => accountActions.cancelScheduledPlan(site.id),
+        },
       }}
     >
       {children}

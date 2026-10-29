@@ -66,8 +66,8 @@ export function useSite(id: string) {
 const MONTH = new Intl.DateTimeFormat("en-GB", { month: "long" })
 
 export const accountActions = {
-  /** each website has its own plan; upgrading bills the difference today */
-  setPlan(siteId: string, plan: Plan) {
+  /** each website has its own plan; upgrading starts today and bills `charge` (the prorated difference) */
+  setPlan(siteId: string, plan: Plan, charge?: number) {
     const s = read()
     const site = s.sites.find((x) => x.id === siteId)
     if (!site || site.plan === plan) return
@@ -79,8 +79,8 @@ export const accountActions = {
               id: `INV-${siteId.slice(0, 4).toUpperCase()}-${s.invoices.length + 1}`,
               date: "Today",
               siteId,
-              description: `${info.name} plan · ${MONTH.format(new Date())}`,
-              amount: info.price,
+              description: `${info.name} plan${charge !== undefined && charge !== info.price ? " · prorated upgrade" : ""} · ${MONTH.format(new Date())}`,
+              amount: charge ?? info.price,
               status: "paid" as const,
             },
             ...s.invoices,
@@ -89,8 +89,17 @@ export const accountActions = {
     write({
       ...s,
       invoices,
-      sites: s.sites.map((x) => (x.id === siteId ? { ...x, plan, renews: info.price > 0 ? x.renews ?? "28 Nov 2026" : undefined } : x)),
+      sites: s.sites.map((x) => (x.id === siteId ? { ...x, plan, scheduledPlan: undefined, renews: info.price > 0 ? x.renews ?? "29 Nov 2026" : undefined } : x)),
     })
+  },
+  /** downgrades wait for the end of the period that's already paid for */
+  schedulePlan(siteId: string, plan: Plan) {
+    const s = read()
+    write({ ...s, sites: s.sites.map((x) => (x.id === siteId && x.renews ? { ...x, scheduledPlan: { plan, on: x.renews } } : x)) })
+  },
+  cancelScheduledPlan(siteId: string) {
+    const s = read()
+    write({ ...s, sites: s.sites.map((x) => (x.id === siteId ? { ...x, scheduledPlan: undefined } : x)) })
   },
   setEnquiryStatus(id: string, status: EnquiryStatus) {
     const s = read()
