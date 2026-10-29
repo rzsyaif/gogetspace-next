@@ -77,6 +77,7 @@ App components built for the generation flow (also on `/styleguide` → App patt
 - **Drawer** — side panel (phone menus in the editor and the dashboard)
 - **RadioCard** / **RadioDot** — bordered radio choices (publish domain, style options)
 - **Accordion** (`Accordion`, `AccordionItem`, `AccordionTrigger`, `AccordionContent`) — bordered collapsible sections
+- **CopyField** — monospace value with a copy button (DNS records, keys)
 - **Table** (`Table`, `TableHead`, `TableBody`, `TableRow`, `TableHeaderCell`, `TableCell`, `TableEmpty`) — bordered data table that scrolls sideways on phones
 - **Stepper** — horizontal stepper (review sheet footer, Buy a domain); reached steps can be clickable
 - **NavItem** — sidebar/menu row used by the dashboard sidebar and the editor's phone menu
@@ -171,6 +172,9 @@ statuses and invoices in sessionStorage so the dashboard and the editor stay in 
 - `/sites/[id]`: the editor on its own. The rail adds **Analytics**, **Enquiries** and **Plan**, which open full-width
   pages (`components/account`); the logo goes back to the dashboard and the site picker switches websites. Drafts
   that haven't been built show where planning stopped. The editor at the end of `/generate` is the same component.
+- Connecting a domain bought elsewhere (editor Domain tab, or Dashboard → Domains) is a 3-step dialog
+  (`account/connect-domain.tsx`): domain + provider → the A/CNAME records with copy buttons and where that provider
+  keeps DNS settings → a check that can finish as "Waiting for DNS". Subdomains get a single CNAME.
 - Domains: buy one from Dashboard → Domains (search → duration → payment, optionally pointed at a website). Bought
   domains that aren't used appear in the editor's Domain tab under "Connect a domain you own" and connect without DNS
   steps; domains bought elsewhere still go through DNS. The editor's Plan tab shows the plan (8 columns) beside a

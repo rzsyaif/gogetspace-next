@@ -102,15 +102,15 @@ export function Stepper({ steps, label, onSelect, className }: { steps: StepperS
               {st.title}
             </span>
             {st.caption && (
-              <span className={cn("type-caption", tone === "success" ? "text-status-success-text" : tone === "warning" ? "text-status-warning-text" : "text-fg-tertiary")}>
+              <span className={cn("max-w-full truncate type-caption", tone === "success" ? "text-status-success-text" : tone === "warning" ? "text-status-warning-text" : "text-fg-tertiary")}>
                 {st.caption}
               </span>
             )}
           </>
         )
-        const box = cn("flex flex-1 flex-col items-start border-t py-3 text-left", reached ? "border-action-primary" : "border-line-default")
+        const box = cn("flex min-w-0 flex-1 flex-col items-start border-t py-3 text-left", reached ? "border-action-primary" : "border-line-default")
         return (
-          <li key={st.title} className="flex flex-1 items-start" aria-current={st.state === "current" ? "step" : undefined}>
+          <li key={st.title} className="flex min-w-0 flex-1 items-start" aria-current={st.state === "current" ? "step" : undefined}>
             {onSelect ? (
               <button type="button" onClick={() => onSelect(i)} className={cn(box, "focus-visible:outline-none focus-visible:focus-ring")}>
                 {inner}

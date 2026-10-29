@@ -3,7 +3,8 @@
 import { useState } from "react"
 import Link from "next/link"
 import { CircleCheck, Globe, Link2, ShoppingCart } from "lucide-react"
-import { Alert, Badge, Button, Field, Input, RadioCard } from "@/components/ui"
+import { ConnectDomainDialog } from "./connect-domain"
+import { Alert, Badge, Button, RadioCard } from "@/components/ui"
 import { planInfo } from "@/lib/plans"
 import { accountActions, useAccountState } from "@/lib/account/store"
 import { useEditorSite } from "@/components/generate/editor-site"
@@ -18,23 +19,21 @@ export function DomainPanel({ onOpenPlan }: { onOpenPlan: () => void }) {
   const { domains } = useAccountState()
   const [open, setOpen] = useState(false)
   const [choice, setChoice] = useState<string>("")
-  const [other, setOther] = useState("")
+  const [external, setExternal] = useState<null | { at: "domain" | "records"; domain?: string }>(null)
   // the site being created in /generate isn't in the account yet: remember the choice until it's published
-  const [draftDomain, setDraftDomain] = useState<string | null>(null)
+  const [draftDomain, setDraftDomain] = useState<{ name: string; status: "connected" | "pending" } | null>(null)
   const unused = domains.filter((d) => d.siteId === null)
   const allowed = planInfo(plan).customDomain
-  const connected = mode === "site" ? site.domain : draftDomain ? { name: draftDomain, status: "connected" as const } : null
+  const connected = mode === "site" ? site.domain : draftDomain
   const live = site.status === "live"
-  const otherOk = /^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(other.trim())
   const picked = choice || unused[0]?.name || ""
 
-  const connect = (name: string, ownedHere: boolean) => {
+  const connect = (name: string, ownedHere: boolean, status: "connected" | "pending" = "connected") => {
     if (mode === "site") {
       if (ownedHere) accountActions.assignDomain(site.id, name)
-      else accountActions.connectDomain(site.id, name.toLowerCase())
-    } else setDraftDomain(name.toLowerCase())
+      else accountActions.connectDomain(site.id, name.toLowerCase(), status)
+    } else setDraftDomain({ name: name.toLowerCase(), status })
     setOpen(false)
-    setOther("")
   }
 
   return (
@@ -46,8 +45,13 @@ export function DomainPanel({ onOpenPlan }: { onOpenPlan: () => void }) {
           label="Your domain"
           value={connected.name}
           trailing={<Badge tone={connected.status === "connected" ? "success" : "warning"}>{connected.status === "connected" ? "Connected" : "Waiting for DNS"}</Badge>}
-          meta={connected.status === "pending" ? "Add an A record (76.76.21.21) and a CNAME for www (cname.get.space) where you bought it." : undefined}
+          meta={connected.status === "pending" ? `The site stays on ${site.freeDomain} until the DNS records are found. We check every few minutes.` : undefined}
         >
+          {connected.status === "pending" && (
+            <Button size="sm" variant="secondary" className="mt-2 self-start" onClick={() => setExternal({ at: "records", domain: connected.name })}>
+              See DNS steps & check
+            </Button>
+          )}
           <Button size="sm" variant="link" className="mt-1 self-start" onClick={() => (mode === "site" ? accountActions.disconnectDomain(site.id) : setDraftDomain(null))}>
             Disconnect
           </Button>
@@ -83,25 +87,28 @@ export function DomainPanel({ onOpenPlan }: { onOpenPlan: () => void }) {
               <span className="type-caption text-fg-tertiary">Bought through GoGetSpace, so it works within minutes — no DNS steps.</span>
             </fieldset>
           )}
-          <form
-            className="flex flex-col gap-2"
-            onSubmit={(e) => {
-              e.preventDefault()
-              if (otherOk) connect(other.trim(), false)
-            }}
-          >
-            <Field label={unused.length ? "Or one you bought elsewhere" : "A domain you bought elsewhere"} helper={other && !otherOk ? "e.g. baktianalisa.com.my" : undefined}>
-              <Input value={other} onChange={(e) => setOther(e.target.value)} placeholder="yourpractice.com" leadingIcon={<Globe />} />
-            </Field>
-            <Button type="submit" variant="secondary" disabled={!otherOk}>
-              Connect
+          <div className="flex flex-col gap-2">
+            <p className="type-label-md text-fg-secondary">{unused.length ? "Or one you bought elsewhere" : "A domain you bought elsewhere"}</p>
+            <Button variant="secondary" leadingIcon={<Globe />} onClick={() => setExternal({ at: "domain" })}>
+              Connect a domain from another provider
             </Button>
-          </form>
+            <span className="type-caption text-fg-tertiary">Exabytes, GoDaddy, Namecheap, Cloudflare and others. We&apos;ll walk you through the two DNS records to add.</span>
+          </div>
           <Button variant="ghost" size="sm" className="self-start" onClick={() => setOpen(false)}>
             Cancel
           </Button>
         </PanelSection>
       )}
+
+      <ConnectDomainDialog
+        open={external !== null}
+        onOpenChange={(o) => !o && setExternal(null)}
+        siteName={site.name}
+        freeDomain={site.freeDomain}
+        initialDomain={external?.domain}
+        startAt={external?.at}
+        onConnect={(name, status) => connect(name, false, status)}
+      />
 
       <Button asChild variant="ghost" leadingIcon={<ShoppingCart />} className="self-start">
         <Link href={`/dashboard/domains?buy=1${mode === "site" ? `&site=${site.id}` : ""}`}>Buy a new domain</Link>
