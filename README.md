@@ -76,6 +76,7 @@ App components built for the generation flow (also on `/styleguide` → App patt
 - **PromptBox**, **PromptAttachButton**, **PromptSendButton**, **AttachmentChip** — the chat and "create your own style" boxes
 - **Drawer** — side panel (phone menus in the editor and the dashboard)
 - **RadioCard** / **RadioDot** — bordered radio choices (publish domain, style options)
+- **Accordion** (`Accordion`, `AccordionItem`, `AccordionTrigger`, `AccordionContent`) — bordered collapsible sections
 - **Table** (`Table`, `TableHead`, `TableBody`, `TableRow`, `TableHeaderCell`, `TableCell`, `TableEmpty`) — bordered data table that scrolls sideways on phones
 - **Stepper** — horizontal stepper (review sheet footer, Buy a domain); reached steps can be clickable
 - **NavItem** — sidebar/menu row used by the dashboard sidebar and the editor's phone menu
@@ -101,7 +102,7 @@ import { Button, Field, Input } from "@/components/ui"
 ### Copying components into another project
 
 `/styleguide` has a **Setup** section (the npm install line plus `tokens.css`, `globals.css`, `cn.ts` and `fonts.ts`,
-each with a copy button) and a **Code** panel under every group of components: **Usage** gives the import and
+each collapsed until opened, with a copy button) and a collapsed **Code** panel under every group of components: **Usage** gives the import and
 example JSX, **Source** gives the whole component file (read from `src/` at build time, so it never drifts) and lists
 what it depends on. Usage snippets live in `src/app/styleguide/snippets.ts` — update them when a component's props
 change.
