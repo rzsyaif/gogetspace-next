@@ -336,7 +336,9 @@ export function BillingPage() {
                   <SiteMark site={s} className="size-8" />
                   <span className="flex min-w-0 flex-col">
                     <span className="truncate type-label-md text-fg-primary">{s.name}</span>
-                    <span className="type-body-sm text-fg-tertiary">{p.price ? `Renews ${s.renews ?? "next month"}` : "No charge"}</span>
+                    <span className={s.scheduledPlan ? "type-body-sm text-status-warning-text" : "type-body-sm text-fg-tertiary"}>
+                      {s.scheduledPlan ? `Moves to ${planInfo(s.scheduledPlan.plan).name} on ${s.scheduledPlan.on}` : p.price ? `Renews ${s.renews ?? "next month"}` : "No charge"}
+                    </span>
                   </span>
                 </span>
                 <span className="flex items-center justify-between gap-4 pl-11 sm:w-[300px] sm:justify-end sm:pl-0">

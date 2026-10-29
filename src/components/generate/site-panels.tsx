@@ -12,12 +12,12 @@ import type { Tab } from "./workspace"
 
 /** The editor's full-width tabs: Analytics, Enquiries and Plan for the open website. */
 export function SitePanel({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) {
-  const { site, plan, setPlan, usage } = useEditorSite()
+  const { site, plan, setPlan, usage, billing } = useEditorSite()
   return (
     <PanelPage>
       {tab === "analytics" && <AnalyticsPanel site={site} plan={plan} onUpgrade={() => onTab("plan")} />}
       {tab === "enquiries" && <EnquiriesPanel siteId={site.id} live={site.status === "live"} />}
-      {tab === "plan" && <PlanPanel siteName={site.name} plan={plan} usage={usage} onChange={setPlan} onManageDomain={() => onTab("domain")} />}
+      {tab === "plan" && <PlanPanel siteName={site.name} plan={plan} usage={usage} billing={billing} onChange={setPlan} onManageDomain={() => onTab("domain")} />}
     </PanelPage>
   )
 }

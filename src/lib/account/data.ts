@@ -44,6 +44,8 @@ export interface Site {
   creditsUsed: number
   /** next renewal for paid plans */
   renews?: string
+  /** a downgrade waiting for the end of the paid period */
+  scheduledPlan?: { plan: Plan; on: string }
 }
 
 export const SITES: Site[] = [

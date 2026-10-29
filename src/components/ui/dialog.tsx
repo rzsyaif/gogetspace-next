@@ -47,7 +47,7 @@ export function DialogContent({
           </D.Close>
         </div>
         {children && <div className="flex flex-col gap-4 px-6 pb-2 pt-4">{children}</div>}
-        {footer && <div className="flex justify-end gap-3 p-6">{footer}</div>}
+        {footer && <div className="sticky bottom-0 flex justify-end gap-3 bg-surface-raised p-6">{footer}</div>}
       </D.Content>
     </D.Portal>
   )
