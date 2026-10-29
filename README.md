@@ -31,7 +31,7 @@ Routes:
 | `/dashboard` | Account home: new-site prompt and all websites; also `/websites`, `/domains`, `/billing`, `/settings`, `/inbox` |
 | `/sites/[id]` | The editor for one website (`?tab=analytics`, `enquiries`, `plan`, `domain`…) |
 | `/screens` | Index of the prototype screens |
-| `/styleguide` | Every token and component in light and dark |
+| `/styleguide` | Every token and component in light and dark, with copyable usage and source for each component |
 
 ## Design tokens
 
@@ -97,6 +97,14 @@ import { Button, Field, Input } from "@/components/ui"
 </Field>
 <Button size="lg" trailingIcon={<ArrowRight />}>Start building</Button>
 ```
+
+### Copying components into another project
+
+`/styleguide` has a **Setup** section (the npm install line plus `tokens.css`, `globals.css`, `cn.ts` and `fonts.ts`,
+each with a copy button) and a **Code** panel under every group of components: **Usage** gives the import and
+example JSX, **Source** gives the whole component file (read from `src/` at build time, so it never drifts) and lists
+what it depends on. Usage snippets live in `src/app/styleguide/snippets.ts` — update them when a component's props
+change.
 
 ## Fonts
 
