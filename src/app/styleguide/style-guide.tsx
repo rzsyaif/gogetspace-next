@@ -40,6 +40,12 @@ import {
   Stepper,
   StudsMedia,
   Switch,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeaderCell,
+  TableRow,
   Tabs,
   TabsContent,
   TabsList,
@@ -468,6 +474,31 @@ export function StyleGuide({ palettes }: { palettes: [string, Record<string, str
               <Divider>or with email</Divider>
             </div>
           </div>
+          <Table>
+            <TableHead>
+              <tr>
+                <TableHeaderCell>Website</TableHeaderCell>
+                <TableHeaderCell>Status</TableHeaderCell>
+                <TableHeaderCell align="right">Visitors · 30 d</TableHeaderCell>
+              </tr>
+            </TableHead>
+            <TableBody>
+              <TableRow>
+                <TableCell>Bakti Analisa Clinical Laboratory</TableCell>
+                <TableCell>
+                  <Badge tone="success">Live</Badge>
+                </TableCell>
+                <TableCell align="right">1,284</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>Rahma Family Dental</TableCell>
+                <TableCell>
+                  <Badge>Draft</Badge>
+                </TableCell>
+                <TableCell align="right">—</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
           <div className="grid gap-8 md:grid-cols-2">
             <StepList>
               <Step status="done" connector="active">

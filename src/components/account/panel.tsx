@@ -17,7 +17,7 @@ export function PanelHeader({ title, description, actions, className }: { title:
 /** Bordered block with a small heading. */
 export function PanelSection({ title, actions, children, className }: { title: string; actions?: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <section className={cn("flex flex-col gap-4 rounded-lg border border-line-default bg-surface p-4 sm:p-5", className)}>
+    <section className={cn("flex min-w-0 flex-col gap-4 rounded-lg border border-line-default bg-surface p-4 sm:p-5", className)}>
       <div className="flex items-center justify-between gap-3">
         <h2 className="type-h6 text-fg-primary">{title}</h2>
         {actions}
