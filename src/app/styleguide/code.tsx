@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { Check, Copy } from "lucide-react"
-import { Button, SegmentedControl, Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui"
+import { Check, Code2, Copy } from "lucide-react"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger, Button, SegmentedControl, Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui"
 import { cn } from "@/lib/cn"
 import type { Snippet } from "./snippets"
 
@@ -74,59 +74,83 @@ function dependencies(source: string) {
 }
 
 /**
- * Code for a section's components: pick a component, then copy its usage (import + JSX) or the whole source file.
+ * Code for a section's components, collapsed until opened: pick a component, then copy its usage (import + JSX) or
+ * the whole source file.
  */
 export function CodePanel({ items, sources }: { items: Snippet[]; sources: Record<string, string> }) {
   const [view, setView] = useState<"usage" | "source">("usage")
   return (
-    <Tabs defaultValue={items[0].name} className="flex min-w-0 flex-col gap-3 rounded-xl border border-line-default p-3 sm:p-4">
-      <div className="flex min-w-0 flex-col gap-3 md:flex-row md:items-center">
-        <span className="type-label-md text-fg-primary">Code</span>
-        <TabsList aria-label="Component" className="max-w-full overflow-x-auto [&>*]:shrink-0">
-          {items.map((it) => (
-            <TabsTrigger key={it.name} value={it.name}>
-              {it.name}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-        <SegmentedControl
-          label="Show"
-          size="sm"
-          value={view}
-          onChange={setView}
-          options={[
-            { value: "usage", label: "Usage" },
-            { value: "source", label: "Source" },
-          ]}
-          className="self-start md:ml-auto md:self-auto"
-        />
-      </div>
-      {items.map((it) => {
-        const importLine = `import { ${it.exports.join(", ")} } from "${it.from}"`
-        const source = sources[it.file] ?? ""
-        const deps = dependencies(source)
-        return (
-          <TabsContent key={it.name} value={it.name} className="flex min-w-0 flex-col gap-3">
-            {view === "usage" ? (
-              <CodeBlock label={`${it.name} · usage`} code={`${importLine}\n${it.usage.startsWith("import") ? "" : "\n"}${it.usage}`} />
-            ) : (
-              <>
-                <CodeBlock label={it.file} code={source} maxHeight={480} copyLabel="Copy file" />
-                <p className={cn("type-caption text-fg-tertiary")}>
-                  Needs {deps.pkgs.length ? <code className="font-mono">{deps.pkgs.join(", ")}</code> : "no packages"}
-                  {deps.local.length > 0 && (
+    <Accordion type="single" collapsible>
+      <AccordionItem value="code">
+        <AccordionTrigger meta={items.map((it) => it.name).join(" · ")}>
+          <Code2 /> Code
+        </AccordionTrigger>
+        <AccordionContent>
+          <Tabs defaultValue={items[0].name} className="flex min-w-0 flex-col gap-3">
+            <div className="flex min-w-0 flex-col gap-3 md:flex-row md:items-center">
+              <TabsList aria-label="Component" className="max-w-full overflow-x-auto [&>*]:shrink-0">
+                {items.map((it) => (
+                  <TabsTrigger key={it.name} value={it.name}>
+                    {it.name}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+              <SegmentedControl
+                label="Show"
+                size="sm"
+                value={view}
+                onChange={setView}
+                options={[
+                  { value: "usage", label: "Usage" },
+                  { value: "source", label: "Source" },
+                ]}
+                className="self-start md:ml-auto md:self-auto"
+              />
+            </div>
+            {items.map((it) => {
+              const importLine = `import { ${it.exports.join(", ")} } from "${it.from}"`
+              const source = sources[it.file] ?? ""
+              const deps = dependencies(source)
+              return (
+                <TabsContent key={it.name} value={it.name} className="flex min-w-0 flex-col gap-3">
+                  {view === "usage" ? (
+                    <CodeBlock label={`${it.name} · usage`} code={`${importLine}\n${it.usage.startsWith("import") ? "" : "\n"}${it.usage}`} />
+                  ) : (
                     <>
-                      {" "}
-                      and <code className="font-mono">{deps.local.join(", ")}</code>
+                      <CodeBlock label={it.file} code={source} maxHeight={480} copyLabel="Copy file" />
+                      <p className={cn("type-caption text-fg-tertiary")}>
+                        Needs {deps.pkgs.length ? <code className="font-mono">{deps.pkgs.join(", ")}</code> : "no packages"}
+                        {deps.local.length > 0 && (
+                          <>
+                            {" "}
+                            and <code className="font-mono">{deps.local.join(", ")}</code>
+                          </>
+                        )}
+                        , plus the setup files at the top of this page.
+                      </p>
                     </>
                   )}
-                  , plus the setup files at the top of this page.
-                </p>
-              </>
-            )}
-          </TabsContent>
-        )
-      })}
-    </Tabs>
+                </TabsContent>
+              )
+            })}
+          </Tabs>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
+  )
+}
+
+/** A file shown collapsed: its path in the header, the note and code (with copy) when opened. */
+export function CodeFile({ file, note, code }: { file: string; note: string; code: string }) {
+  return (
+    <AccordionItem value={file}>
+      <AccordionTrigger meta={`${code.split("\n").length} lines`}>
+        <Code2 /> <span className="truncate font-mono text-[13px]">{file}</span>
+      </AccordionTrigger>
+      <AccordionContent className="flex flex-col gap-3">
+        <p className="type-body-sm text-fg-secondary">{note}</p>
+        <CodeBlock label={file} code={code} maxHeight={420} copyLabel="Copy file" />
+      </AccordionContent>
+    </AccordionItem>
   )
 }

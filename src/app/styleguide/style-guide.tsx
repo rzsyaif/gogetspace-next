@@ -5,6 +5,10 @@ import Link from "next/link"
 import { ArrowRight, Eye, FileText, Globe, LayoutTemplate, Maximize, Minus, Monitor, MoreHorizontal, MousePointerClick, Pencil, Play, Plus, RefreshCw, Search, Settings, Smartphone, Sparkles, Tablet, Trash2, X } from "lucide-react"
 import {
   Alert,
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
   AttachmentChip,
   Avatar,
   Badge,
@@ -57,7 +61,7 @@ import {
 } from "@/components/ui"
 import { ThemeToggle } from "@/components/theme"
 import { DetailCard } from "@/components/account/panel"
-import { CodeBlock, CodePanel } from "./code"
+import { CodeBlock, CodeFile, CodePanel } from "./code"
 import { INSTALL, SETUP, SNIPPETS } from "./snippets"
 
 const SEMANTIC: { group: string; items: { name: string; className: string }[] }[] = [
@@ -158,27 +162,22 @@ export function StyleGuide({ palettes, sources }: { palettes: [string, Record<st
           <h1 className="type-h1">Style guide</h1>
           <p className="max-w-2xl type-body-lg text-fg-secondary">
             Tokens and components generated from the Figma library. Switch the theme in the header to check dark mode. Every
-            component has a Code panel: copy its usage, or the whole source file to build with it elsewhere.
+            component has a Code panel (collapsed until you open it): copy its usage, or the whole source file to build with it elsewhere.
           </p>
         </div>
 
         <Section id="setup" title="Setup">
           <p className="max-w-3xl type-body-md text-fg-secondary">
             The components are React + Tailwind CSS v4 with Radix for behaviour. To use them in another project, install the packages, add these four files,
-            then copy the components you need from the Code panels below (they import each other from <code className="font-mono text-[13px]">@/components/ui</code>
+            then copy the components you need from the Code panels below each group (they import each other from <code className="font-mono text-[13px]">@/components/ui</code>
             , so keep that path or update the imports).
           </p>
           <CodeBlock label="Terminal" code={INSTALL} maxHeight={96} />
-          <div className="grid gap-4 lg:grid-cols-2">
+          <Accordion type="multiple" className="flex flex-col gap-3">
             {SETUP.map((f) => (
-              <div key={f.file} className="flex min-w-0 flex-col gap-2">
-                <p className="type-body-sm text-fg-secondary">
-                  <code className="font-mono text-[13px] text-fg-primary">{f.file}</code> — {f.note}
-                </p>
-                <CodeBlock label={f.file} code={sources[f.file] ?? ""} maxHeight={260} copyLabel="Copy file" />
-              </div>
+              <CodeFile key={f.file} file={f.file} note={f.note} code={sources[f.file] ?? ""} />
             ))}
-          </div>
+          </Accordion>
         </Section>
 
         <Section id="colors" title="Colors">
@@ -478,6 +477,16 @@ export function StyleGuide({ palettes, sources }: { palettes: [string, Record<st
               </Card>
             ))}
           </div>
+          <Accordion type="single" collapsible className="flex max-w-2xl flex-col gap-3">
+            <AccordionItem value="hours">
+              <AccordionTrigger meta="3 locations">Opening hours</AccordionTrigger>
+              <AccordionContent className="type-body-sm text-fg-secondary">Mon–Sat 7:30 am – 6 pm · Sunday 8 am – 1 pm</AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="prep">
+              <AccordionTrigger>Do I need to fast before a blood test?</AccordionTrigger>
+              <AccordionContent className="type-body-sm text-fg-secondary">Only for glucose and lipid tests — 8 to 10 hours, water is fine.</AccordionContent>
+            </AccordionItem>
+          </Accordion>
           <CodePanel items={SNIPPETS.display} sources={sources} />
         </Section>
 

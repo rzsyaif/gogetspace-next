@@ -347,6 +347,23 @@ const [open, setOpen] = useState(false)
 </Card>`,
     },
     {
+      name: "Accordion",
+      file: "src/components/ui/accordion.tsx",
+      from: UI,
+      exports: ["Accordion", "AccordionContent", "AccordionItem", "AccordionTrigger"],
+      usage: `// type="single" collapsible: one open at a time · type="multiple": several · no defaultValue = all collapsed
+<Accordion type="single" collapsible className="flex flex-col gap-3">
+  <AccordionItem value="hours">
+    <AccordionTrigger meta="3 locations">Opening hours</AccordionTrigger>
+    <AccordionContent>Mon–Sat 7:30 am – 6 pm · Sunday 8 am – 1 pm</AccordionContent>
+  </AccordionItem>
+  <AccordionItem value="prep">
+    <AccordionTrigger>Do I need to fast before a blood test?</AccordionTrigger>
+    <AccordionContent>Only for glucose and lipid tests.</AccordionContent>
+  </AccordionItem>
+</Accordion>`,
+    },
+    {
       name: "Logo",
       file: "src/components/ui/logo.tsx",
       from: UI,
