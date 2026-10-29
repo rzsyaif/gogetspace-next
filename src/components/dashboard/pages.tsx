@@ -6,6 +6,7 @@ import { ChevronDown, CreditCard, Download, ExternalLink, Globe, Link2, Plus, Sh
 import { useSearchParams } from "next/navigation"
 import { Alert, Badge, Button, Checkbox, Dialog, DialogContent, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Field, Input, Select, Switch } from "@/components/ui"
 import { BuyDomainDialog } from "@/components/account/buy-domain"
+import { ConnectDomainDialog } from "@/components/account/connect-domain"
 import { cn } from "@/lib/cn"
 import { planInfo } from "@/lib/plans"
 import { ACCOUNT, ENQUIRIES, dailyStats, siteUrl, type Site } from "@/lib/account/data"
@@ -207,7 +208,7 @@ export function DomainsPage() {
             : []),
         ])}
       </ul>
-      <ConnectDomainDialog open={connect} onOpenChange={setConnect} sites={sites} />
+      <ConnectDomainFromDashboard open={connect} onOpenChange={setConnect} sites={sites} />
       <BuyDomainDialog open={buy} onOpenChange={setBuy} siteId={forSite} />
     </PanelPage>
   )
@@ -250,54 +251,26 @@ function DomainRow({ site, name, kind, status, ok, pending }: { site: Site; name
   )
 }
 
-function ConnectDomainDialog({ open, onOpenChange, sites }: { open: boolean; onOpenChange: (o: boolean) => void; sites: Site[] }) {
+/** connect a domain bought elsewhere, picking the website first (paid websites without a domain) */
+function ConnectDomainFromDashboard({ open, onOpenChange, sites }: { open: boolean; onOpenChange: (o: boolean) => void; sites: Site[] }) {
   const eligible = sites.filter((s) => planInfo(s.plan).customDomain && !s.domain)
-  const [siteId, setSiteId] = useState("")
-  const [name, setName] = useState("")
-  const chosen = siteId || eligible[0]?.id || ""
-  const valid = /^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(name.trim())
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        title="Connect a domain you own"
-        description="Pick the website, then type the domain. We'll show the records to add at your registrar."
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button
-              disabled={!chosen || !valid}
-              onClick={() => {
-                accountActions.connectDomain(chosen, name.trim().toLowerCase())
-                setName("")
-                onOpenChange(false)
-              }}
-            >
-              Connect
-            </Button>
-          </>
-        }
-      >
-        {eligible.length === 0 ? (
+  if (open && eligible.length === 0)
+    return (
+      <Dialog open onOpenChange={onOpenChange}>
+        <DialogContent title="Connect a domain you own" footer={<Button onClick={() => onOpenChange(false)}>OK</Button>}>
           <Alert tone="info" size="sm" title="Custom domains come with Starter and Business">
             Your paid websites already have a domain. Upgrade another website to connect one to it.
           </Alert>
-        ) : (
-          <>
-            <Field label="Website">
-              <Select value={chosen} onValueChange={setSiteId} options={eligible.map((s) => ({ value: s.id, label: s.name }))} />
-            </Field>
-            <Field label="Domain" helper={name && !valid ? "That doesn't look like a domain yet — e.g. rahmadental.com" : "Without https:// or www"}>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="yourpractice.com" leadingIcon={<Globe />} />
-            </Field>
-          </>
-        )}
-        {sites.some((s) => !planInfo(s.plan).customDomain) && (
-          <p className="type-body-sm text-fg-tertiary">
-            Not listed: {sites.filter((s) => !planInfo(s.plan).customDomain).map((s) => s.name).join(", ")} (Free plan).
-          </p>
-        )}
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+    )
+  return (
+    <ConnectDomainDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      sites={eligible.map((s) => ({ id: s.id, name: s.name }))}
+      onConnect={(name, status, siteId) => siteId && accountActions.connectDomain(siteId, name, status)}
+    />
   )
 }
 

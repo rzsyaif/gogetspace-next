@@ -105,9 +105,10 @@ export const accountActions = {
     const s = read()
     write({ ...s, enquiryStatus: { ...s.enquiryStatus, [id]: status } })
   },
-  connectDomain(siteId: string, name: string) {
+  /** a domain bought elsewhere: "pending" until its DNS records are found, then "connected" */
+  connectDomain(siteId: string, name: string, status: "pending" | "connected" = "pending") {
     const s = read()
-    write({ ...s, sites: s.sites.map((x) => (x.id === siteId ? { ...x, domain: { name, status: "pending" } } : x)) })
+    write({ ...s, sites: s.sites.map((x) => (x.id === siteId ? { ...x, domain: { name, status } } : x)) })
   },
   /** register a domain for `years`; optionally point it at a website straight away */
   buyDomain(name: string, years: number, price: number, siteId: string | null) {

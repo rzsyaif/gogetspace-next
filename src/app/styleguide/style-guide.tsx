@@ -16,6 +16,7 @@ import {
   Card,
   Checkbox,
   Chip,
+  CopyField,
   Dialog,
   DialogClose,
   Divider,
@@ -508,6 +509,7 @@ export function StyleGuide({ palettes, sources }: { palettes: [string, Record<st
             <div className="flex flex-col gap-3">
               <DetailCard label="Free address" value="bakti-analisa.get.space" trailing={<Badge tone="success">Live</Badge>} />
               <Divider>or with email</Divider>
+              <CopyField value="cname.get.space" label="Copy CNAME value" />
             </div>
           </div>
           <Table>

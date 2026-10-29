@@ -450,6 +450,17 @@ const [open, setOpen] = useState(false)
 </Table>`,
     },
     {
+      name: "CopyField",
+      file: "src/components/ui/copy-field.tsx",
+      from: UI,
+      exports: ["CopyField", "copyText"],
+      usage: `// a value people paste somewhere else (DNS record, API key); label is read out by screen readers
+<CopyField value="cname.get.space" label="Copy CNAME value" />
+
+// copy anything yourself (falls back when the Clipboard API is blocked)
+await copyText("76.76.21.21")`,
+    },
+    {
       name: "Divider",
       file: "src/components/ui/divider.tsx",
       from: UI,
