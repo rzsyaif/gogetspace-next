@@ -1,6 +1,7 @@
 /**
- * The brief the agent drafts for Bakti Analisa. Text in [square brackets] is a guess the agent made
- * and wants confirmed; it renders as a highlighted chip until the person confirms or changes it.
+ * The brief the agent drafts for a dental practice.
+ * Text in [square brackets] is a guess the agent made and wants confirmed;
+ * it renders as a highlighted chip until the person confirms or changes it.
  */
 
 export interface BriefItem {
@@ -24,70 +25,70 @@ const item = (text: string): BriefItem => ({ id: `b${++n}`, text })
 export const DEFAULT_BRIEF: BriefSection[] = [
   {
     id: "about",
-    title: "About the business",
+    title: "About the practice",
     items: [
-      item("Name: Bakti Analisa"),
-      item("What it is: a private clinical laboratory in [George Town], Penang"),
-      item("Locations: [1 main lab + collection centres in Bayan Lepas and Butterworth]"),
-      item("Credentials: [MS ISO 15189 accredited; licensed under the Private Healthcare Facilities and Services Act]"),
-      item("Established: [2008]"),
+      item("Name: [Your Dental Clinic]"),
+      item("What it is: a [general] dental practice in [your city]"),
+      item("Specialty: [general and family dentistry]"),
+      item("Credentials: [registered dentist; member of the Malaysian Dental Association]"),
+      item("Established: [2015]"),
     ],
   },
   {
     id: "audience",
     title: "Who the site is for",
     items: [
-      item("Patients who need a blood test or health check, either on their own or with a doctor’s referral."),
-      item("Doctors and clinics who send samples to the lab."),
-      item("HR teams and companies that need pre-employment or annual staff screening."),
+      item("Patients looking for a dentist nearby — from first-time visitors to regular check-up patients."),
+      item("Parents booking dental care for their children."),
+      item("Adults considering cosmetic or orthodontic treatment."),
     ],
   },
   {
     id: "services",
-    title: "Services to feature",
+    title: "Treatments to feature",
     items: [
-      item("Routine blood and urine tests: full blood count, glucose, cholesterol, kidney and liver function"),
-      item("Health screening packages: [Basic, Comprehensive, Women’s, Men’s, Senior]"),
-      item("Specialist tests: [hormones, allergy panels, tumour markers]"),
-      item("Pre-employment and corporate screening, including [on-site collection]"),
-      item("[Home sample collection]"),
-      item("Online results"),
+      item("General: check-up and exam, teeth cleaning, fillings, extractions"),
+      item("Cosmetic: [teeth whitening, veneers, bonding]"),
+      item("Orthodontics: [braces, clear aligners, retainers]"),
+      item("Restorative: [crowns, bridges, dentures]"),
+      item("[Root canal treatment]"),
+      item("[Dental implants]"),
     ],
   },
   {
     id: "goals",
     title: "What the website should achieve",
     items: [
-      item("Turn “I need a blood test” into a booked visit or a WhatsApp enquiry."),
-      item("Give doctors and HR teams enough confidence to send their work to Bakti Analisa."),
-      item("Cut down repeat phone calls about test preparation, opening hours and results."),
+      item("Turn visitors into booked appointments — online or by phone."),
+      item("Build trust with real dentist profiles, credentials and patient reviews."),
+      item("Answer the common questions about cost, pain and what to bring."),
     ],
   },
   {
     id: "tone",
-    title: "Tone & Language",
+    title: "Tone & Style",
     items: [
-      item("Tone: reassuring, clear and professional. Plain language for patients and precise detail for doctors."),
-      item("Languages: [English and Bahasa Malaysia; Chinese optional]"),
+      item("Tone: warm, calm and plain-language. Short sentences. No medical jargon without an explanation."),
+      item("Style preset: [Calm clinical — white with soft blue or teal and a warm accent for buttons]"),
     ],
   },
   {
     id: "features",
     title: "Must-have features",
     items: [
-      item("Online booking"),
-      item("WhatsApp button"),
-      item("Test and package list with prices"),
-      item("Preparation instructions for each test"),
-      item("Map and opening hours for each location"),
-      item("Link to the results portal"),
+      item("Online appointment booking"),
+      item("Phone and WhatsApp always visible on mobile"),
+      item("Treatment pages with honest comfort information"),
+      item("Price guidance (from-prices or ranges)"),
+      item("New-patient guide: what to bring, step-by-step first visit"),
+      item("Map and opening hours"),
     ],
   },
 ]
 
 export const DEFAULT_QUESTIONS: OpenQuestion[] = [
-  { id: "q1", q: "Should prices be shown publicly, or only on request?", answer: "" },
-  { id: "q2", q: "Do you already use a booking or results system we should link to?", answer: "" },
+  { id: "q1", q: "How would you like prices to appear on the site?", answer: "" },
+  { id: "q2", q: "Do you have an existing booking system we should link to, or should we set one up?", answer: "" },
   { id: "q3", q: "Is there a logo or brand colour we must use?", answer: "" },
 ]
 

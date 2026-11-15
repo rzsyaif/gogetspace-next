@@ -1,5 +1,6 @@
 /**
- * State of the scripted generation flow (plan → review → create → publish).
+ * State of the scripted generation flow for the Dentist niche playbook.
+ * Flow: goal question → assumptions card → module offer → plan → review → create → publish.
  * Pure reducer; timing lives in the provider's runner. Edge cases are driven by `scenario`.
  */
 import { DEFAULT_BRIEF, DEFAULT_QUESTIONS, countAssumptions, type BriefSection, type OpenQuestion } from "./brief"
@@ -20,12 +21,12 @@ export type Scenario =
 
 export const SCENARIOS: { id: Scenario; label: string; note: string }[] = [
   { id: "happy", label: "Happy path", note: "Everything works" },
-  { id: "vague", label: "Vague prompt", note: "Asks a question before planning" },
-  { id: "no-results", label: "Nothing found online", note: "New business, brief from description only" },
-  { id: "ambiguous", label: "Several matches", note: "“Is this you?” before continuing" },
+  { id: "vague", label: "Vague prompt", note: "Goal question first, then planning" },
+  { id: "no-results", label: "Nothing found online", note: "New clinic, brief from description only" },
+  { id: "ambiguous", label: "Several matches", note: ""Is this your clinic?" before continuing" },
   { id: "search-fail", label: "Search unavailable", note: "Continues without the web" },
   { id: "step-fail", label: "Step fails", note: "Writing the brief fails once, with Retry" },
-  { id: "slow", label: "Slow step", note: "“Taking longer than usual” note" },
+  { id: "slow", label: "Slow step", note: ""Taking longer than usual" note" },
   { id: "restricted", label: "Can't help with this", note: "Request is declined politely" },
   { id: "credits-low", label: "Credits low", note: "Warned before Start Creation" },
   { id: "credits-out", label: "Credits run out", note: "Build pauses midway" },
@@ -52,9 +53,107 @@ export interface Run {
   tasks: Task[]
 }
 
+/* ---------- Dentist playbook: goals, modules, scenarios ---------- */
+
+export type GoalId = "G1" | "G2" | "G3" | "G4" | "G5" | "G6" | "G7" | "G8"
+
+export interface DentistGoal {
+  id: GoalId
+  label: string
+  mainButton: string
+  modules: string[]
+  automations: string[]
+}
+
+export const DENTIST_GOALS: DentistGoal[] = [
+  { id: "G1", label: "Get more patients booking online", mainButton: "Book an appointment", modules: ["Appointments", "Services and Prices", "Contact and Locations", "Reviews"], automations: ["Confirmation", "Reminders", "Review request"] },
+  { id: "G2", label: "Get consultation requests for braces, implants or cosmetic work", mainButton: "Book a consultation", modules: ["Estimates", "Appointments", "Patients and enquiries", "Before and after gallery"], automations: ["Estimate follow-up"] },
+  { id: "G3", label: "Handle emergencies and same-day patients", mainButton: "Call now or book same day", modules: ["Contact actions", "Appointments"], automations: ["Reminders"] },
+  { id: "G4", label: "Keep patients coming back", mainButton: "Book your next check-up", modules: ["Patients and enquiries", "Appointments", "Reviews"], automations: ["Recall", "Reactivation", "Review request"] },
+  { id: "G5", label: "Take deposits or payments online", mainButton: "Book and pay a deposit", modules: ["Payments", "Appointments"], automations: ["Payment receipts"] },
+  { id: "G6", label: "Just be found and trusted online", mainButton: "Call or message us", modules: ["Services and Prices", "Reviews", "Contact and Locations"], automations: [] },
+  { id: "G7", label: "Run several branches or dentists", mainButton: "Book with a dentist or branch", modules: ["Branch pages", "Contact and Locations"], automations: ["Per-branch reminders"] },
+  { id: "G8", label: "Serve companies or insured patients", mainButton: "Request a quote or check coverage", modules: ["Estimates", "Patients and enquiries"], automations: ["Estimate follow-up"] },
+]
+
+export const GOAL_CHIPS: { id: GoalId; label: string }[] = [
+  { id: "G1", label: "Get more patients booking online" },
+  { id: "G2", label: "Get consultation requests for bigger treatments" },
+  { id: "G3", label: "Handle emergencies and same-day patients" },
+  { id: "G4", label: "Keep patients coming back" },
+  { id: "G5", label: "Take deposits online" },
+  { id: "G6", label: "Just be found and trusted" },
+  { id: "G7", label: "Run several branches or dentists" },
+  { id: "G8", label: "Serve companies or insured patients" },
+]
+
+export interface ModuleCard {
+  name: string
+  goal: string
+  included: string
+  price: "Free" | "Paid"
+  dependsOn?: string
+}
+
+export const MODULE_OFFER: Record<GoalId, ModuleCard[]> = {
+  G1: [
+    { name: "Appointments", goal: "Get more patients booking online", included: "Online booking with confirmation and reminder messages", price: "Paid" },
+    { name: "Services and Prices", goal: "Get more patients booking online", included: "Treatment pages with from-prices and an estimate note", price: "Free" },
+    { name: "Reviews", goal: "Get more patients booking online", included: "Real patient reviews with a review-request automation", price: "Free" },
+  ],
+  G2: [
+    { name: "Estimates", goal: "Get consultation requests", included: "Consultation request form, estimate follow-up automation", price: "Paid", dependsOn: "Appointments" },
+    { name: "Patients and enquiries", goal: "Get consultation requests", included: "Enquiry inbox with contact list and last-visit dates", price: "Paid" },
+  ],
+  G3: [
+    { name: "Emergency page", goal: "Handle emergencies", included: "Emergency path, same-day slots, urgent-care notice", price: "Free" },
+    { name: "Appointments", goal: "Handle emergencies", included: "Same-day booking slots with phone fallback", price: "Paid" },
+  ],
+  G4: [
+    { name: "Patients and enquiries", goal: "Keep patients coming back", included: "Recall and reactivation automations, contact list", price: "Paid" },
+    { name: "Reviews", goal: "Keep patients coming back", included: "Review request automation after each completed visit", price: "Free" },
+  ],
+  G5: [
+    { name: "Payments", goal: "Take deposits online", included: "Deposit collection linked to Appointments or Estimates", price: "Paid", dependsOn: "Appointments" },
+  ],
+  G6: [
+    { name: "Services and Prices", goal: "Be found and trusted", included: "Treatment pages with from-prices and an estimate note", price: "Free" },
+    { name: "Reviews", goal: "Be found and trusted", included: "Real patient reviews displayed on the homepage", price: "Free" },
+    { name: "Contact and Locations", goal: "Be found and trusted", included: "Map, hours, phone and WhatsApp for each branch", price: "Free" },
+  ],
+  G7: [
+    { name: "Branch pages", goal: "Run several branches or dentists", included: "Per-branch pages with hours, map and availability", price: "Paid" },
+    { name: "Contact and Locations", goal: "Run several branches or dentists", included: "Map, hours, phone and WhatsApp for each branch", price: "Free" },
+  ],
+  G8: [
+    { name: "Estimates", goal: "Serve companies or insured patients", included: "Quote request form, eligibility notes, follow-up automation", price: "Paid" },
+    { name: "Patients and enquiries", goal: "Serve companies or insured patients", included: "Corporate enquiry inbox and CRM contact list", price: "Paid" },
+  ],
+}
+
+/* ---------- assumptions card ---------- */
+
+export interface AssumptionsCard {
+  build: string
+  mainGoal: GoalId
+  secondaryGoals: GoalId[]
+  mainButton: string
+  specialty: string
+  prices: string
+  emergencies: boolean
+  insurance: boolean
+  stylePreset: string
+  reminders: string[]
+}
+
+/* ---------- message types ---------- */
+
 export type Msg =
   | { id: string; type: "user"; text: string }
   | { id: string; type: "agent"; text: string }
+  | { id: string; type: "goal-question"; answers: GoalId[] }
+  | { id: string; type: "assumptions"; card: AssumptionsCard; accepted?: boolean }
+  | { id: string; type: "module-offer"; goals: GoalId[]; accepted: Record<string, boolean> }
   | { id: string; type: "plan"; runId: number }
   | { id: string; type: "artifacts" }
   | { id: string; type: "clarify"; answer?: string }
@@ -105,29 +204,35 @@ export interface GenState {
   publish: { status: "idle" | "live"; domain: string }
   /** plan run whose brief review has already been opened automatically */
   autoReviewed?: number
+  /** dentist playbook: selected goals */
+  selectedGoals: GoalId[]
+  /** dentist playbook: accepted module names */
+  acceptedModules: string[]
+  /** dentist playbook: assumptions card accepted */
+  assumptionsAccepted: boolean
   seq: number
 }
 
 /* ---------- task scripts ---------- */
 
-export const SEARCH_QUERY = "Bakti Analisa clinical laboratory Penang"
+export const SEARCH_QUERY = "dental clinic appointment booking"
 export const SEARCH_RESULTS = [
-  { title: "Bakti Analisa — Klinik & Makmal, Jalan Burmah", site: "www.google.com/maps" },
-  { title: "Medical laboratories in George Town, Penang", site: "www.penang-traveltips.com" },
-  { title: "MS ISO 15189 accredited laboratories list", site: "www.jsm.gov.my" },
+  { title: "Book a dentist appointment near you — Google Maps", site: "www.google.com/maps" },
+  { title: "How to find a good dentist in Malaysia — KKM", site: "www.moh.gov.my" },
+  { title: "Malaysian Dental Association — member directory", site: "www.mda.org.my" },
 ]
 export const BUSINESS_MATCHES = [
-  { id: "penang", name: "Bakti Analisa", place: "Jalan Burmah, George Town, Penang", kind: "Clinical laboratory" },
-  { id: "kedah", name: "Bakti Analisa Diagnostik", place: "Sungai Petani, Kedah", kind: "Medical lab & X-ray" },
-  { id: "kl", name: "Analisa Bakti Consulting", place: "Petaling Jaya, Selangor", kind: "Data consultancy" },
+  { id: "clinic-a", name: "Klinik Pergigian Maju", place: "Petaling Jaya, Selangor", kind: "General dental clinic" },
+  { id: "clinic-b", name: "Klinik Pergigian Maju Dua", place: "Shah Alam, Selangor", kind: "Family dental clinic" },
+  { id: "clinic-c", name: "Maju Dental Centre", place: "Klang, Selangor", kind: "Dental clinic & orthodontics" },
 ]
 
 const planTasks = (): Task[] => [
   { id: "read", label: "Reading & analyzing the prompt", status: "running" },
   { id: "search", label: "Searching the web", status: "pending" },
-  { id: "brief", label: "Write the brief", status: "pending" },
-  { id: "style", label: "Sketch the style guideline", status: "pending" },
-  { id: "sitemap", label: "Create the sitemap", status: "pending" },
+  { id: "brief", label: "Writing the brief", status: "pending" },
+  { id: "style", label: "Sketching the style guideline", status: "pending" },
+  { id: "sitemap", label: "Creating the sitemap", status: "pending" },
 ]
 const buildTasks = (): Task[] => [
   { id: "read-plan", label: "Reading the confirmed plan", status: "running" },
@@ -153,7 +258,7 @@ export function detectScenario(prompt: string): Scenario {
   return "happy"
 }
 
-export const DEFAULT_PROMPT = "Website for clinical laboratory in penang named BAKTI ANALISA"
+export const DEFAULT_PROMPT = "Website for a dental clinic"
 
 export function initialState(prompt = DEFAULT_PROMPT, scenario: Scenario = detectScenario(prompt), speed = 1): GenState {
   return {
@@ -164,9 +269,12 @@ export function initialState(prompt = DEFAULT_PROMPT, scenario: Scenario = detec
     phase: "plan",
     msgs: [
       { id: "m1", type: "user", text: prompt },
-      { id: "m2", type: "plan", runId: 1 },
+      // vague prompt → ask the goal question first; happy path → plan immediately
+      ...(scenario === "vague"
+        ? [{ id: "m2", type: "goal-question" as const, answers: [] }]
+        : [{ id: "m2", type: "plan" as const, runId: 1 }]),
     ],
-    runs: { 1: { id: 1, kind: "plan", status: "running", tasks: planTasks() } },
+    runs: { 1: { id: 1, kind: "plan", status: scenario === "vague" ? "waiting" : "running", tasks: planTasks() } },
     planRun: 1,
     buildRun: null,
     searchShown: 0,
@@ -184,7 +292,10 @@ export function initialState(prompt = DEFAULT_PROMPT, scenario: Scenario = detec
     pages: {},
     queued: [],
     account: null,
-    publish: { status: "idle", domain: "bakti-analisa.get.space" },
+    publish: { status: "idle", domain: "your-dental-clinic.get.space" },
+    selectedGoals: [],
+    acceptedModules: [],
+    assumptionsAccepted: false,
     seq: 10,
   }
 }
@@ -230,6 +341,11 @@ export type Action =
   | { type: "published"; domain: string }
   | { type: "feedback"; id: string; answer: FeedbackAnswer | "skipped" }
   | { type: "jump"; to: JumpTarget; scenario?: Scenario; plan?: Plan }
+  // Dentist playbook actions
+  | { type: "selectGoals"; goals: GoalId[] }
+  | { type: "acceptAssumptions" }
+  | { type: "toggleModule"; name: string; accepted: boolean }
+  | { type: "confirmModules" }
 
 export type JumpTarget = "generating" | "ready" | "review-brief" | "review-style" | "review-sitemap" | "creating" | "built" | "published"
 
@@ -275,6 +391,25 @@ function allConfirmed(s: GenState) {
   return s.artifacts.brief === "confirmed" && s.artifacts.style === "confirmed" && s.artifacts.sitemap === "confirmed"
 }
 
+/** Build the default assumptions card from selected goals */
+function buildAssumptionsCard(goals: GoalId[]): AssumptionsCard {
+  const main = goals[0] ?? "G1"
+  const goal = DENTIST_GOALS.find((g) => g.id === main)!
+  const automations = Array.from(new Set(goals.flatMap((gid) => DENTIST_GOALS.find((g) => g.id === gid)?.automations ?? [])))
+  return {
+    build: "one dental practice website",
+    mainGoal: main,
+    secondaryGoals: goals.slice(1),
+    mainButton: goal.mainButton,
+    specialty: "general and family dentistry",
+    prices: "From prices for routine care; Ask us for specialty treatments",
+    emergencies: goals.includes("G3"),
+    insurance: goals.includes("G8"),
+    stylePreset: "Calm clinical",
+    reminders: automations,
+  }
+}
+
 export function reducer(s: GenState, a: Action): GenState {
   switch (a.type) {
     case "reset":
@@ -283,6 +418,58 @@ export function reducer(s: GenState, a: Action): GenState {
       return a.state
     case "speed":
       return { ...s, speed: a.speed }
+
+    /* ----- dentist playbook actions ----- */
+    case "selectGoals": {
+      const goals = a.goals.length === 0 ? ["G1" as GoalId] : a.goals
+      const card = buildAssumptionsCard(goals)
+      // mark goal-question as answered, show assumptions card
+      let n: GenState = {
+        ...s,
+        selectedGoals: goals,
+        msgs: s.msgs.map((m) => (m.type === "goal-question" ? { ...m, answers: goals } : m)),
+      }
+      n = push(n,
+        { type: "user", text: goals.map((g) => DENTIST_GOALS.find((d) => d.id === g)?.label ?? g).join(", ") },
+        { type: "assumptions", card },
+      )
+      return n
+    }
+    case "acceptAssumptions": {
+      // mark assumptions card accepted, show module offer, then start planning
+      let n: GenState = {
+        ...s,
+        assumptionsAccepted: true,
+        msgs: s.msgs.map((m) => (m.type === "assumptions" ? { ...m, accepted: true } : m)),
+      }
+      const initialAccepted: Record<string, boolean> = {}
+      s.selectedGoals.forEach((gid) => {
+        MODULE_OFFER[gid]?.forEach((mod) => { initialAccepted[mod.name] = true })
+      })
+      n = push(n, { type: "module-offer", goals: s.selectedGoals, accepted: initialAccepted })
+      return n
+    }
+    case "toggleModule": {
+      const n: GenState = {
+        ...s,
+        msgs: s.msgs.map((m) =>
+          m.type === "module-offer"
+            ? { ...m, accepted: { ...m.accepted, [a.name]: a.accepted } }
+            : m,
+        ),
+      }
+      return n
+    }
+    case "confirmModules": {
+      // gather accepted modules from latest module-offer message
+      const offerMsg = [...s.msgs].reverse().find((m) => m.type === "module-offer")
+      const accepted = offerMsg?.type === "module-offer" ? Object.entries(offerMsg.accepted).filter(([, v]) => v).map(([k]) => k) : []
+      let n: GenState = { ...s, acceptedModules: accepted }
+      // now kick off the plan run
+      n = updateRun(n, s.planRun, (r) => ({ ...r, status: "running" }))
+      n = push(n, { type: "user", text: "Looks good — build it." }, { type: "plan", runId: s.planRun })
+      return n
+    }
 
     /* ----- plan run ----- */
     case "revealResult":
@@ -301,14 +488,14 @@ export function reducer(s: GenState, a: Action): GenState {
           const n = updateRun(s, r.id, (r) => ({ ...r, status: "blocked", tasks: r.tasks.map((x, j) => (j === i ? { ...x, status: "done", duration: "6s" } : x)) }))
           return push(n, { type: "refused" })
         }
-        if (s.scenario === "vague" && !s.msgs.some((m) => m.type === "clarify")) {
-          const n = updateRun(s, r.id, (r) => ({ ...r, status: "waiting", tasks: r.tasks.map((x, j) => (j === i ? { ...x, status: "done", duration: "9s" } : j === i + 1 ? { ...x, status: "pending" } : x)) }))
-          return push(n, { type: "clarify" })
+        if (s.scenario === "vague" && !s.assumptionsAccepted) {
+          // already waiting for goal question answer — keep waiting
+          return s
         }
       }
       if (t.id === "search") {
         if (s.scenario === "ambiguous" && !s.msgs.some((m) => m.type === "pick")) {
-          const n = updateRun(s, r.id, (r) => ({ ...r, status: "waiting", tasks: r.tasks.map((x, j) => (j === i ? { ...x, status: "done", duration: DURATIONS.search, detail: "Found 3 businesses with a similar name" } : x)) }))
+          const n = updateRun(s, r.id, (r) => ({ ...r, status: "waiting", tasks: r.tasks.map((x, j) => (j === i ? { ...x, status: "done", duration: DURATIONS.search, detail: "Found 3 clinics with a similar name" } : x)) }))
           return push(n, { type: "pick" })
         }
         if (s.scenario === "no-results") return updateRun(s, r.id, (r) => advance(r, i, { detail: "Nothing found online — I'll work from your description" }))
@@ -345,7 +532,7 @@ export function reducer(s: GenState, a: Action): GenState {
     case "pickBusiness": {
       const pick = BUSINESS_MATCHES.find((b) => b.id === a.id)
       let n: GenState = { ...s, msgs: s.msgs.map((m) => (m.type === "pick" ? { ...m, picked: a.id } : m)) }
-      n = push(n, { type: "user", text: pick ? `It's ${pick.name} in ${pick.place.split(", ").slice(-1)[0]}.` : "None of these — it's a new business." })
+      n = push(n, { type: "user", text: pick ? `It's ${pick.name} in ${pick.place.split(", ").slice(-1)[0]}.` : "None of these — it's a new clinic." })
       return updateRun(n, s.planRun, (r) => ({ ...r, status: "running", tasks: r.tasks.map((t) => (t.id === "brief" ? { ...t, status: "running" } : t)) }))
     }
     case "followUp": {
@@ -356,7 +543,7 @@ export function reducer(s: GenState, a: Action): GenState {
         if (build && build.status !== "done") {
           return push({ ...s, queued: [...s.queued, text] }, { type: "user", text }, { type: "agent", text: "Got it — I'll do this as soon as the build finishes." })
         }
-        return push(s, { type: "user", text }, { type: "agent", text: `Done — I've applied “${text}” to the site. Check the preview.` })
+        return push(s, { type: "user", text }, { type: "agent", text: `Done — I've applied "${text}" to the site. Check the preview.` })
       }
       // during planning a follow-up restarts the plan with the new information
       const id = Math.max(...Object.keys(s.runs).map(Number)) + 1
@@ -377,7 +564,6 @@ export function reducer(s: GenState, a: Action): GenState {
           [id]: { id, kind: "plan", status: "running", tasks: planTasks() },
         },
       }
-      // planning edge cases have been seen once already; build-time ones (credits, page failure) stay
       if (["vague", "no-results", "ambiguous", "search-fail", "step-fail", "slow"].includes(n.scenario)) n.scenario = "happy"
       if (n.scenario === "restricted" && detectScenario(text) !== "restricted") n.scenario = "happy"
       n = push(n, { type: "user", text }, { type: "agent", text: "Got it — I'll restart the plan with that in mind." }, { type: "plan", runId: id })
@@ -448,16 +634,15 @@ export function reducer(s: GenState, a: Action): GenState {
       const r = s.runs[s.buildRun]
       const order = flatten(s.sitemap).map((p) => p.id)
       const building = order.find((id) => s.pages[id] === "building")
-      // a retried or newly unlocked page after the build has finished
       if (r.status === "done") return building ? startNextPage({ ...s, pages: { ...s.pages, [building]: "built" }, credits: Math.min(99, s.credits + 3) }) : s
       if (r.status !== "running") return s
       const pages = { ...s.pages }
       let credits = s.credits
       if (building) {
-        pages[building] = s.scenario === "page-fail" && building === "corporate" && !s.failedOnce ? "failed" : "built"
+        pages[building] = s.scenario === "page-fail" && building === "prices" && !s.failedOnce ? "failed" : "built"
         credits = Math.min(100, credits + 3)
       }
-      let n: GenState = { ...s, pages, credits, failedOnce: s.failedOnce || (s.scenario === "page-fail" && building === "corporate") }
+      let n: GenState = { ...s, pages, credits, failedOnce: s.failedOnce || (s.scenario === "page-fail" && building === "prices") }
       if (credits >= 100 && order.some((id) => pages[id] === "queued")) {
         n = updateRun(n, r.id, (r) => ({ ...r, status: "paused" }))
         return push(n, { type: "credits-out" })
@@ -527,8 +712,7 @@ function finishBuild(s: GenState): GenState {
   if (locked) text += ` ${locked} more ${locked === 1 ? "page is" : "pages are"} planned and will be built when you upgrade.`
   text += " Have a look around the preview, then publish when you're happy."
   let n = push(s, { type: "agent", text })
-  for (const q of s.queued) n = push(n, { type: "agent", text: `Done — I've applied your note: “${q}”.` })
-  // ask how it went once, after the first build only
+  for (const q of s.queued) n = push(n, { type: "agent", text: `Done — I've applied your note: "${q}".` })
   if (!n.msgs.some((m) => m.type === "feedback")) n = push(n, { type: "feedback" })
   return { ...n, queued: [] }
 }
@@ -539,13 +723,13 @@ function jump(s: GenState, to: JumpTarget, plan: Plan = "business"): GenState {
   if (to === "generating") return n
   // finish the plan run
   n = updateRun(n, 1, (r) => ({ ...r, status: "done", tasks: r.tasks.map((t) => ({ ...t, status: "done", duration: DURATIONS[t.id], detail: t.id === "brief" ? `Drafted a profile from assumptions, flagging ${countAssumptions(n.brief)} details to confirm` : t.id === "style" ? "Sketched 4 style options, including colors, fonts, and vibe" : t.id === "sitemap" ? `Planned ${flatten(n.sitemap).length} pages, including the structure` : undefined })) }))
-  n = { ...n, searchShown: SEARCH_RESULTS.length, autoReviewed: n.planRun }
+  n = { ...n, searchShown: SEARCH_RESULTS.length, autoReviewed: n.planRun, selectedGoals: ["G1"], assumptionsAccepted: true }
   n = finishPlan(n)
   if (to === "ready") return n
   if (to === "review-brief") return { ...n, review: { open: true, step: 0 } }
   n = { ...n, artifacts: { ...n.artifacts, brief: "confirmed" } }
   if (to === "review-style") return { ...n, review: { open: true, step: 1 } }
-  n = { ...n, styleId: n.styleId ?? "clinical-clarity", artifacts: { ...n.artifacts, style: "confirmed" } }
+  n = { ...n, styleId: n.styleId ?? "calm-clinical", artifacts: { ...n.artifacts, style: "confirmed" } }
   if (to === "review-sitemap") return { ...n, review: { open: true, step: 2 } }
   n = startBuild({ ...n, artifacts: { ...n.artifacts, sitemap: "confirmed" }, plan })
   if (to === "creating") return n
@@ -555,7 +739,7 @@ function jump(s: GenState, to: JumpTarget, plan: Plan = "business"): GenState {
   n = updateRun(n, n.buildRun!, (r) => ({ ...r, status: "done", tasks: r.tasks.map((t) => ({ ...t, status: "done", duration: DURATIONS[t.id], detail: t.id === "pages" ? `Built ${Object.values(pages).filter((p) => p === "built").length} pages` : undefined })) }))
   n = finishBuild(n)
   if (to === "built") return n
-  return { ...n, account: { name: "Kiki", email: "kiki@example.com" }, publish: { status: "live", domain: "bakti-analisa.get.space" } }
+  return { ...n, account: { name: "Dr. Sarah", email: "sarah@yourdentalclinic.com" }, publish: { status: "live", domain: "your-dental-clinic.get.space" } }
 }
 
 export const isPlanActive = (s: GenState) => s.runs[s.planRun]?.status === "running"
@@ -568,7 +752,6 @@ export { nextId }
 export function siteState(opts: { prompt: string; plan: Plan; live: boolean; built: boolean; account: { name: string; email: string }; domain: string; credits: number }): GenState {
   const base = initialState(opts.prompt, "happy")
   const n = opts.built ? reducer(base, { type: "jump", to: opts.live ? "published" : "built", plan: opts.plan }) : reducer(base, { type: "jump", to: "ready" })
-  // existing websites were rated (or skipped) back when they were first built
   const msgs = n.msgs.map((m) => (m.type === "feedback" ? { ...m, answer: "skipped" as const } : m))
   return { ...n, msgs, plan: opts.plan, credits: opts.credits, account: opts.account, publish: { status: opts.live ? "live" : "idle", domain: opts.domain } }
 }

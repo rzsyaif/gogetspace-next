@@ -1,4 +1,4 @@
-/** The page plan the agent proposes (matches the Figma "Sitemap Plan"). */
+/** The page plan the agent proposes for a dental practice (matches the Figma "Sitemap Plan"). */
 
 export interface PageNode {
   id: string
@@ -15,33 +15,67 @@ export interface PageNode {
 }
 
 export const SITEMAP: PageNode = {
-  id: "home", sections: ["Hero", "Trust strip", "Who we help", "Popular tests", "Health screening packages", "How it works", "Testimonials", "Locations", "FAQ & booking"],
+  id: "home",
+  sections: ["Hero", "Trust strip", "Popular treatments", "How a first visit works", "Our dentists", "Patient reviews", "Hours & location", "FAQ & booking"],
   title: "Homepage",
   slug: "",
-  purpose: "What the lab does, popular tests, locations and booking",
+  purpose: "Make the next step obvious — book, call or WhatsApp",
   children: [
     {
-      id: "services", sections: ["Page header", "Services overview", "Home collection \u00b7 results \u00b7 panels"],
-      title: "Services",
-      slug: "services",
-      purpose: "Overview of everything the lab offers",
+      id: "treatments",
+      sections: ["Page header", "Treatments by category", "Prices note"],
+      title: "Treatments",
+      slug: "treatments",
+      purpose: "Help patients find the treatment they need",
       children: [
-        { id: "tests", sections: ["Page header", "Packages table", "Test search & filters", "Test list"], title: "Tests & Packages", slug: "tests-and-packages", purpose: "Searchable test list and screening packages with prices" },
-        { id: "doctors", sections: ["Page header", "Partner benefits", "Clinic account form"], title: "For Doctors & Clinics", slug: "for-doctors", purpose: "Referrals, courier pick-up and e-reports" },
-        { id: "corporate", sections: ["Page header", "Key numbers", "What we cover", "Quote request form"], title: "Corporate Screening", slug: "corporate-screening", purpose: "Pre-employment and annual staff screening" },
-        { id: "prepare", sections: ["Page header", "Preparation guides", "Booking call-to-action"], title: "Prepare for Your Test", slug: "prepare-for-your-test", purpose: "Fasting and preparation instructions" },
+        { id: "general", sections: ["Page header", "What it is", "Who it is for", "Step by step", "Comfort info", "Aftercare", "Price note", "FAQ", "Call to action"], title: "General Dentistry", slug: "treatments/general", purpose: "Check-ups, cleaning, fillings and extractions" },
+        { id: "cosmetic", sections: ["Page header", "What it is", "Who it is for", "Step by step", "Comfort info", "Aftercare", "Price note", "FAQ", "Call to action"], title: "Cosmetic Dentistry", slug: "treatments/cosmetic", purpose: "Whitening, veneers and bonding" },
+        { id: "orthodontics", sections: ["Page header", "What it is", "Who it is for", "Step by step", "Comfort info", "Aftercare", "Price note", "FAQ", "Call to action"], title: "Orthodontics", slug: "treatments/orthodontics", purpose: "Braces, aligners and retainers" },
+        { id: "implants", sections: ["Page header", "What it is", "Who it is for", "Step by step", "Comfort info", "Aftercare", "Price note", "FAQ", "Call to action"], title: "Dental Implants", slug: "treatments/implants", purpose: "Single, multiple and full-arch implants" },
       ],
     },
-    { id: "about", sections: ["Page header", "Story & accreditation", "Key facts", "Team"], title: "About Us", slug: "about", purpose: "Story, accreditation and team" },
-    { id: "locations", sections: ["Page header", "Centres & opening hours", "Map", "Contact form"], title: "Locations & Contact", slug: "locations", purpose: "Three centres with hours, map and contact form" },
+    {
+      id: "dentists",
+      sections: ["Page header", "Dentist profiles", "Book with this dentist"],
+      title: "Our Dentists",
+      slug: "our-dentists",
+      purpose: "Build trust with real profiles, credentials and areas of focus",
+    },
+    {
+      id: "new-patients",
+      sections: ["Page header", "What to bring", "Step-by-step first visit", "Patient form", "Payment & insurance", "Support for nervous patients"],
+      title: "New Patients",
+      slug: "new-patients",
+      purpose: "Reduce first-visit anxiety with a clear guide",
+    },
+    {
+      id: "prices",
+      sections: ["Page header", "Price table with estimate note", "Accepted insurers", "Instalment information"],
+      title: "Prices & Insurance",
+      slug: "prices",
+      purpose: "Remove cost uncertainty with honest from-prices",
+    },
+    {
+      id: "locations",
+      sections: ["Page header", "Address, hours & map", "Phone & WhatsApp", "Transport & parking", "Emergency line"],
+      title: "Contact & Locations",
+      slug: "contact",
+      purpose: "Make reaching the clinic effortless",
+    },
+    {
+      id: "faq",
+      sections: ["Page header", "Questions & answers"],
+      title: "FAQ",
+      slug: "faq",
+      purpose: "Cost, pain, children, insurance, cancellation and check-up frequency",
+    },
     { id: "terms", sections: ["Page header", "Legal sections"], title: "Terms and Conditions", slug: "terms", purpose: "Terms of service" },
-    { id: "privacy", sections: ["Page header", "Legal sections"], title: "Privacy Policy", slug: "privacy", purpose: "How patient data is handled (PDPA 2010)" },
-    { id: "faq", sections: ["Page header", "Questions & answers"], title: "FAQ", slug: "faq", purpose: "Answers to common questions" },
+    { id: "privacy", sections: ["Page header", "Legal sections"], title: "Privacy Policy", slug: "privacy", purpose: "How patient data is handled" },
   ],
 }
 
 /** Which pages each plan builds, most important first (Starter builds up to 5). */
-export const PAGE_PRIORITY = ["home", "tests", "locations", "services", "prepare", "doctors", "corporate", "about", "faq", "terms", "privacy"]
+export const PAGE_PRIORITY = ["home", "treatments", "locations", "new-patients", "prices", "general", "dentists", "faq", "cosmetic", "orthodontics", "implants", "terms", "privacy"]
 
 export type Plan = "free" | "starter" | "business"
 export const PLAN_PAGE_LIMIT: Record<Plan, number> = { free: 1, starter: 5, business: Infinity }
