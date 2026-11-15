@@ -2,33 +2,19 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import {
-  AlertCircle,
-  ArrowRight,
-  Award,
-  CalendarCheck,
-  CheckCircle2,
-  Clock,
-  Heart,
-  MapPin,
-  MessageCircle,
-  ShieldCheck,
-  Smile,
-  Sparkles,
-  Users,
-} from "lucide-react"
+import { ArrowRight, Award, Building2, CalendarCheck, Clock, HeartPulse, MapPin, MessageCircle, ShieldCheck, Smartphone, Stethoscope, Users } from "lucide-react"
 import { cn } from "@/lib/cn"
 import type { SiteTheme } from "@/lib/bakti/themes"
-import { AUDIENCES, BUSINESS, EMERGENCY_NOTICE, FAQS, LOCATIONS, PACKAGES, STEPS, TESTIMONIALS, TESTS } from "@/lib/bakti/content"
+import { AUDIENCES, BUSINESS, FAQS, LOCATIONS, PACKAGES, STEPS, TESTIMONIALS, TESTS } from "@/lib/bakti/content"
 import { CLINIC_PHOTO } from "@/components/site/assets"
 import { useSite } from "./site-shell"
 import { Card, Eyebrow, H, Price, SButton, SLink, Section, container } from "./ui"
 
 const TRUST = [
-  { Icon: Award, label: `${BUSINESS.accreditation}` },
-  { Icon: Smile, label: "Gentle approach for anxious patients" },
-  { Icon: MapPin, label: "2 branches in George Town & Bayan Lepas" },
-  { Icon: ShieldCheck, label: `Serving families since ${BUSINESS.established}` },
+  { Icon: Award, label: `${BUSINESS.accreditation} accredited` },
+  { Icon: Clock, label: "Most results the same day" },
+  { Icon: MapPin, label: "3 centres across Penang" },
+  { Icon: ShieldCheck, label: `Trusted since ${BUSINESS.established}` },
 ]
 
 export function HomePage({ theme }: { theme: SiteTheme }) {
@@ -37,22 +23,20 @@ export function HomePage({ theme }: { theme: SiteTheme }) {
 
   const heroCopy = (
     <div className={cn("flex flex-col gap-6", theme.hero === "centered" && "items-center text-center")}>
-      <Eyebrow className={theme.hero === "banner" ? "text-(--s-soft)" : undefined}>
-        General, Family & Orthodontics · Penang
-      </Eyebrow>
-      <H as="h1" className={cn("text-[38px] leading-[1.08] tracking-tight sm:text-[56px]", theme.hero === "banner" && "text-white")}>
-        Clear, caring dental care for your whole family
+      <Eyebrow className={theme.hero === "banner" ? "text-(--s-soft)" : undefined}>Clinical laboratory · Penang</Eyebrow>
+      <H as="h1" className={cn("text-[40px] leading-[1.05] tracking-tight sm:text-[60px]", theme.hero === "banner" && "text-white")}>
+        Lab results you and your doctor can act on
       </H>
       <p className={cn("max-w-xl text-[18px] leading-relaxed sm:text-[19px]", theme.hero === "banner" ? "text-white/80" : "text-(--s-muted)")}>
-        Routine check-ups, teeth cleaning, braces and emergency care in George Town and Bayan Lepas. We explain everything
-        before we start, with honest from-prices and no surprises.
+        Blood tests and health screening in George Town, Bayan Lepas and Butterworth. Book in a minute, walk out in ten, and get
+        your results on your phone.
       </p>
       <div className="flex flex-wrap gap-3">
         <SButton size="lg" tone={theme.hero === "banner" ? "light" : "primary"} onClick={() => book()}>
-          <CalendarCheck /> Book an appointment
+          <CalendarCheck /> Book a test
         </SButton>
-        <SLink size="lg" tone="secondary" href={href("treatments")} className={theme.hero === "banner" ? "border-white/30 bg-transparent text-white hover:border-white" : ""}>
-          See treatments & prices
+        <SLink size="lg" tone="secondary" href={href("tests-and-packages")} className={theme.hero === "banner" ? "border-white/30 bg-transparent text-white hover:border-white" : ""}>
+          See tests & prices
         </SLink>
       </div>
     </div>
@@ -64,7 +48,7 @@ export function HomePage({ theme }: { theme: SiteTheme }) {
       {theme.hero === "banner" ? (
         <section className="relative overflow-hidden bg-(--s-ink)">
           <div className="absolute inset-y-0 right-0 hidden w-1/2 lg:block">
-            <Image src={CLINIC_PHOTO} alt="Comfortable modern dental surgery room" fill sizes="50vw" className="object-cover opacity-90" priority />
+            <Image src={CLINIC_PHOTO} alt="" fill sizes="50vw" className="object-cover opacity-90" priority />
             <div className="absolute inset-0 bg-linear-to-r from-(--s-ink) via-(--s-ink)/40 to-transparent" />
           </div>
           <div className={cn(container, "relative py-20 sm:py-28 lg:w-full")}>
@@ -76,7 +60,7 @@ export function HomePage({ theme }: { theme: SiteTheme }) {
           <div className={cn(container, "flex flex-col items-center gap-12")}>
             <div className="max-w-3xl">{heroCopy}</div>
             <div className="relative aspect-[16/7] w-full max-w-5xl overflow-hidden rounded-t-(--s-radius-lg)">
-              <Image src={CLINIC_PHOTO} alt="Warm welcoming dental clinic reception and care team" fill sizes="(max-width: 1180px) 100vw, 1024px" className="object-cover object-[50%_30%]" priority />
+              <Image src={CLINIC_PHOTO} alt="A patient smiling as she reads her lab results" fill sizes="(max-width: 1180px) 100vw, 1024px" className="object-cover object-[50%_30%]" priority />
             </div>
           </div>
         </section>
@@ -87,15 +71,15 @@ export function HomePage({ theme }: { theme: SiteTheme }) {
             <div className="relative">
               <div className="absolute -top-6 -right-6 size-40 rounded-full bg-(--s-soft) opacity-50 blur-2xl" aria-hidden />
               <div className="relative aspect-[4/5] overflow-hidden rounded-(--s-radius-lg) bg-(--s-tint)">
-                <Image src={CLINIC_PHOTO} alt="Patient consulting comfortably with the dentist" fill sizes="(max-width: 1024px) 100vw, 520px" className="object-cover" priority />
+                <Image src={CLINIC_PHOTO} alt="A patient smiling as she reads her lab results" fill sizes="(max-width: 1024px) 100vw, 520px" className="object-cover" priority />
               </div>
               <div className="absolute bottom-6 -left-4 flex items-center gap-3 rounded-(--s-radius) border border-(--s-line) bg-(--s-card) p-4 shadow-lg sm:-left-10">
                 <span className="grid size-11 place-items-center rounded-full bg-(--s-tint) text-(--s-primary)">
-                  <Heart className="size-5" />
+                  <Smartphone className="size-5" />
                 </span>
                 <span className="flex flex-col">
-                  <span className="text-[14px] font-semibold">Anxious about visiting?</span>
-                  <span className="text-[13px] text-(--s-muted)">Tell us — we pause whenever you need</span>
+                  <span className="text-[14px] font-semibold">Results ready</span>
+                  <span className="text-[13px] text-(--s-muted)">Sent to your phone · 4:12 pm</span>
                 </span>
               </div>
             </div>
@@ -103,11 +87,11 @@ export function HomePage({ theme }: { theme: SiteTheme }) {
         </section>
       )}
 
-      {/* trust strip (Playbook §6.1) */}
+      {/* trust strip */}
       <div className="border-y border-(--s-line) bg-(--s-card)">
         <ul className={cn(container, "grid grid-cols-2 gap-4 py-6 lg:grid-cols-4")}>
           {TRUST.map(({ Icon, label }) => (
-            <li key={label} className="flex items-center gap-3 text-[14px] font-medium sm:text-[15px]">
+            <li key={label} className="flex items-center gap-3 text-[15px] font-medium">
               <Icon className="size-5 shrink-0 text-(--s-primary)" />
               {label}
             </li>
@@ -115,15 +99,15 @@ export function HomePage({ theme }: { theme: SiteTheme }) {
         </ul>
       </div>
 
-      {/* Who we help */}
+      {/* audiences */}
       <Section>
         <div className="mb-10 flex flex-col gap-3">
-          <Eyebrow>Personalised care</Eyebrow>
-          <H className="text-[30px] sm:text-[40px]">Dentistry tailored to each stage of your smile</H>
+          <Eyebrow>Who we help</Eyebrow>
+          <H className="text-[30px] sm:text-[40px]">One lab for patients, doctors and companies</H>
         </div>
         <div className="grid gap-5 md:grid-cols-3">
           {AUDIENCES.map((a, i) => {
-            const Icon = [Smile, Heart, Sparkles][i]
+            const Icon = [HeartPulse, Stethoscope, Building2][i]
             return (
               <Card key={a.id} className="flex flex-col gap-4 p-7">
                 <span className="grid size-12 place-items-center rounded-(--s-radius) bg-(--s-tint) text-(--s-primary)">
@@ -140,76 +124,58 @@ export function HomePage({ theme }: { theme: SiteTheme }) {
         </div>
       </Section>
 
-      {/* Popular treatments with honest prices */}
+      {/* popular tests */}
       <Section tone="tint">
         <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
           <div className="flex flex-col gap-3">
-            <Eyebrow>Popular treatments</Eyebrow>
-            <H className="text-[30px] sm:text-[40px]">Transparent prices, honest guidance</H>
-            <p className="text-[14px] text-(--s-muted)">Final fees confirmed after clinical examination · No hidden charges</p>
+            <Eyebrow>Popular tests</Eyebrow>
+            <H className="text-[30px] sm:text-[40px]">Clear prices, no surprises</H>
           </div>
-          <SLink tone="secondary" href={href("treatments")}>All treatments & prices <ArrowRight /></SLink>
+          <SLink tone="secondary" href={href("tests-and-packages")}>All tests & packages <ArrowRight /></SLink>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {popular.map((t) => (
             <Card key={t.id} className="flex flex-col gap-3">
               <div className="flex items-start justify-between gap-3">
                 <H as="h3" className="text-[18px] leading-snug">{t.name}</H>
-                <div className="text-right">
-                  <span className="text-[12px] text-(--s-muted)">from </span>
-                  <Price value={t.price} className="text-[20px] font-bold text-(--s-primary)" />
-                </div>
+                <Price value={t.price} className="text-[20px] font-bold text-(--s-primary)" />
               </div>
               <p className="flex-1 text-[14px] leading-relaxed text-(--s-muted)">{t.description}</p>
-              {t.comfortNote && (
-                <div className="rounded-(--s-radius) bg-(--s-tint)/50 p-2 text-[12px] text-(--s-muted)">
-                  💡 {t.comfortNote}
-                </div>
-              )}
               <div className="flex items-center justify-between gap-2 border-t border-(--s-line) pt-3 text-[13px]">
-                <span className="text-(--s-muted)">{t.duration} · {t.turnaround}</span>
-                <button type="button" onClick={() => book(t.id)} className="font-semibold text-(--s-primary) hover:underline">
-                  Book visit
-                </button>
+                <span className="text-(--s-muted)">{t.fasting ? `Fast ${t.fasting}` : "No fasting"} · {t.turnaround}</span>
+                <button type="button" onClick={() => book(t.id)} className="font-semibold text-(--s-primary) hover:underline">Book</button>
               </div>
             </Card>
           ))}
         </div>
       </Section>
 
-      {/* Packages / Routine care */}
+      {/* packages */}
       <Section>
         <div className="mb-10 flex flex-col gap-3">
-          <Eyebrow>Preventive dental plans</Eyebrow>
-          <H className="text-[30px] sm:text-[40px]">Care bundles to keep you smiling</H>
+          <Eyebrow>Health screening</Eyebrow>
+          <H className="text-[30px] sm:text-[40px]">Packages for every stage of life</H>
         </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
           {PACKAGES.map((p) => (
             <div key={p.id} className={cn("flex flex-col gap-3 rounded-(--s-radius-lg) border p-5", p.featured ? "border-(--s-primary) bg-(--s-primary) text-(--s-on-primary)" : "border-(--s-line) bg-(--s-card)")}>
-              <span className={cn("text-[13px] font-semibold uppercase tracking-wider", p.featured ? "opacity-80" : "text-(--s-muted)")}>Includes {p.tests} items</span>
-              <H as="h3" className={cn("text-[20px]", p.featured && "text-(--s-on-primary)")}>{p.name}</H>
+              <span className={cn("text-[13px] font-semibold uppercase tracking-wider", p.featured ? "opacity-80" : "text-(--s-muted)")}>{p.tests} tests</span>
+              <H as="h3" className={cn("text-[22px]", p.featured && "text-(--s-on-primary)")}>{p.name}</H>
               <p className={cn("flex-1 text-[14px]", p.featured ? "opacity-85" : "text-(--s-muted)")}>{p.for}</p>
-              <div>
-                <span className="text-[12px] opacity-75">from </span>
-                <Price value={p.price} className="text-[24px] font-bold" />
-              </div>
-              <SButton tone={p.featured ? "light" : "secondary"} onClick={() => book(p.id)} className="w-full">
-                Book appointment
-              </SButton>
+              <Price value={p.price} className="text-[26px] font-bold" />
+              <SButton tone={p.featured ? "light" : "secondary"} onClick={() => book(p.id)} className="w-full">Book</SButton>
             </div>
           ))}
         </div>
       </Section>
 
-      {/* How a first visit works (Playbook §6.1) */}
+      {/* how it works */}
       <Section tone="ink">
         <div className="grid gap-12 lg:grid-cols-[1fr_1.4fr]">
           <div className="flex flex-col gap-4">
-            <Eyebrow className="text-(--s-soft)">Your first visit</Eyebrow>
-            <H className="text-[30px] text-white sm:text-[40px]">What happens when you visit us</H>
-            <p className="text-[17px] leading-relaxed text-white/70">
-              We know visiting the dentist can feel daunting. We keep things calm, unhurried, and completely under your control from start to finish.
-            </p>
+            <Eyebrow className="text-(--s-soft)">How it works</Eyebrow>
+            <H className="text-[30px] text-white sm:text-[40px]">From booking to results in three steps</H>
+            <p className="text-[17px] leading-relaxed text-white/70">No referral needed for most tests. Bring your IC and, if you have one, your doctor&apos;s letter.</p>
           </div>
           <ol className="grid gap-4 sm:grid-cols-3">
             {STEPS.map((s, i) => (
@@ -225,16 +191,12 @@ export function HomePage({ theme }: { theme: SiteTheme }) {
         </div>
       </Section>
 
-      {/* Real reviews (Playbook §9 guardrails: no fake praise, real attributable experiences) */}
+      {/* testimonials */}
       <Section>
-        <div className="mb-10 flex flex-col gap-2">
-          <Eyebrow>Patient experiences</Eyebrow>
-          <H className="text-[30px] sm:text-[40px]">What our patients say</H>
-        </div>
         <div className="grid gap-5 md:grid-cols-3">
           {TESTIMONIALS.map((t) => (
             <figure key={t.name} className="flex flex-col gap-5 rounded-(--s-radius-lg) bg-(--s-tint) p-7">
-              <blockquote className="flex-1 text-[17px] leading-relaxed" style={{ fontFamily: "var(--s-heading)" }}>
+              <blockquote className="flex-1 text-[18px] leading-relaxed" style={{ fontFamily: "var(--s-heading)" }}>
                 “{t.quote}”
               </blockquote>
               <figcaption className="flex items-center gap-3">
@@ -251,36 +213,32 @@ export function HomePage({ theme }: { theme: SiteTheme }) {
         </div>
       </Section>
 
-      {/* Locations & Opening hours */}
+      {/* locations */}
       <Section tone="card">
         <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
           <div className="flex flex-col gap-3">
-            <Eyebrow>Practices</Eyebrow>
-            <H className="text-[30px] sm:text-[40px]">Two convenient Penang locations</H>
+            <Eyebrow>Locations</Eyebrow>
+            <H className="text-[30px] sm:text-[40px]">Three centres across Penang</H>
           </div>
-          <SLink tone="secondary" href={href("locations")}>Maps, directions & hours <ArrowRight /></SLink>
+          <SLink tone="secondary" href={href("locations")}>Maps & opening hours <ArrowRight /></SLink>
         </div>
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-3">
           {LOCATIONS.map((l) => (
-            <Card key={l.id} className="flex flex-col gap-2.5 bg-(--s-paper) p-6">
+            <Card key={l.id} className="flex flex-col gap-2 bg-(--s-paper)">
               <span className="text-[13px] font-semibold text-(--s-primary)">{l.kind}</span>
               <H as="h3" className="text-[22px]">{l.name}</H>
               <p className="text-[15px] text-(--s-muted)">{l.address.join(", ")}</p>
-              <div className="mt-2 text-[14px]">
-                <p><strong>{l.hours[0].days}:</strong> {l.hours[0].time}</p>
-                <p><strong>{l.hours[1].days}:</strong> {l.hours[1].time}</p>
-              </div>
-              {l.note && <p className="mt-1 text-[13px] text-(--s-muted)">🚗 {l.note}</p>}
+              <p className="mt-2 text-[14px]"><strong>{l.hours[0].days}</strong> {l.hours[0].time}</p>
             </Card>
           ))}
         </div>
       </Section>
 
-      {/* FAQ teaser + booking CTA */}
+      {/* faq teaser + cta */}
       <Section>
         <div className="grid gap-12 lg:grid-cols-2">
           <div className="flex flex-col gap-6">
-            <H className="text-[30px] sm:text-[40px]">Common dental questions</H>
+            <H className="text-[30px] sm:text-[40px]">Questions before your visit?</H>
             <dl className="flex flex-col divide-y divide-(--s-line) border-y border-(--s-line)">
               {FAQS.slice(0, 3).map((f) => (
                 <div key={f.q} className="flex flex-col gap-2 py-5">
@@ -289,28 +247,17 @@ export function HomePage({ theme }: { theme: SiteTheme }) {
                 </div>
               ))}
             </dl>
-            <Link href={href("faq")} className="inline-flex items-center gap-1.5 font-semibold text-(--s-primary)">
-              More answers <ArrowRight className="size-4" />
-            </Link>
+            <Link href={href("faq")} className="inline-flex items-center gap-1.5 font-semibold text-(--s-primary)">More answers <ArrowRight className="size-4" /></Link>
           </div>
           <div className="flex flex-col justify-between gap-8 rounded-(--s-radius-lg) bg-(--s-primary) p-8 text-(--s-on-primary) sm:p-10">
             <div className="flex flex-col gap-4">
-              <Smile className="size-9 opacity-80" />
-              <H className="text-[30px] text-(--s-on-primary) sm:text-[36px]">Ready to book your visit?</H>
-              <p className="text-[17px] leading-relaxed opacity-85">
-                Pick a branch and convenient slot online, or message our team on WhatsApp. We reply promptly during opening hours.
-              </p>
+              <Users className="size-9 opacity-80" />
+              <H className="text-[30px] text-(--s-on-primary) sm:text-[36px]">Book your test today</H>
+              <p className="text-[17px] leading-relaxed opacity-85">Pick a centre and time online, or message us on WhatsApp — we usually reply within 10 minutes during opening hours.</p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <SButton tone="light" size="lg" onClick={() => book()}>
-                <CalendarCheck /> Book an appointment
-              </SButton>
-              <a
-                href={`https://wa.me/${BUSINESS.whatsapp.replace(/\D/g, "")}`}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex h-13 items-center gap-2 rounded-(--s-btn-radius) border border-white/40 px-6 font-semibold hover:bg-white/10"
-              >
+              <SButton tone="light" size="lg" onClick={() => book()}><CalendarCheck /> Book a test</SButton>
+              <a href={`https://wa.me/${BUSINESS.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noreferrer" className="inline-flex h-13 items-center gap-2 rounded-(--s-btn-radius) border border-white/40 px-6 font-semibold hover:bg-white/10">
                 <MessageCircle className="size-[18px]" /> WhatsApp
               </a>
             </div>
