@@ -3,10 +3,26 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
 import Link from "next/link"
 import { Dialog } from "radix-ui"
-import { ArrowLeft, Calendar, Check, ChevronRight, Clock, Mail, MapPin, Menu, MessageCircle, Phone, X } from "lucide-react"
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Calendar,
+  Check,
+  ChevronRight,
+  Clock,
+  Heart,
+  Mail,
+  MapPin,
+  Menu,
+  MessageCircle,
+  Phone,
+  Shield,
+  Sparkles,
+  X,
+} from "lucide-react"
 import { cn } from "@/lib/cn"
 import type { SiteTheme } from "@/lib/bakti/themes"
-import { BUSINESS, LOCATIONS, PACKAGES, TESTS } from "@/lib/bakti/content"
+import { BUSINESS, EMERGENCY_NOTICE, LOCATIONS, PACKAGES, TESTS } from "@/lib/bakti/content"
 import { siteFontVars } from "./site-fonts"
 import { FieldLabel, H, SButton, container, inputClass, themeVars } from "./ui"
 import { EditBridge } from "./edit-bridge"
@@ -24,16 +40,16 @@ export function useSite() {
 }
 
 const NAV = [
-  { title: "Tests & Packages", slug: "tests-and-packages" },
-  { title: "For Doctors", slug: "for-doctors" },
-  { title: "Corporate", slug: "corporate-screening" },
-  { title: "Locations", slug: "locations" },
-  { title: "About", slug: "about" },
+  { title: "Treatments", slug: "treatments" },
+  { title: "Our Dentists", slug: "our-dentists" },
+  { title: "New Patients", slug: "new-patients" },
+  { title: "Prices & Insurance", slug: "prices" },
+  { title: "Locations & Contact", slug: "locations" },
 ]
 
 /**
- * Frame of the generated Bakti Analisa site: theme variables, header, footer, booking dialog and the
- * WhatsApp button. When it runs inside the builder's preview iframe it reports the current page upward.
+ * Frame of the generated dental practice website: theme variables, header, footer, booking dialog,
+ * mobile quick-contact bar (phone & WhatsApp per playbook section 5), and standing emergency notice.
  */
 export function SiteShell({ theme, slug, children }: { theme: SiteTheme; slug: string; children: ReactNode }) {
   const base = `/preview/${theme.id}`
@@ -52,15 +68,28 @@ export function SiteShell({ theme, slug, children }: { theme: SiteTheme; slug: s
         className={cn(siteFontVars, "flex min-h-svh w-full flex-col bg-(--s-paper) text-[16px] text-(--s-ink) antialiased")}
         style={{ ...themeVars(theme), fontFamily: "var(--s-body)" }}
       >
+        {/* top emergency alert notice */}
+        <aside aria-label="Urgent care notice" className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-[13px] text-amber-950 sm:text-center">
+          <div className={cn(container, "flex items-center justify-between gap-3 sm:justify-center")}>
+            <span className="flex items-center gap-1.5 font-medium">
+              <AlertTriangle className="size-4 shrink-0 text-amber-700" />
+              <span>Dental emergency or severe toothache? Same-day slots available daily.</span>
+            </span>
+            <a href={`tel:${BUSINESS.emergencyPhone}`} className="font-semibold text-amber-900 underline hover:no-underline">
+              Call {BUSINESS.emergencyPhone}
+            </a>
+          </div>
+        </aside>
+
         <header className="sticky top-0 z-40 border-b border-(--s-line) bg-(--s-paper)/90 backdrop-blur-md">
           <div className={cn(container, "flex h-18 items-center gap-6")}>
             <Link href={href("")} className="flex items-center gap-2.5" onClick={() => setMenu(false)}>
               <Mark />
               <span className="flex flex-col leading-none">
                 <span className="text-[19px] text-(--s-ink)" style={{ fontFamily: "var(--s-heading)", fontWeight: 700 }}>
-                  Bakti Analisa
+                  {BUSINESS.name}
                 </span>
-                <span className="mt-1 text-[11px] tracking-[0.12em] text-(--s-muted) uppercase">Clinical Laboratory</span>
+                <span className="mt-1 text-[11px] tracking-[0.12em] text-(--s-muted) uppercase">Dental Clinic</span>
               </span>
             </Link>
             <nav aria-label="Main" className="ml-auto hidden items-center gap-1 lg:flex">
@@ -77,7 +106,7 @@ export function SiteShell({ theme, slug, children }: { theme: SiteTheme; slug: s
             </nav>
             <div className="ml-auto flex items-center gap-2 lg:ml-2">
               <SButton className="hidden sm:inline-flex" onClick={() => setBooking({ open: true })}>
-                Book a test
+                Book an appointment
               </SButton>
               <button
                 type="button"
@@ -92,21 +121,32 @@ export function SiteShell({ theme, slug, children }: { theme: SiteTheme; slug: s
           </div>
           {menu && (
             <nav aria-label="Mobile" className={cn(container, "flex flex-col gap-1 pb-5 lg:hidden")}>
-              {[{ title: "Home", slug: "" }, { title: "All services", slug: "services" }, ...NAV, { title: "FAQ", slug: "faq" }].map((n) => (
+              {[{ title: "Home", slug: "" }, ...NAV, { title: "FAQ", slug: "faq" }].map((n) => (
                 <Link key={n.slug} href={href(n.slug)} onClick={() => setMenu(false)} className="flex items-center justify-between rounded-(--s-radius) px-3 py-3 text-[16px] font-medium hover:bg-(--s-tint)">
                   {n.title}
                   <ChevronRight className="size-4 text-(--s-muted)" />
                 </Link>
               ))}
               <SButton size="lg" className="mt-2 w-full" onClick={() => { setMenu(false); setBooking({ open: true }) }}>
-                Book a test
+                Book an appointment
               </SButton>
             </nav>
           )}
         </header>
 
         <EditBridge />
-        <main className="flex-1">{children}</main>
+        <main className="flex-1 pb-16 sm:pb-0">{children}</main>
+
+        {/* standing emergency notice footer banner */}
+        <section className="border-t border-amber-200 bg-amber-50/60 py-6 text-[14px] text-amber-950">
+          <div className={cn(container, "flex items-start gap-3")}>
+            <Shield className="mt-0.5 size-5 shrink-0 text-amber-700" />
+            <div className="flex flex-col gap-1">
+              <strong className="font-semibold text-amber-900">Emergency & Urgent Care Guidance:</strong>
+              <p className="leading-relaxed opacity-90">{EMERGENCY_NOTICE}</p>
+            </div>
+          </div>
+        </section>
 
         <footer className="bg-(--s-ink) text-white/80">
           <div className={cn(container, "grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]")}>
@@ -114,38 +154,65 @@ export function SiteShell({ theme, slug, children }: { theme: SiteTheme; slug: s
               <div className="flex items-center gap-2.5">
                 <Mark light />
                 <span className="text-[19px] text-white" style={{ fontFamily: "var(--s-heading)", fontWeight: 700 }}>
-                  Bakti Analisa
+                  {BUSINESS.name}
                 </span>
               </div>
               <p className="max-w-xs text-[14px] leading-relaxed text-white/60">
-                {BUSINESS.accreditation} accredited clinical laboratory serving Penang since {BUSINESS.established}.
+                {BUSINESS.accreditation} · {BUSINESS.registrationNo}. Caring, gentle dental care for your whole family since {BUSINESS.established}.
               </p>
               <div className="flex flex-col gap-2 text-[14px]">
                 <a href={`tel:${BUSINESS.phone}`} className="flex items-center gap-2 hover:text-white"><Phone className="size-4" /> {BUSINESS.phone}</a>
+                <a href={`https://wa.me/${BUSINESS.whatsapp.replace(/\D/g, "")}`} className="flex items-center gap-2 hover:text-white"><MessageCircle className="size-4" /> WhatsApp: {BUSINESS.whatsapp}</a>
                 <a href={`mailto:${BUSINESS.email}`} className="flex items-center gap-2 hover:text-white"><Mail className="size-4" /> {BUSINESS.email}</a>
               </div>
             </div>
-            <FooterCol title="Services" links={[["Tests & Packages", "tests-and-packages"], ["For Doctors & Clinics", "for-doctors"], ["Corporate Screening", "corporate-screening"], ["Prepare for Your Test", "prepare-for-your-test"]]} />
-            <FooterCol title="Lab" links={[["About Us", "about"], ["Locations & Contact", "locations"], ["FAQ", "faq"]]} />
-            <FooterCol title="Legal" links={[["Terms and Conditions", "terms"], ["Privacy Policy", "privacy"]]} />
+            <FooterCol title="Treatments" links={[["Check-up & Cleaning", "treatments"], ["Teeth Whitening", "treatments"], ["Braces & Aligners", "treatments"], ["Dental Implants", "treatments"], ["Children's Dentistry", "new-patients"]]} />
+            <FooterCol title="Practice" links={[["Our Dentists", "our-dentists"], ["New Patients Guide", "new-patients"], ["Prices & Insurance", "prices"], ["Contact & Locations", "locations"], ["FAQ", "faq"]]} />
+            <FooterCol title="Legal & Safety" links={[["Terms of Service", "terms"], ["Privacy Policy", "privacy"], ["Patient Rights", "terms"]]} />
           </div>
           <div className="border-t border-white/10">
             <div className={cn(container, "flex flex-col gap-2 py-6 text-[13px] text-white/50 sm:flex-row sm:justify-between")}>
-              <span>© 2026 {BUSINESS.legalName}</span>
-              <span>Built with GoGetSpace</span>
+              <span>© 2026 {BUSINESS.legalName} · MDC Reg. {BUSINESS.registrationNo}</span>
+              <span>All dental procedures performed by registered practitioners · Results vary</span>
             </div>
           </div>
         </footer>
 
+        {/* Mobile quick-contact bar (phone & WhatsApp visible on mobile as required by section 5) */}
+        <div className="fixed inset-x-0 bottom-0 z-40 flex h-14 border-t border-(--s-line) bg-(--s-paper)/95 backdrop-blur-md sm:hidden">
+          <a
+            href={`tel:${BUSINESS.phone}`}
+            className="flex flex-1 items-center justify-center gap-2 border-r border-(--s-line) text-[14px] font-semibold text-(--s-ink)"
+          >
+            <Phone className="size-4 text-(--s-primary)" /> Call clinic
+          </a>
+          <a
+            href={`https://wa.me/${BUSINESS.whatsapp.replace(/\D/g, "")}`}
+            target="_blank"
+            rel="noreferrer"
+            className="flex flex-1 items-center justify-center gap-2 text-[14px] font-semibold text-[#128C7E]"
+          >
+            <MessageCircle className="size-4" /> WhatsApp
+          </a>
+          <button
+            type="button"
+            onClick={() => setBooking({ open: true })}
+            className="flex flex-1 items-center justify-center bg-(--s-primary) text-[14px] font-semibold text-(--s-on-primary)"
+          >
+            Book
+          </button>
+        </div>
+
+        {/* Desktop WhatsApp pill */}
         <a
           href={`https://wa.me/${BUSINESS.whatsapp.replace(/\D/g, "")}`}
           target="_blank"
           rel="noreferrer"
-          aria-label="Chat with us on WhatsApp"
-          className="fixed right-5 bottom-5 z-40 flex h-14 items-center gap-2 rounded-full bg-[#25D366] px-5 font-semibold text-white shadow-lg hover:brightness-95"
+          aria-label="Chat with our dental reception on WhatsApp"
+          className="fixed right-5 bottom-5 z-40 hidden h-14 items-center gap-2 rounded-full bg-[#25D366] px-5 font-semibold text-white shadow-lg hover:brightness-95 sm:flex"
         >
           <MessageCircle className="size-5" />
-          <span className="hidden sm:inline">WhatsApp us</span>
+          <span>Chat on WhatsApp</span>
         </a>
 
         {booking.open && <BookingDialog open preselect={booking.preselect} onOpenChange={(open) => setBooking((b) => ({ ...b, open }))} />}
@@ -168,21 +235,20 @@ function FooterCol({ title, links }: { title: string; links: [string, string][] 
   )
 }
 
-/** Simple droplet-in-circle mark in the theme colours */
+/** Dental Tooth Icon in the theme colours */
 export function Mark({ light }: { light?: boolean }) {
   return (
     <span aria-hidden className={cn("grid size-10 place-items-center rounded-(--s-radius)", light ? "bg-white/10" : "bg-(--s-primary)")}>
-      <svg viewBox="0 0 24 24" className="size-6" fill="none">
-        <path d="M12 3.5c3 3.6 5.5 6.9 5.5 10a5.5 5.5 0 1 1-11 0c0-3.1 2.5-6.4 5.5-10Z" fill={light ? "white" : "var(--s-on-primary)"} />
-        <path d="M9.5 14.5a2.5 2.5 0 0 0 2.5 2.5" stroke="var(--s-accent)" strokeWidth="1.8" strokeLinecap="round" />
+      <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke={light ? "white" : "var(--s-on-primary)"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 2C9 2 7 3.5 6 6c-1.5 4-2.5 8-1 12 1 2.5 3 3 4.5 1 1.2-1.6 1.8-2 2.5-2s1.3.4 2.5 2c1.5 2 3.5 1.5 4.5-1 1.5-4 .5-8-1-12-1-2.5-3-4-6-4Z" />
+        <path d="M9 7c1 1 2 1.5 3 1.5s2-.5 3-1.5" />
       </svg>
     </span>
   )
 }
 
-/* ---------------- booking ---------------- */
+/* ---------------- booking dialog (Dentist Playbook §8.2 & §8.3) ---------------- */
 
-/** next 7 days except Sundays (computed on open, so prerendering never reads the clock) */
 function nextDays() {
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date()
@@ -190,34 +256,39 @@ function nextDays() {
     return d
   }).filter((d) => d.getDay() !== 0)
 }
-const SLOTS = ["7:30 am", "8:00 am", "8:30 am", "9:00 am", "9:30 am", "10:30 am", "11:30 am", "2:00 pm", "3:30 pm"]
+const SLOTS = ["9:00 am", "9:45 am", "10:30 am", "11:15 am", "2:00 pm", "2:45 pm", "3:30 pm", "4:15 pm", "5:00 pm"]
 
-/** Mounted only while open (fresh state each time, and the clock is never read while prerendering). */
 function BookingDialog({ open, preselect, onOpenChange }: { open: boolean; preselect?: string; onOpenChange: (o: boolean) => void }) {
   const [step, setStep] = useState(0)
-  const [what, setWhat] = useState(preselect ?? "comprehensive")
+  const [what, setWhat] = useState(preselect ?? "checkup-clean")
   const [where, setWhere] = useState(LOCATIONS[0].id)
   const [day, setDay] = useState(0)
   const [slot, setSlot] = useState<string | null>(null)
   const [name, setName] = useState("")
   const [phone, setPhone] = useState("")
+  const [email, setEmail] = useState("")
+  const [patientType, setPatientType] = useState<"me" | "child" | "other">("me")
+  const [guardianName, setGuardianName] = useState("")
+  const [insurance, setInsurance] = useState("")
   const [DAYS] = useState<Date[]>(nextDays)
 
   const options = [
-    ...PACKAGES.map((p) => ({ id: p.id, label: `${p.name} health screening`, price: p.price })),
-    ...TESTS.filter((t) => t.popular).map((t) => ({ id: t.id, label: t.name, price: t.price })),
-    { id: "unsure", label: "Not sure yet — I'll ask at the counter", price: 0 },
+    { id: "checkup-clean", label: "Check-up & Teeth Cleaning (Scaling)", price: 120, note: "Routine care · 30–45 min" },
+    { id: "new-patient-exam", label: "New Patient Comprehensive Exam & X-rays", price: 160, note: "Initial visit · 45–60 min" },
+    { id: "emergency-toothache", label: "Toothache or Emergency Relief", price: 100, note: "Same-day priority slot · 30 min" },
+    { id: "child-visit", label: "Child's First Dental Visit", price: 80, note: "Gentle & fun · 30 min" },
+    { id: "clear-aligners", label: "Consultation (Braces / Aligners / Implants)", price: 150, note: "Assessment & scan · 45 min" },
+    { id: "unsure", label: "Not sure / Discuss with dentist", price: 0, note: "We'll examine first" },
   ]
-  const chosen = options.find((o) => o.id === what) ?? TESTS.map((t) => ({ id: t.id, label: t.name, price: t.price })).find((o) => o.id === what)
+  const chosen = options.find((o) => o.id === what) ?? { id: what, label: "Dental appointment", price: 0, note: "" }
   const loc = LOCATIONS.find((l) => l.id === where)!
-  const fasting = TESTS.find((t) => t.id === what)?.fasting ?? (PACKAGES.some((p) => p.id === what) ? "10–12 hours" : undefined)
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/45 data-[state=open]:animate-[bp-fade-in_150ms]" />
         <Dialog.Content
-          className="fixed inset-x-0 bottom-0 z-50 flex max-h-[92svh] flex-col overflow-hidden rounded-t-(--s-radius-lg) bg-(--s-paper) text-(--s-ink) shadow-2xl outline-none sm:inset-x-auto sm:top-1/2 sm:left-1/2 sm:w-[520px] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-(--s-radius-lg) data-[state=open]:animate-[bp-dialog-in_200ms]"
+          className="fixed inset-x-0 bottom-0 z-50 flex max-h-[92svh] flex-col overflow-hidden rounded-t-(--s-radius-lg) bg-(--s-paper) text-(--s-ink) shadow-2xl outline-none sm:inset-x-auto sm:top-1/2 sm:left-1/2 sm:w-[540px] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-(--s-radius-lg) data-[state=open]:animate-[bp-dialog-in_200ms]"
           style={{ fontFamily: "var(--s-body)" }}
         >
           <div className="flex items-center gap-3 border-b border-(--s-line) px-6 py-4">
@@ -228,7 +299,7 @@ function BookingDialog({ open, preselect, onOpenChange }: { open: boolean; prese
             )}
             <Dialog.Title asChild>
               <H as="h2" className="text-[20px]">
-                {step === 3 ? "You're booked" : "Book a test"}
+                {step === 3 ? "Appointment confirmed" : "Book an appointment"}
               </H>
             </Dialog.Title>
             {step < 3 && <span className="text-[13px] text-(--s-muted)">Step {step + 1} of 3</span>}
@@ -236,25 +307,29 @@ function BookingDialog({ open, preselect, onOpenChange }: { open: boolean; prese
               <X className="size-5" />
             </Dialog.Close>
           </div>
-          <Dialog.Description className="sr-only">Choose a test, a centre and a time, then add your details.</Dialog.Description>
+          <Dialog.Description className="sr-only">Choose a reason for your visit, select a clinic branch and time, and enter your contact details.</Dialog.Description>
 
           <div className="flex flex-col gap-5 overflow-y-auto px-6 py-5">
             {step === 0 && (
               <fieldset className="flex flex-col gap-2">
-                <legend className="mb-2 text-[15px] font-semibold">What would you like to do?</legend>
+                <legend className="mb-2 text-[15px] font-semibold">Reason for visit</legend>
                 {options.map((o) => (
-                  <label key={o.id} className={cn("flex cursor-pointer items-center gap-3 rounded-(--s-radius) border px-4 py-3", what === o.id ? "border-(--s-primary) bg-(--s-tint)" : "border-(--s-line) bg-(--s-card)")}>
-                    <input type="radio" name="what" value={o.id} checked={what === o.id} onChange={() => setWhat(o.id)} className="accent-(--s-primary)" />
-                    <span className="flex-1 text-[15px]">{o.label}</span>
-                    {o.price > 0 && <span className="text-[14px] font-semibold tabular-nums">RM {o.price}</span>}
+                  <label key={o.id} className={cn("flex cursor-pointer items-start gap-3 rounded-(--s-radius) border px-4 py-3", what === o.id ? "border-(--s-primary) bg-(--s-tint)" : "border-(--s-line) bg-(--s-card)")}>
+                    <input type="radio" name="what" value={o.id} checked={what === o.id} onChange={() => setWhat(o.id)} className="mt-1 accent-(--s-primary)" />
+                    <span className="flex flex-1 flex-col">
+                      <span className="text-[15px] font-medium">{o.label}</span>
+                      <span className="text-[12px] text-(--s-muted)">{o.note}</span>
+                    </span>
+                    {o.price > 0 && <span className="text-[13px] font-semibold tabular-nums text-(--s-muted)">from RM {o.price}</span>}
                   </label>
                 ))}
               </fieldset>
             )}
+
             {step === 1 && (
               <>
                 <fieldset className="flex flex-col gap-2">
-                  <legend className="mb-2 text-[15px] font-semibold">Centre</legend>
+                  <legend className="mb-2 text-[15px] font-semibold">Select clinic branch</legend>
                   {LOCATIONS.map((l) => (
                     <label key={l.id} className={cn("flex cursor-pointer items-start gap-3 rounded-(--s-radius) border px-4 py-3", where === l.id ? "border-(--s-primary) bg-(--s-tint)" : "border-(--s-line) bg-(--s-card)")}>
                       <input type="radio" name="where" checked={where === l.id} onChange={() => setWhere(l.id)} className="mt-1 accent-(--s-primary)" />
@@ -266,7 +341,7 @@ function BookingDialog({ open, preselect, onOpenChange }: { open: boolean; prese
                   ))}
                 </fieldset>
                 <div className="flex flex-col gap-2">
-                  <p className="text-[15px] font-semibold">Day</p>
+                  <p className="text-[15px] font-semibold">Select date</p>
                   <div className="flex gap-2 overflow-x-auto pb-1">
                     {DAYS.map((d, i) => (
                       <button key={i} type="button" onClick={() => setDay(i)} className={cn("flex min-w-16 flex-col items-center rounded-(--s-radius) border px-3 py-2", day === i ? "border-(--s-primary) bg-(--s-primary) text-(--s-on-primary)" : "border-(--s-line) bg-(--s-card)")}>
@@ -277,10 +352,10 @@ function BookingDialog({ open, preselect, onOpenChange }: { open: boolean; prese
                   </div>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <p className="text-[15px] font-semibold">Time</p>
+                  <p className="text-[15px] font-semibold">Select time</p>
                   <div className="grid grid-cols-3 gap-2">
-                    {SLOTS.filter((_, i) => DAYS[day]?.getDay() !== 6 || i < 6).map((s, i) => {
-                      const full = (i + day) % 4 === 3
+                    {SLOTS.map((s, i) => {
+                      const full = (i + day) % 5 === 4
                       return (
                         <button key={s} type="button" disabled={full} onClick={() => setSlot(s)} className={cn("h-11 rounded-(--s-radius) border text-[14px] disabled:cursor-not-allowed disabled:line-through disabled:opacity-40", slot === s ? "border-(--s-primary) bg-(--s-primary) text-(--s-on-primary)" : "border-(--s-line) bg-(--s-card)")}>
                           {s}
@@ -288,51 +363,100 @@ function BookingDialog({ open, preselect, onOpenChange }: { open: boolean; prese
                       )
                     })}
                   </div>
-                  {fasting && <p className="flex items-center gap-2 rounded-(--s-radius) bg-(--s-tint) px-3 py-2 text-[13px]"><Clock className="size-4 shrink-0" /> Fasting needed: {fasting}. A morning slot is easiest.</p>}
                 </div>
               </>
             )}
+
             {step === 2 && (
               <form id="booking-details" className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); setStep(3) }}>
-                <FieldLabel label="Full name">
-                  <input required value={name} onChange={(e) => setName(e.target.value)} className={inputClass} autoComplete="name" />
+                {/* Playbook 8.3 fields */}
+                <fieldset className="flex flex-col gap-2">
+                  <legend className="text-[14px] font-semibold">Who is this visit for?</legend>
+                  <div className="flex gap-3">
+                    {[
+                      { id: "me", label: "Myself" },
+                      { id: "child", label: "My child" },
+                      { id: "other", label: "Someone else" },
+                    ].map((p) => (
+                      <label key={p.id} className={cn("flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-(--s-radius) border py-2 text-[14px]", patientType === p.id ? "border-(--s-primary) bg-(--s-tint) font-medium text-(--s-primary)" : "border-(--s-line)")}>
+                        <input type="radio" name="ptype" value={p.id} checked={patientType === p.id} onChange={() => setPatientType(p.id as "me" | "child" | "other")} className="sr-only" />
+                        {p.label}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+
+                <FieldLabel label="Patient full name">
+                  <input required value={name} onChange={(e) => setName(e.target.value)} className={inputClass} placeholder="e.g. Nurul Huda binti Ahmad" autoComplete="name" />
                 </FieldLabel>
-                <FieldLabel label="Mobile number (for your results link)">
+
+                {patientType === "child" && (
+                  <FieldLabel label="Parent or Guardian name">
+                    <input required value={guardianName} onChange={(e) => setGuardianName(e.target.value)} className={inputClass} placeholder="Parent / Legal Guardian name" />
+                  </FieldLabel>
+                )}
+
+                <FieldLabel label="WhatsApp mobile number (for confirmation & reminders)">
                   <input required value={phone} onChange={(e) => setPhone(e.target.value)} className={inputClass} inputMode="tel" placeholder="012-345 6789" autoComplete="tel" />
                 </FieldLabel>
-                <label className="flex items-start gap-3 text-[14px] text-(--s-muted)">
+
+                <FieldLabel label="Email address (optional)">
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} placeholder="name@example.com" autoComplete="email" />
+                </FieldLabel>
+
+                <FieldLabel label="Insurance / Corporate Panel (optional)">
+                  <input value={insurance} onChange={(e) => setInsurance(e.target.value)} className={inputClass} placeholder="e.g. AIA, Prudential, PMCare" />
+                </FieldLabel>
+
+                {/* Guardrail 8.3 & 9: Privacy warning */}
+                <div className="rounded-(--s-radius) bg-(--s-tint)/60 p-3 text-[13px] leading-relaxed text-(--s-muted)">
+                  <span className="font-semibold text-(--s-ink)">Privacy notice: </span>
+                  Please do not include confidential medical conditions or medications here. A private health history questionnaire will be completed securely at the clinic.
+                </div>
+
+                <label className="flex items-start gap-3 text-[13px] text-(--s-muted)">
                   <input type="checkbox" required className="mt-1 accent-(--s-primary)" />
-                  I agree to the privacy policy and to receive my booking details on WhatsApp.
+                  I confirm the details above and consent to receiving appointment reminders via WhatsApp. Free cancellation up to 24 hours prior.
                 </label>
               </form>
             )}
+
             {step === 3 && (
               <div className="flex flex-col items-center gap-4 py-4 text-center">
                 <span className="grid size-16 place-items-center rounded-full bg-(--s-tint) text-(--s-primary)">
                   <Check className="size-8" />
                 </span>
-                <p className="text-[16px]">
-                  {name ? `Thanks, ${name.split(" ")[0]}! ` : ""}We&apos;ve sent your booking to WhatsApp.
+                <p className="text-[17px] font-medium">
+                  {name ? `Thank you, ${name.split(" ")[0]}! ` : "Thank you! "}Your appointment is reserved.
                 </p>
-                <div className="flex w-full flex-col gap-2 rounded-(--s-radius) border border-(--s-line) bg-(--s-card) p-4 text-left text-[14px]">
-                  <span className="flex items-center gap-2"><Calendar className="size-4 text-(--s-primary)" /> {DAYS[day]?.toLocaleDateString("en-MY", { weekday: "long", day: "numeric", month: "long" })}, {slot}</span>
-                  <span className="flex items-center gap-2"><MapPin className="size-4 text-(--s-primary)" /> {loc.name} — {loc.address[0]}</span>
-                  <span className="flex items-center gap-2"><Check className="size-4 text-(--s-primary)" /> {chosen?.label}</span>
+                <p className="text-[14px] text-(--s-muted)">
+                  We have sent confirmation and arrival guidance to <strong>{phone || "your WhatsApp"}</strong>.
+                </p>
+                <div className="flex w-full flex-col gap-2.5 rounded-(--s-radius) border border-(--s-line) bg-(--s-card) p-4 text-left text-[14px]">
+                  <span className="flex items-center gap-2 font-medium">
+                    <Calendar className="size-4 text-(--s-primary)" /> {DAYS[day]?.toLocaleDateString("en-MY", { weekday: "long", day: "numeric", month: "long" })}, {slot}
+                  </span>
+                  <span className="flex items-center gap-2 text-(--s-muted)">
+                    <MapPin className="size-4 text-(--s-primary)" /> {loc.name} — {loc.address[0]}
+                  </span>
+                  <span className="flex items-center gap-2 text-(--s-muted)">
+                    <Sparkles className="size-4 text-(--s-primary)" /> {chosen.label}
+                  </span>
+                  {chosen.price > 0 && (
+                    <span className="mt-1 text-[13px] text-(--s-muted)">
+                      Estimated fee: <strong>from RM {chosen.price}</strong> (confirmed after consultation)
+                    </span>
+                  )}
                 </div>
               </div>
             )}
           </div>
 
           <div className="flex items-center gap-3 border-t border-(--s-line) px-6 py-4">
-            {step < 3 && chosen && chosen.price > 0 && (
-              <span className="text-[14px] text-(--s-muted)">
-                Total <strong className="text-[17px] text-(--s-ink)">RM {chosen.price}</strong>
-              </span>
-            )}
             {step === 0 && <SButton className="ml-auto" onClick={() => setStep(1)}>Continue</SButton>}
             {step === 1 && <SButton className="ml-auto" disabled={!slot} onClick={() => setStep(2)}>Continue</SButton>}
-            {step === 2 && <SButton className="ml-auto" type="submit" form="booking-details">Confirm booking</SButton>}
-            {step === 3 && <SButton className="w-full" onClick={() => onOpenChange(false)}>Done</SButton>}
+            {step === 2 && <SButton className="ml-auto" type="submit" form="booking-details">Confirm appointment</SButton>}
+            {step === 3 && <SButton className="w-full" onClick={() => onOpenChange(false)}>Close</SButton>}
           </div>
         </Dialog.Content>
       </Dialog.Portal>
