@@ -43,18 +43,14 @@ export function ChatInput({ className, credits }: { className?: string; credits?
     }
   }
 
-  // a question card is open: answers go on the card, the chat is for anything else
-  const asking = s.msgs.some((m) => (m.type === "pb-question" || m.type === "pb-gate") && !m.answer)
   const placeholder = clarifying
     ? "Describe your business…"
-    : asking
-      ? "Or ask me something else…"
     : planRunning
       ? "Queue a follow up…"
       : s.phase === "create"
         ? "Ask for a change…"
         : "Ask for a change to the plan…"
-  const hint = asking && hasText ? null : planRunning && hasText ? "Sending this restarts the plan with your note" : blocked ? "Pick one of the businesses above to continue" : null
+  const hint = planRunning && hasText ? "Sending this restarts the plan with your note" : blocked ? "Pick one of the businesses above to continue" : null
 
   return (
     <div className={cn("flex flex-col", className)}>
