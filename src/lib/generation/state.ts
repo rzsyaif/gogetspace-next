@@ -812,6 +812,8 @@ function pbConfirmPlan(s: GenState): GenState {
     questions: dentistQuestions(pb),
     sitemap: dentistSitemap(pb),
     pagePriority: dentistPriority(pb),
+    // the plan card's style preset is preselected in the style step
+    styleId: s.styleId ?? presetOf(pb),
     msgs: s.msgs.map((m) => (m.type === "pb-plan" ? { ...m, confirmed: true } : m)),
   }
   n = push(
@@ -923,7 +925,7 @@ function fastForwardPlaybook(s: GenState): GenState {
   if (isDemoClinic(pb)) pb = { ...pb, found: { rating: RAHMA.rating, dentists: RAHMA.dentists.length, branches: 1, hours: RAHMA.hours }, answers: { ...pb.answers, scale: pb.answers.scale?.source === "default" ? { value: "dentists", source: "search" } : pb.answers.scale } }
   for (const g of offerFor(pb.goals)) for (const mod of g.modules) if (mod.id !== "gallery") pb = { ...pb, decisions: decide(pb.decisions, mod.id, "added", pb.goals) }
   pb = { ...pb, planConfirmed: true }
-  const n: GenState = { ...s, pb, brief: dentistBrief(pb), questions: dentistQuestions(pb), sitemap: dentistSitemap(pb), pagePriority: dentistPriority(pb) }
+  const n: GenState = { ...s, pb, brief: dentistBrief(pb), questions: dentistQuestions(pb), sitemap: dentistSitemap(pb), pagePriority: dentistPriority(pb), styleId: s.styleId ?? presetOf(pb) }
   return push(n, { type: "pb-plan", confirmed: true })
 }
 

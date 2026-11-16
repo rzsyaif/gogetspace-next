@@ -134,6 +134,62 @@ export const ALT_THEMES: SiteTheme[] = [
   },
 ]
 
+/** Style options for a dental practice (dentist playbook). The first three are the playbook's presets. */
+export const DENTAL_THEMES: SiteTheme[] = [
+  {
+    id: "calm-clinical",
+    name: "Calm Clinical",
+    vibe: "Soft blues, clean and reassuring",
+    heading: "jakarta",
+    body: "inter",
+    headingWeight: 700,
+    palette: ["#1D6FB8", "#BFE0F5", "#2FB5A3", "#10233A", "#F5F9FC"],
+    onPrimary: "#FFFFFF",
+    radius: 14,
+    buttonRadius: 10,
+    hero: "split",
+  },
+  {
+    id: "warm-family",
+    name: "Warm Family",
+    vibe: "Sunny and friendly, made for parents",
+    heading: "bricolage",
+    body: "dmSans",
+    headingWeight: 700,
+    palette: ["#D8642E", "#FFE0C4", "#2E9C8F", "#2B1D14", "#FFF9F2"],
+    onPrimary: "#FFFFFF",
+    radius: 24,
+    buttonRadius: 999,
+    hero: "centered",
+  },
+  {
+    id: "modern-premium",
+    name: "Modern Premium",
+    vibe: "Deep and refined, for bigger treatments",
+    heading: "dmSerif",
+    body: "inter",
+    headingWeight: 400,
+    palette: ["#1F2A36", "#DCCBA8", "#A9824A", "#141A21", "#F7F4EE"],
+    onPrimary: "#FFFFFF",
+    radius: 6,
+    buttonRadius: 4,
+    hero: "split",
+  },
+  {
+    id: "fresh-smile",
+    name: "Fresh Smile",
+    vibe: "Mint and white, bright and modern",
+    heading: "spaceGrotesk",
+    body: "geist",
+    headingWeight: 700,
+    palette: ["#0E9682", "#C7F1E7", "#5B6CFF", "#0D2A26", "#F4FBF9"],
+    onPrimary: "#FFFFFF",
+    radius: 18,
+    buttonRadius: 999,
+    hero: "split",
+  },
+]
+
 export const CUSTOM_THEME: SiteTheme = {
   id: "custom",
   name: "Your style",
@@ -148,7 +204,9 @@ export const CUSTOM_THEME: SiteTheme = {
   hero: "split",
 }
 
-export const ALL_THEMES = [...THEMES, ...ALT_THEMES, CUSTOM_THEME]
+export const ALL_THEMES = [...THEMES, ...ALT_THEMES, ...DENTAL_THEMES, CUSTOM_THEME]
+/** the Bakti Analisa demo site is only prerendered in its own options */
+export const LAB_THEMES = [...THEMES, ...ALT_THEMES, CUSTOM_THEME]
 
 export function getTheme(id: string | undefined | null): SiteTheme {
   return ALL_THEMES.find((t) => t.id === id) ?? THEMES[0]

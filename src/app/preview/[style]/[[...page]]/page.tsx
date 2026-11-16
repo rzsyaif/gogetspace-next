@@ -1,12 +1,12 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
-import { ALL_THEMES } from "@/lib/bakti/themes"
+import { ALL_THEMES, LAB_THEMES } from "@/lib/bakti/themes"
 import { KNOWN_SLUGS } from "@/lib/bakti/sitemap"
 import { SitePage, titleFromSlug } from "@/components/bakti-site/site-page"
 
 /** The generated Bakti Analisa site: every page in every style option, prerendered. */
 export function generateStaticParams() {
-  return ALL_THEMES.flatMap((t) => KNOWN_SLUGS.map((s) => ({ style: t.id, page: s ? [s] : [] })))
+  return LAB_THEMES.flatMap((t) => KNOWN_SLUGS.map((s) => ({ style: t.id, page: s ? [s] : [] })))
 }
 
 export async function generateMetadata({ params }: PageProps<"/preview/[style]/[[...page]]">): Promise<Metadata> {

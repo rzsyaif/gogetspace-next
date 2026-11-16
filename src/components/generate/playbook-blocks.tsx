@@ -265,7 +265,7 @@ export function PlanCard({ m, compact }: { m: Extract<Msg, { type: "pb-plan" }>;
       </div>
 
       {/* assumptions */}
-      <dl className="flex flex-col divide-y divide-line-subtle rounded-md border border-line-default">
+      <dl className="flex flex-col divide-y divide-line-default rounded-md border border-line-default">
         {shown.map((l) => (
           <div key={l.key} className="flex flex-col gap-2 px-3 py-2.5">
             <div className="flex items-start gap-3">

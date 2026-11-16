@@ -5,7 +5,7 @@ import { Loader, RefreshCw, Sparkles } from "lucide-react"
 import { IconButton, RadioDot, Tooltip } from "@/components/ui"
 import { cn } from "@/lib/cn"
 import type { SiteTheme } from "@/lib/bakti/themes"
-import { HeroPreview } from "@/components/bakti-site/hero-preview"
+import { FlowHero } from "./flow-hero"
 
 /**
  * Phone version of the style step: each option is one big card (name + its hero) in a swipeable row, and the card
@@ -124,7 +124,7 @@ export function StyleCarousel({
               </div>
               <div className="relative h-[min(420px,50svh)] overflow-hidden bg-canvas p-3">
                 <div className="overflow-hidden rounded-md border border-line-default shadow-soft-sm">
-                  <HeroPreview theme={t} viewport={390} />
+                  <FlowHero theme={t} viewport={390} />
                 </div>
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-linear-to-t from-canvas to-transparent" aria-hidden />
               </div>

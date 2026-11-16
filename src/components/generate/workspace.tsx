@@ -38,6 +38,8 @@ import { Avatar, Badge, Button, Drawer, DrawerContent, DrawerTrigger, DropdownMe
 import { cn } from "@/lib/cn"
 import { flatten, type PageNode } from "@/lib/bakti/sitemap"
 import { getTheme } from "@/lib/bakti/themes"
+import { previewUrl } from "@/lib/generation/preview-url"
+import { siteName } from "@/lib/generation/state"
 import type { PageStatus } from "@/lib/generation/state"
 import { useGen } from "./gen-provider"
 import { PreviewFrame, type EditEvent } from "./preview-frame"
@@ -328,7 +330,7 @@ export function PreviewPane({ chatOpen, onShowChat, onToast }: { chatOpen: boole
   const page = pages.find((p) => p.id === pageId) ?? pages[0]
   const status: PageStatus = s.pages[page.id] ?? "queued"
   const styleId = s.styleId ?? "clinical-clarity"
-  const src = `/preview/${styleId}${page.slug ? `/${page.slug}` : ""}`
+  const src = previewUrl(s, page.slug)
   const build = s.buildRun ? s.runs[s.buildRun] : null
   const buildDone = build?.status === "done"
   const anyBuilt = Object.values(s.pages).some((p) => p === "built")
@@ -555,13 +557,14 @@ function PageOverlay({ page, status, onRetry }: { page: PageNode; status: PageSt
 }
 
 function CodeView({ page, built }: { page: PageNode; built: boolean }) {
+  const { s } = useGen()
   const name = page.title.replace(/[^a-zA-Z0-9]+/g, "")
   const lines = built
     ? [
         `// app/(site)/${page.slug || "page"}${page.slug ? "/page" : ""}.tsx`,
         `import { Header, Footer, Section, BookingButton } from "@/site"`,
         "",
-        `export const metadata = { title: "${page.title} · Bakti Analisa" }`,
+        `export const metadata = { title: "${page.title} · ${siteName(s)}" }`,
         "",
         `export default function ${name || "Page"}() {`,
         "  return (",

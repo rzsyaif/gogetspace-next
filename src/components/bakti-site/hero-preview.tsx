@@ -100,7 +100,7 @@ export function HeroPreview({ theme, viewport }: { theme: SiteTheme; viewport: n
 }
 
 /** Lays content out at a fixed virtual width and scales it down to fit the available width. */
-function Scaled({ width, children }: { width: number; children: React.ReactNode }) {
+export function Scaled({ width, children }: { width: number; children: React.ReactNode }) {
   const outer = useRef<HTMLDivElement>(null)
   const inner = useRef<HTMLDivElement>(null)
   const [box, setBox] = useState({ w: 0, h: 0 })
