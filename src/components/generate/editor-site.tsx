@@ -7,6 +7,7 @@ import type { Site } from "@/lib/account/data"
 import { accountActions, useSite } from "@/lib/account/store"
 import type { PlanUsage } from "@/components/account/plan-panel"
 import { useGen } from "./gen-provider"
+import { siteName } from "@/lib/generation/state"
 
 /**
  * The website the editor is working on. In the generation flow it's the site being created (plan and status
@@ -37,7 +38,7 @@ export function FlowSiteProvider({ children }: { children: ReactNode }) {
   const built = Object.values(s.pages).filter((p) => p === "built").length
   const site: Site = {
     id: "new-site",
-    name: "Bakti Analisa Clinical Laboratory Penang",
+    name: s.pb ? siteName(s) : "Bakti Analisa Clinical Laboratory Penang",
     status: s.publish.status === "live" ? "live" : "draft",
     plan: s.plan,
     freeDomain: s.publish.domain,

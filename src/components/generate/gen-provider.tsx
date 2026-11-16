@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useEffect, useEffectEvent, useReducer, type Dispatch, type ReactNode } from "react"
-import { BUILD_STEP_MS, PAGE_MS, PLAN_STEP_MS, SEARCH_RESULTS, initialState, reducer, type Action, type GenState } from "@/lib/generation/state"
+import { BUILD_STEP_MS, PAGE_MS, PLAN_STEP_MS, initialState, searchOf, reducer, type Action, type GenState } from "@/lib/generation/state"
 import { flatten } from "@/lib/bakti/sitemap"
 
 const KEY = "gogetspace-generation"
@@ -53,7 +53,7 @@ function restore(prompt: string | null, key: string, initial?: () => GenState): 
     const raw = typeof window !== "undefined" ? sessionStorage.getItem(key) : null
     if (raw) saved = JSON.parse(raw) as GenState
   } catch {}
-  if (saved?.v === 2 && (!prompt || prompt === saved.prompt)) return saved
+  if (saved?.v === 3 && (!prompt || prompt === saved.prompt)) return saved
   return initial ? initial() : initialState(prompt ?? undefined)
 }
 
@@ -85,7 +85,7 @@ function usePlanRunner(s: GenState, dispatch: Dispatch<Action>) {
     timers.push(window.setTimeout(() => dispatch({ type: "planStepDone" }), (slow ? 9000 : PLAN_STEP_MS[id]) * k))
     if (slow) timers.push(window.setTimeout(() => dispatch({ type: "taskNote", note: "Still working — this one is taking longer than usual." }), 3500 * k))
     if (id === "search" && st.scenario !== "no-results" && st.scenario !== "search-fail") {
-      for (let n = st.searchShown; n < SEARCH_RESULTS.length; n++) timers.push(window.setTimeout(() => dispatch({ type: "revealResult" }), (700 + n * 800) * k))
+      for (let n = st.searchShown; n < searchOf(st).results.length; n++) timers.push(window.setTimeout(() => dispatch({ type: "revealResult" }), (700 + n * 800) * k))
     }
     return () => timers.forEach((t) => window.clearTimeout(t))
   }, [key, dispatch])

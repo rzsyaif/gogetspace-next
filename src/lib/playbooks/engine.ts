@@ -162,6 +162,12 @@ export interface PlaybookState {
    * kept, the rest go under Add later), or the proposal for a vague goal ("more patients")
    */
   candidates: { goals: string[]; kind: "several" | "vague" } | null
+  /** style preset the owner picked on the plan card (otherwise the scenario's preset) */
+  style: string | null
+  /** the plan card was confirmed: brief, style and sitemap are generated from here on */
+  planConfirmed: boolean
+  /** modules whose owner accounts are connected (out of test mode) */
+  activated: string[]
 }
 
 export function initialPlaybookState(prompt: string, pb: Playbook = DENTIST): PlaybookState {
@@ -188,6 +194,9 @@ export function initialPlaybookState(prompt: string, pb: Playbook = DENTIST): Pl
     unsupported: a.unsupported,
     consent: [],
     candidates,
+    style: null,
+    planConfirmed: false,
+    activated: [],
   }
 }
 
@@ -264,6 +273,7 @@ export function scenariosOf(st: PlaybookState, pb: Playbook = DENTIST): string[]
 }
 
 export function presetOf(st: PlaybookState, pb: Playbook = DENTIST): string {
+  if (st.style) return st.style
   const sc = scenariosOf(st, pb)
   if (sc.includes("S3")) return "warm-family"
   if (sc.includes("S5")) return "modern-premium"
@@ -355,7 +365,7 @@ export function mainButton(st: PlaybookState, pb: Playbook = DENTIST): { label: 
 }
 
 /** automations that come with the added modules for the chosen goals */
-export function automationsOf(st: PlaybookState, pb: Playbook = DENTIST): string[] {
+export function automationsOf(st: PlaybookState): string[] {
   const has = (id: string) => st.decisions[id] === "added"
   const out: string[] = []
   if (has("appointments")) out.push("Confirmation", "Reminders")

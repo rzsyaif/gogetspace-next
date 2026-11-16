@@ -43,7 +43,7 @@ export function ReviewSheet() {
       return dispatch({ type: "confirm", key: "brief" })
     }
     if (key === "style") return status === "confirmed" ? go(2) : dispatch({ type: "confirm", key: "style" })
-    const needed = Math.min(unlockedIds(s.sitemap, s.plan).size, flatten(s.sitemap).length) * 3 + 8
+    const needed = Math.min(unlockedIds(s.sitemap, s.plan, s.pagePriority).size, flatten(s.sitemap).length) * 3 + 8
     if (s.credits + needed > 100 && s.scenario === "credits-low") return setCreditWarn(true)
     dispatch({ type: "startCreation" })
   }
@@ -181,7 +181,7 @@ export function ReviewSheet() {
       <Dialog open={creditWarn} onOpenChange={setCreditWarn}>
         <DialogContent
           title="You may run out of credits"
-          description={`You've used ${s.credits}% of this month's credits. Building all the pages in your plan needs about ${Math.min(unlockedIds(s.sitemap, s.plan).size, flatten(s.sitemap).length) * 3 + 8}% — more than you have left.`}
+          description={`You've used ${s.credits}% of this month's credits. Building all the pages in your plan needs about ${Math.min(unlockedIds(s.sitemap, s.plan, s.pagePriority).size, flatten(s.sitemap).length) * 3 + 8}% — more than you have left.`}
           footer={
             <>
               <Button variant="secondary" onClick={() => { setCreditWarn(false); dispatch({ type: "startCreation", homepageOnly: true }) }}>Build the homepage only</Button>

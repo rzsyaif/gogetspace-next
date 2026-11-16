@@ -26,11 +26,12 @@ import {
 import { Alert, Badge, Button, Checkbox, Chip, Field, Input, Step, StepList, Textarea } from "@/components/ui"
 import { cn } from "@/lib/cn"
 import { flatten } from "@/lib/bakti/sitemap"
-import { BUSINESS_MATCHES, SEARCH_QUERY, SEARCH_RESULTS, type ArtifactKey, type FeedbackAnswer, type Msg, type Run, type Task } from "@/lib/generation/state"
+import { BUSINESS_MATCHES, searchOf, siteName, type ArtifactKey, type FeedbackAnswer, type Msg, type Run, type Task } from "@/lib/generation/state"
 import { RATING, type Rating } from "@/lib/admin/data"
 import { submitFeedback } from "@/lib/admin/store"
 import { useEditorSite } from "./editor-site"
 import { useGen } from "./gen-provider"
+import { ActivationCard, GateCard, GuardCard, PatchCard, PlanCard, QuestionCard } from "./playbook-blocks"
 
 export const ARTIFACTS: { key: ArtifactKey; title: string; Icon: typeof FileText }[] = [
   { key: "brief", title: "Project Brief", Icon: FileText },
@@ -79,6 +80,18 @@ function Block({ m, compact }: { m: Msg; compact?: boolean }) {
       return <CreditsOut resolved={m.resolved} />
     case "feedback":
       return <FeedbackCard id={m.id} answer={m.answer} compact={compact} />
+    case "pb-question":
+      return <QuestionCard m={m} compact={compact} />
+    case "pb-gate":
+      return <GateCard m={m} compact={compact} />
+    case "pb-guard":
+      return <GuardCard m={m} compact={compact} />
+    case "pb-plan":
+      return <PlanCard m={m} compact={compact} />
+    case "pb-patch":
+      return <PatchCard m={m} compact={compact} />
+    case "pb-activate":
+      return <ActivationCard compact={compact} />
   }
 }
 
@@ -130,11 +143,13 @@ function PlanBlock({ run, compact }: { run: Run; compact?: boolean }) {
     <div className={cn("flex flex-col gap-6", !compact && "pr-20")}>
       {finished ? (
         <div className="flex flex-col gap-4 type-body-md text-fg-primary">
-          <p>Hi! Let&apos;s build the website for Bakti Analisa. I&apos;ve drafted three things for you to review before I start: a brief, some style options, and a page plan.</p>
+          <p>Hi! Let&apos;s build the website for {siteName(s)}. I&apos;ve drafted three things for you to review before I start: a brief, some style options, and a page plan.</p>
           <p>Open each one and change anything that doesn&apos;t fit — nothing gets built until you confirm.</p>
         </div>
       ) : (
-        <p className="type-body-md text-fg-primary">Before I build anything, I&apos;ll plan it out with you first.</p>
+        <p className="type-body-md text-fg-primary">
+          {s.pb ? "Before I build anything, I'll plan it with you — a couple of quick questions while I look you up." : "Before I build anything, I'll plan it out with you first."}
+        </p>
       )}
       <div className="flex flex-col gap-4">
         {finished ? (
@@ -144,6 +159,7 @@ function PlanBlock({ run, compact }: { run: Run; compact?: boolean }) {
         ) : (
           <p className="type-label-sm text-fg-secondary" aria-live="polite">
             {done}/{run.tasks.length} tasks
+            {isCurrent && run.status === "waiting" && s.pb && " · waiting for you"}
           </p>
         )}
         {(!finished || open) && (
@@ -167,18 +183,19 @@ function PlanBlock({ run, compact }: { run: Run; compact?: boolean }) {
 function SearchResults({ task }: { task: Task }) {
   const { s } = useGen()
   const [open, setOpen] = useState(true)
-  if (s.scenario === "search-fail" || s.scenario === "no-results") return <p className="type-body-sm text-fg-secondary">{SEARCH_QUERY}</p>
-  const shown = Math.min(s.searchShown, SEARCH_RESULTS.length)
+  const so = searchOf(s)
+  if (s.scenario === "search-fail" || s.scenario === "no-results" || so.none) return <p className="type-body-sm text-fg-secondary">{so.query}</p>
+  const shown = Math.min(s.searchShown, so.results.length)
   return (
     <div className="mt-1 flex flex-col gap-2">
       <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="flex items-center gap-1 self-start type-body-sm text-fg-primary">
-        {SEARCH_QUERY}
+        {so.query}
         <ChevronDown className={cn("size-4 transition-transform", open && "rotate-180")} />
       </button>
       {open && shown > 0 && (
         <ul className="flex flex-col gap-2 rounded-sm bg-subtle p-2">
           <AnimatePresence initial={false}>
-            {SEARCH_RESULTS.slice(0, shown).map((r) => (
+            {so.results.slice(0, shown).map((r) => (
               <motion.li key={r.site} initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="flex items-center gap-2">
                 <span className="grid size-5 shrink-0 place-items-center rounded-[4px] bg-muted text-fg-tertiary"><Globe className="size-3" /></span>
                 <span className="min-w-0 flex-1 truncate type-body-sm text-fg-primary">{r.title}</span>
