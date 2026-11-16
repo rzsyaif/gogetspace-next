@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { Popover } from "radix-ui"
-import { Check, CircleHelp, Pencil, Plus, Sparkles, Trash2 } from "lucide-react"
+import { Check, Pencil, Plus, Sparkles, Trash2 } from "lucide-react"
 import { Button, IconButton } from "@/components/ui"
 import { cn } from "@/lib/cn"
 import { countAssumptions, resolveGuess, segments, stripBrackets, type BriefSection } from "@/lib/generation/brief"
@@ -17,7 +17,7 @@ export function BriefStep() {
   const scroller = useRef<HTMLDivElement>(null)
   const [active, setActive] = useState(s.brief[0]?.id)
   const guesses = countAssumptions(s.brief)
-  const sections = [...s.brief.map((b) => ({ id: b.id, title: b.title })), { id: "questions", title: "Open questions" }]
+  const sections = s.brief.map((b) => ({ id: b.id, title: b.title }))
 
   const set = (brief: BriefSection[]) => dispatch({ type: "editBrief", brief })
   const editItem = (secId: string, itemId: string, text: string | null) =>
@@ -85,24 +85,6 @@ export function BriefStep() {
           </section>
         ))}
 
-        <section id="brief-questions" data-brief-section className="flex flex-col gap-3">
-          <h3 className="flex items-center gap-2 type-h5 text-fg-primary">
-            Open questions <CircleHelp className="size-5 text-fg-tertiary" />
-          </h3>
-          <p className="type-body-sm text-fg-secondary">Optional — answer what you can now, the rest can wait until after the build.</p>
-          {s.questions.map((q) => (
-            <label key={q.id} className="flex flex-col gap-1.5">
-              <span className="type-body-md text-fg-primary">{q.q}</span>
-              <textarea
-                rows={2}
-                value={q.answer}
-                onChange={(e) => dispatch({ type: "answerQuestion", id: q.id, answer: e.target.value })}
-                placeholder="Your answer"
-                className="w-full resize-y rounded-md border border-line-strong bg-surface px-3 py-2 type-body-md text-fg-primary outline-none placeholder:text-fg-tertiary focus:border-blue-500 focus:shadow-[0_0_0_4px_var(--color-blue-100)]"
-              />
-            </label>
-          ))}
-        </section>
       </div>
 
       <nav aria-label="Brief sections" className="hidden w-[280px] shrink-0 flex-col self-start lg:flex">

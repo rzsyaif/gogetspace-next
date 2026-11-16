@@ -134,7 +134,7 @@ without the pixel pattern. The page is always light (`data-theme="light"`).
 
 Typing a prompt on the homepage opens `/generate`. A scripted agent (`src/lib/generation/state.ts`, timers in
 `gen-provider.tsx`) plans the site, then the person reviews three artifacts in a sheet: an editable brief (guesses are
-highlighted until confirmed), style options previewed on one hero section, and a sitemap (list and map side by side, with
+highlighted until confirmed; there's no separate open-questions list), style options previewed on one hero section, and a sitemap (list and map side by side, with
 rename / add / remove, plan limits and the sections planned for each page). "Start Creation" opens the workspace: chat, build progress, credits, and a
 preview of the generated site with device sizes and a page switcher. Sign-up is asked for only when publishing. When the first build finishes, a feedback card in the chat asks how it turned out (Good / Fine / Bad + why) and whether we may contact them for research.
 
@@ -182,7 +182,11 @@ a website for one kind of practice. The first is the dentist playbook (v0.3), in
 In `/generate`, a dental prompt runs the playbook conversation (`components/generate/playbook-blocks.tsx`):
 
 1. The agent reads the prompt and starts the web search; **questions are asked while it searches**, and the search
-   fills answers too (e.g. the number of dentists). Every question has "You decide" and accepts a typed answer.
+   fills answers too (e.g. the number of dentists). Questions come **one at a time on a card**
+   (`question-series.tsx`, Figma 125:982): a counter ("2 / 4"), the answers as a radio list (checkboxes for goals,
+   with a main goal), "Something else" with a text field, "You decide", Back to change the previous answer, and
+   "Skip these questions" to let the agent decide the rest. The chat input is hidden while a card is open. Once
+   done, the answers fold into one summary.
 2. Claims and data the site can't publish ("best dentist", "painless", medical history on a form, before-and-after
    photos without consent…) get a guardrail card with the reason and a compliant alternative.
 3. One **"Here's my plan"** card: assumptions tagged with where they came from (your message, found online, you chose,

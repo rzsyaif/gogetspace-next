@@ -88,7 +88,22 @@ export type Msg =
   /** a gate before planning: a directory instead of one practice, or two businesses in one prompt */
   | { id: string; type: "pb-gate"; kind: "directory" | "two-sites" | "directory-retry"; answer?: string }
   /** one of the playbook's questions (Q1 goals, Q2 focus, Q3 scale, Q4 the goal's follow-up) */
-  | { id: string; type: "pb-question"; qid: string; slot: Slot; variant?: string; answer?: string }
+  | {
+      id: string
+      type: "pb-question"
+      qid: string
+      slot: Slot
+      variant?: string
+      answer?: string
+      /** why the agent chose, when the owner let it decide or skipped */
+      note?: string
+      /** the plan as it was before this answer, so Back can undo it */
+      prev?: PlaybookState
+      /** a written answer that didn't match any option */
+      unclear?: string
+      /** the option(s) picked, kept when Back reopens the question */
+      value?: string | string[]
+    }
   /** a guardrail: declines a claim or field, offers the compliant alternative */
   | { id: string; type: "pb-guard"; rule: string; quote: string; resolved?: "accepted" | "declined" }
   /** the plan card: assumptions with Edit, the module offer and the running total */
@@ -298,6 +313,9 @@ export type Action =
   | { type: "jump"; to: JumpTarget; scenario?: Scenario; plan?: Plan }
   /* playbook conversation */
   | { type: "pbAnswer"; id: string; value: string | string[]; text?: string }
+  | { type: "pbBack"; id: string }
+  | { type: "pbAnswerText"; id: string; text: string }
+  | { type: "pbSkipAll" }
   | { type: "pbGate"; id: string; answer: string }
   | { type: "pbGuard"; id: string; resolution: "accepted" | "declined" }
   | { type: "pbEdit"; slot: Slot | "style"; value: string | string[] }
@@ -609,6 +627,18 @@ export function reducer(s: GenState, a: Action): GenState {
       return s.pb ? { ...s, pb: { ...s.pb, consent: [...new Set([...s.pb.consent, a.module])], decisions: decide(s.pb.decisions, a.module, "added", s.pb.goals) } } : s
     case "pbConfirmPlan":
       return pbConfirmPlan(s)
+    case "pbBack":
+      return pbBack(s, a.id)
+    case "pbAnswerText": {
+      const m = s.msgs.find((x) => x.id === a.id)
+      if (!m || m.type !== "pb-question" || m.answer) return s
+      const v = parseAnswer(m, a.text)
+      if (v === null) return { ...s, msgs: s.msgs.map((x) => (x.id === a.id ? { ...x, unclear: a.text } : x)) }
+      const n = pbAnswer(s, a.id, v)
+      return { ...n, msgs: n.msgs.map((x) => (x.id === a.id && x.type === "pb-question" ? { ...x, answer: `${x.answer} — “${a.text}”`, unclear: undefined } : x)) }
+    }
+    case "pbSkipAll":
+      return pbSkipAll(s)
     case "pbPatch":
       return pbPatch(s, a.id, a.decisions)
     case "pbActivate":
@@ -670,8 +700,8 @@ function opening(s: GenState): GenState {
   if (!next) return s
   if (pb.candidates?.kind === "several") return push(s, { type: "agent", text: "You've asked for a lot — let's start with the one that matters most right now. I'll set that up first and keep the rest under Add later." })
   if (pb.candidates?.kind === "vague") return s
-  if (next.id === "Q1") return push(s, { type: "agent", text: "I'll build a website for a single dental clinic. Before I choose the tools you need, one question — I'll look you up online meanwhile." })
-  if (pb.goals.length) return push(s, { type: "agent", text: `Got it — I read your goal${pb.goals.length > 1 ? "s" : ""} as ${joinAnd(pb.goals.map((g) => lower(goalLabel(g))))}. A quick question while I look you up.` })
+  if (next.id === "Q1") return push(s, { type: "agent", text: "I'll build a website for a single dental clinic. Before I choose the tools you need, a few quick questions — I'll look you up online meanwhile." })
+  if (pb.goals.length) return push(s, { type: "agent", text: `Got it — I read your goal${pb.goals.length > 1 ? "s" : ""} as ${joinAnd(pb.goals.map((g) => lower(goalLabel(g))))}. A few quick questions while I look you up.` })
   return s
 }
 
@@ -718,15 +748,14 @@ function pbAnswer(s: GenState, id: string, value: string | string[], typed?: str
   if (m.slot === "goals") {
     if (value === "decide") {
       pb = { ...pb, goals: [DENTIST.defaultGoal, DENTIST.defaultSecondary], goalsSource: "default" }
-      label = "You decide"
-      reply = "Done. I chose getting more patients booking online, with being found and trusted as a second goal — that's where most clinics start. You can change it any time."
+      label = `${goalLabel(DENTIST.defaultGoal)} (main) · ${goalLabel(DENTIST.defaultSecondary)}`
+      reply = "I chose getting more patients booking online, with being found and trusted as a second goal — that's where most clinics start."
     } else {
       const goals = (Array.isArray(value) ? value : [value]).slice(0, 3)
       const several = pb.candidates?.kind === "several"
       pb = { ...pb, goals, goalsSource: "owner" }
-      label = goals.length === 1 ? goalLabel(goals[0]) : `${goalLabel(goals[0])} — that's the main one. Also: ${goals.slice(1).map((g) => lower(goalLabel(g))).join(", ")}`
-      if (several) reply = `Let's start with that. I'll set it up first and keep the rest under Add later.`
-      else if (pb.candidates?.kind === "vague") reply = "More patients is a great goal. I'll start with online booking and a strong first impression, then add reminders and reviews."
+      label = goals.length === 1 ? goalLabel(goals[0]) : `${goalLabel(goals[0])} (main) · ${goals.slice(1).map((g) => goalLabel(g)).join(" · ")}`
+      if (several) reply = "I'll set this up first and keep the rest under Add later."
     }
     pb = { ...pb, candidates: null }
   } else {
@@ -734,18 +763,52 @@ function pbAnswer(s: GenState, id: string, value: string | string[], typed?: str
     if (value === "decide") {
       const v = DENTIST.defaults[slot as keyof typeof DENTIST.defaults] ?? "one"
       pb = { ...pb, answers: { ...pb.answers, [slot]: { value: v, source: "default" } } }
-      label = "You decide"
-      reply = `Done. I chose “${optionLabel(slot, v)}” because ${DECIDE_REASON[slot] ?? "it's the usual choice"}. You can change it any time.`
+      label = optionLabel(slot, v)
+      reply = `I chose this because ${DECIDE_REASON[slot] ?? "it's the usual choice"}.`
     } else {
       const v = String(value)
       pb = { ...pb, answers: { ...pb.answers, [slot]: { value: v, source: "owner" } } }
       label = optionLabel(slot, v)
     }
   }
-  let n = markAnswered({ ...s, pb }, id, label)
-  n = push(n, { type: "user", text: typed ?? label })
-  if (reply) n = push(n, { type: "agent", text: reply })
+  let n: GenState = { ...s, pb, msgs: s.msgs.map((x) => (x.id === id && x.type === "pb-question" ? { ...x, answer: label, note: reply ?? undefined, prev: s.pb!, value } : x)) }
+  // answered in the chat box: show it as a message; answered on the card: the card moves on to the next question
+  if (typed) n = push(n, { type: "user", text: typed })
   return askNext(n)
+}
+
+/** Back on the question card: reopens the previous question and undoes its answer (and whatever followed it) */
+function pbBack(s: GenState, id: string): GenState {
+  const i = s.msgs.findIndex((x) => x.id === id)
+  if (i < 0) return s
+  let j = -1
+  for (let k = i - 1; k >= 0; k--) {
+    const m = s.msgs[k]
+    if (m.type === "pb-question") {
+      j = k
+      break
+    }
+    if (m.type !== "user" && m.type !== "agent" && m.type !== "pb-guard") break
+  }
+  const prevQ = s.msgs[j]
+  if (j < 0 || prevQ.type !== "pb-question" || !prevQ.prev) return s
+  const msgs = [...s.msgs.slice(0, j), { ...prevQ, answer: undefined, note: undefined, prev: undefined }, ...s.msgs.slice(j + 1).filter((m) => m.type === "pb-guard")]
+  // what the web search found meanwhile stays
+  const cur = s.pb!
+  const keepScale = cur.answers.scale?.source === "search" && !prevQ.prev.answers.scale ? { scale: cur.answers.scale } : {}
+  const pb = { ...prevQ.prev, found: cur.found, place: prevQ.prev.place ?? cur.place, answers: { ...prevQ.prev.answers, ...keepScale } }
+  return { ...s, pb, msgs }
+}
+
+/** "Skip these questions": the agent decides everything still open, with its usual defaults */
+function pbSkipAll(s: GenState): GenState {
+  let n = s
+  for (let k = 0; k < 6; k++) {
+    const open = n.msgs.find((m): m is Extract<Msg, { type: "pb-question" }> => m.type === "pb-question" && !m.answer)
+    if (!open) break
+    n = pbAnswer(n, open.id, open.slot === "goals" ? (n.pb!.candidates?.goals.slice(0, 1) ?? "decide") : "decide")
+  }
+  return n
 }
 
 function pbGate(s: GenState, id: string, answer: string): GenState {

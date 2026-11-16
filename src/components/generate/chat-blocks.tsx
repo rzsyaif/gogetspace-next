@@ -31,7 +31,8 @@ import { RATING, type Rating } from "@/lib/admin/data"
 import { submitFeedback } from "@/lib/admin/store"
 import { useEditorSite } from "./editor-site"
 import { useGen } from "./gen-provider"
-import { ActivationCard, GateCard, GuardCard, PatchCard, PlanCard, QuestionCard } from "./playbook-blocks"
+import { ActivationCard, GuardCard, PatchCard, PlanCard } from "./playbook-blocks"
+import { AnswersSummary, GateCard, QuestionCard } from "./question-series"
 
 export const ARTIFACTS: { key: ArtifactKey; title: string; Icon: typeof FileText }[] = [
   { key: "brief", title: "Project Brief", Icon: FileText },
@@ -43,7 +44,7 @@ export function Messages({ compact }: { compact?: boolean }) {
   const { s } = useGen()
   return (
     <div className={cn("flex flex-col", compact ? "gap-6" : "gap-9")}>
-      {s.msgs.map((m, i) => (
+      {s.msgs.filter((m) => !foldedAway(m, s.msgs)).map((m, i) => (
         // the first bubble arrives with the homepage launch animation, so it doesn't fade in again
         <motion.div key={m.id} initial={i === 0 ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
           <Block m={m} compact={compact} />
@@ -51,6 +52,14 @@ export function Messages({ compact }: { compact?: boolean }) {
       ))}
     </div>
   )
+}
+
+/** answered questions fold into one summary (shown where the last one was) once the series is over */
+function foldedAway(m: Msg, msgs: Msg[]) {
+  if (m.type !== "pb-question" || !m.answer) return false
+  const qs = msgs.filter((x) => x.type === "pb-question")
+  const done = qs.every((x) => x.type === "pb-question" && x.answer)
+  return !(done && qs[qs.length - 1].id === m.id)
 }
 
 function Block({ m, compact }: { m: Msg; compact?: boolean }) {
@@ -81,7 +90,7 @@ function Block({ m, compact }: { m: Msg; compact?: boolean }) {
     case "feedback":
       return <FeedbackCard id={m.id} answer={m.answer} compact={compact} />
     case "pb-question":
-      return <QuestionCard m={m} compact={compact} />
+      return m.answer ? <AnswersSummary compact={compact} /> : <QuestionCard key={m.id} m={m} compact={compact} />
     case "pb-gate":
       return <GateCard m={m} compact={compact} />
     case "pb-guard":

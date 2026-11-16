@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { motion } from "motion/react"
-import { ChevronDown, CircleCheck, FlaskConical, Pencil, ShieldCheck, Sparkles, Star, TriangleAlert } from "lucide-react"
+import { ChevronDown, CircleCheck, FlaskConical, Pencil, ShieldCheck, Star, TriangleAlert } from "lucide-react"
 import { Alert, Badge, Button, Chip } from "@/components/ui"
 import { cn } from "@/lib/cn"
 import type { Msg } from "@/lib/generation/state"
@@ -13,7 +13,6 @@ import {
   addLater,
   bringsWith,
   coreModules,
-  goalChips,
   goalLabel,
   mainButton,
   monthlyTotal,
@@ -38,117 +37,6 @@ function SourceTag({ source }: { source: Source }) {
     <Badge tone={SOURCE_TONE[source]} dot={false} className="shrink-0">
       {SOURCE_LABEL[source]}
     </Badge>
-  )
-}
-
-/* ---------------- questions ---------------- */
-
-/** Q1–Q4: tap an option (or "You decide"), or type an answer in the chat box */
-export function QuestionCard({ m, compact }: { m: Extract<Msg, { type: "pb-question" }>; compact?: boolean }) {
-  const { s, dispatch } = useGen()
-  const q = DENTIST.questions.find((x) => x.id === m.qid && (!m.variant || x.variant === m.variant))!
-  if (m.answer) return null
-  return (
-    <section aria-label="Question" className={cn(card, !compact && "sm:mr-20")}>
-      <div className="flex flex-col gap-1">
-        <h3 className="type-label-lg text-fg-primary">{q.text}</h3>
-        {q.helper && <p className="type-body-sm text-fg-secondary">{q.helper}</p>}
-      </div>
-      {m.slot === "goals" ? (
-        <GoalPicker st={s.pb!} onDone={(goals) => dispatch({ type: "pbAnswer", id: m.id, value: goals })} />
-      ) : (
-        <div className="flex flex-wrap gap-2">
-          {q.options.map((o) => (
-            <Chip key={o.id} onClick={() => dispatch({ type: "pbAnswer", id: m.id, value: o.id })}>
-              {o.label}
-            </Chip>
-          ))}
-        </div>
-      )}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <Button size="sm" variant="ghost" leadingIcon={<Sparkles />} onClick={() => dispatch({ type: "pbAnswer", id: m.id, value: "decide" })}>
-          You decide
-        </Button>
-        <span className="type-caption text-fg-tertiary">Or type your answer below.</span>
-      </div>
-    </section>
-  )
-}
-
-/** up to three goals; with more than one, the owner picks the main one */
-function GoalPicker({ st, onDone }: { st: PlaybookState; onDone: (goals: string[]) => void }) {
-  const cands = st.candidates
-  const { first, more } = goalChips(st)
-  const [picked, setPicked] = useState<string[]>(cands?.kind === "vague" ? cands.goals : [])
-  const [showMore, setShowMore] = useState(false)
-  const [main, setMain] = useState<string | null>(null)
-  const several = cands?.kind === "several"
-  const options = several ? cands.goals : showMore ? [...first, ...more] : first
-  const toggle = (g: string) => {
-    if (several) return setPicked([g])
-    setPicked((p) => (p.includes(g) ? p.filter((x) => x !== g) : p.length < 3 ? [...p, g] : p))
-    setMain(null)
-  }
-  const ordered = main ? [main, ...picked.filter((g) => g !== main)] : picked
-  return (
-    <div className="flex flex-col gap-4">
-      {several && <p className="type-body-sm text-fg-secondary">You mentioned these — which one matters most right now?</p>}
-      <div className="flex flex-wrap gap-2">
-        {options.map((g) => (
-          <Chip key={g} selected={picked.includes(g)} onClick={() => toggle(g)} className="h-auto min-h-[38px] py-1.5 text-left">
-            {DENTIST.goals.find((x) => x.id === g)!.chip}
-          </Chip>
-        ))}
-        {!several && !showMore && (
-          <Chip onClick={() => setShowMore(true)} icon={<ChevronDown />}>
-            More goals
-          </Chip>
-        )}
-      </div>
-      {picked.length > 1 && (
-        <fieldset className="flex flex-col gap-2">
-          <legend className="mb-2 type-label-md text-fg-primary">Which one matters most?</legend>
-          <div className="flex flex-wrap gap-2" role="radiogroup">
-            {picked.map((g) => (
-              <Chip key={g} role="radio" aria-checked={main === g} aria-pressed={undefined} selected={main === g} onClick={() => setMain(g)} className="h-8 px-2.5 type-body-sm">
-                {DENTIST.goals.find((x) => x.id === g)!.chip}
-              </Chip>
-            ))}
-          </div>
-        </fieldset>
-      )}
-      <Button size="sm" className="self-start" disabled={!picked.length || (picked.length > 1 && !main)} onClick={() => onDone(ordered)}>
-        {cands?.kind === "vague" && picked.join() === cands.goals.join() ? "Sounds right" : "Continue"}
-      </Button>
-    </div>
-  )
-}
-
-/* ---------------- gates ---------------- */
-
-export function GateCard({ m, compact }: { m: Extract<Msg, { type: "pb-gate" }>; compact?: boolean }) {
-  const { dispatch } = useGen()
-  if (m.answer) return null
-  const opts =
-    m.kind === "two-sites"
-      ? { title: "That sounds like two different businesses.", body: "Each gets its own website, plan and add-ons. Shall I start with the dental clinic?", choices: [["two", "Yes — two websites, dental first"], ["only", "Just the dental clinic"]] }
-      : m.kind === "directory"
-        ? { title: DENTIST.questions[0].text, body: "A practice website and a directory of many dentists are built very differently.", choices: [["one", "One practice"], ["directory", "A directory"]] }
-        : { title: "Do you run one of the practices yourself?", body: "I can build its website instead.", choices: [["one", "Yes — build my practice's website"]] }
-  return (
-    <section aria-label="Question" className={cn(card, !compact && "sm:mr-20")}>
-      <div className="flex flex-col gap-1">
-        <h3 className="type-label-lg text-fg-primary">{opts.title}</h3>
-        <p className="type-body-sm text-fg-secondary">{opts.body}</p>
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {opts.choices.map(([id, label]) => (
-          <Chip key={id} onClick={() => dispatch({ type: "pbGate", id: m.id, answer: id })}>
-            {label}
-          </Chip>
-        ))}
-      </div>
-    </section>
   )
 }
 
