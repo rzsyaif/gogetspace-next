@@ -33,6 +33,7 @@ import {
   Sparkles,
   Tablet,
   X,
+  Blocks,
 } from "lucide-react"
 import { Avatar, Badge, Button, Drawer, DrawerContent, DrawerTrigger, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, IconButton, Logo, NavItem, SegmentedControl, Tooltip, iconButtonVariants } from "@/components/ui"
 import { cn } from "@/lib/cn"
@@ -58,22 +59,30 @@ const DEVICES = [
 ] as const
 type Device = (typeof DEVICES)[number]["id"]
 
-export type Tab = "agent" | "analytics" | "enquiries" | "plan" | "domain" | "database" | "settings"
+export type Tab = "agent" | "analytics" | "enquiries" | "plan" | "modules" | "domain" | "database" | "settings"
 /** tabs that take over the chat and preview with a full-width page */
-export const FULL_TABS: Tab[] = ["analytics", "enquiries", "plan"]
+export const FULL_TABS: Tab[] = ["analytics", "enquiries", "plan", "modules"]
 
 const RAIL: { id: Tab; Icon: typeof Sparkles; label: string }[] = [
   { id: "agent", Icon: Sparkles, label: "Agent" },
   { id: "analytics", Icon: ChartColumn, label: "Analytics" },
   { id: "enquiries", Icon: Inbox, label: "Enquiries" },
   { id: "plan", Icon: Gem, label: "Plan" },
+  { id: "modules", Icon: Blocks, label: "Modules" },
   { id: "domain", Icon: Link2, label: "Domain" },
   { id: "database", Icon: Database, label: "Database" },
   { id: "settings", Icon: Cog, label: "Settings" },
 ]
 
 /** Editor rail: logo (back to the dashboard) on top, workspace tabs, Account at the bottom (no top navbar). */
+/** Modules only shows for a playbook site */
+function useRail() {
+  const { s } = useGen()
+  return RAIL.filter((r) => r.id !== "modules" || !!s.pb)
+}
+
 export function Rail({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) {
+  const rail = useRail()
   return (
     <nav aria-label="Workspace" className="flex h-full w-[84px] flex-col items-center gap-3 overflow-y-auto px-2 py-5 [scrollbar-width:none]">
       <Tooltip content="All websites" side="right">
@@ -81,7 +90,7 @@ export function Rail({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) {
           <Logo markOnly size={36} />
         </Link>
       </Tooltip>
-      {RAIL.map(({ id, Icon, label }) => (
+      {rail.map(({ id, Icon, label }) => (
         <button key={id} type="button" onClick={() => onTab(id)} aria-current={tab === id ? "page" : undefined} className="group flex shrink-0 flex-col items-center gap-1 focus-visible:outline-none">
           <span className={cn("grid size-11 place-items-center rounded-md border group-focus-visible:focus-ring", tab === id ? "border-fg-secondary bg-inverse text-fg-inverse" : "border-line-default bg-subtle text-fg-secondary group-hover:bg-muted")}>
             <Icon className="size-5" strokeWidth={1.75} />
@@ -102,6 +111,7 @@ export function Rail({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) {
  */
 export function MobileNav({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) {
   const { s, dispatch } = useGen()
+  const rail = useRail()
   const [open, setOpen] = useState(false)
   const [signup, setSignup] = useState(false)
   const pick = (t: Tab) => {
@@ -159,7 +169,7 @@ export function MobileNav({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void })
           }
         >
           <nav aria-label="Workspace" className="flex flex-col gap-0.5">
-            {RAIL.map(({ id, Icon, label }) => (
+            {rail.map(({ id, Icon, label }) => (
               <NavItem key={id} onClick={() => pick(id)} active={tab === id} icon={<Icon strokeWidth={1.75} />} label={label} />
             ))}
           </nav>

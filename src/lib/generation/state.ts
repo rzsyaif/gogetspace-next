@@ -923,7 +923,8 @@ function pbPatch(s: GenState, id: string, decisions: Record<string, Decision> | 
 function fastForwardPlaybook(s: GenState): GenState {
   let pb = withDefaults({ ...s.pb!, candidates: null })
   if (isDemoClinic(pb)) pb = { ...pb, found: { rating: RAHMA.rating, dentists: RAHMA.dentists.length, branches: 1, hours: RAHMA.hours }, answers: { ...pb.answers, scale: pb.answers.scale?.source === "default" ? { value: "dentists", source: "search" } : pb.answers.scale } }
-  for (const g of offerFor(pb.goals)) for (const mod of g.modules) if (mod.id !== "gallery") pb = { ...pb, decisions: decide(pb.decisions, mod.id, "added", pb.goals) }
+  if (!Object.keys(pb.decisions).length)
+    for (const g of offerFor(pb.goals)) for (const mod of g.modules) if (mod.id !== "gallery") pb = { ...pb, decisions: decide(pb.decisions, mod.id, "added", pb.goals) }
   pb = { ...pb, planConfirmed: true }
   const n: GenState = { ...s, pb, brief: dentistBrief(pb), questions: dentistQuestions(pb), sitemap: dentistSitemap(pb), pagePriority: dentistPriority(pb), styleId: s.styleId ?? presetOf(pb) }
   return push(n, { type: "pb-plan", confirmed: true })
@@ -985,8 +986,23 @@ export { nextId }
  * A finished site, as the standalone editor opens it: planned, built with the site's plan and (when live)
  * published. `ready` gives a site that is still waiting for its plan to be reviewed.
  */
-export function siteState(opts: { prompt: string; plan: Plan; live: boolean; built: boolean; account: { name: string; email: string }; domain: string; credits: number }): GenState {
-  const base = initialState(opts.prompt, "happy")
+export function siteState(opts: {
+  prompt: string
+  plan: Plan
+  live: boolean
+  built: boolean
+  account: { name: string; email: string }
+  domain: string
+  credits: number
+  styleId?: string | null
+  /** a playbook site's add-ons, as the account has them */
+  modules?: { id: string; status: "live" | "test" }[]
+}): GenState {
+  let base = initialState(opts.prompt, "happy")
+  if (base.pb && opts.modules) {
+    const decisions = Object.fromEntries(opts.modules.map((m) => [m.id, "added" as Decision]))
+    base = { ...base, styleId: opts.styleId ?? null, pb: { ...withDefaults(base.pb), decisions, activated: opts.modules.filter((m) => m.status === "live").map((m) => m.id) } }
+  }
   const n = opts.built ? reducer(base, { type: "jump", to: opts.live ? "published" : "built", plan: opts.plan }) : reducer(base, { type: "jump", to: "ready" })
   // existing websites were rated (or skipped) back when they were first built
   const msgs = n.msgs.map((m) => (m.type === "feedback" ? { ...m, answer: "skipped" as const } : m))

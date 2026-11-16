@@ -8,6 +8,8 @@ import { Alert, Badge, Button, Checkbox, Dialog, DialogContent, DropdownMenu, Dr
 import { BuyDomainDialog } from "@/components/account/buy-domain"
 import { ConnectDomainDialog } from "@/components/account/connect-domain"
 import { cn } from "@/lib/cn"
+import { moduleById } from "@/lib/playbooks/engine"
+import { sitePreviewUrl } from "@/lib/account/preview"
 import { planInfo } from "@/lib/plans"
 import { ACCOUNT, ENQUIRIES, dailyStats, siteUrl, type Site } from "@/lib/account/data"
 import { accountActions, useAccountState } from "@/lib/account/store"
@@ -228,7 +230,7 @@ function DomainRow({ site, name, kind, status, ok, pending }: { site: Site; name
         <Badge tone={ok ? "success" : pending ? "warning" : "neutral"}>{status}</Badge>
         {ok && (
           <Button asChild size="sm" variant="secondary" trailingIcon={<ExternalLink />}>
-            <a href={`/preview/${site.themeId}`} target="_blank" rel="noreferrer">
+            <a href={sitePreviewUrl(site)} target="_blank" rel="noreferrer">
               Visit
             </a>
           </Button>
@@ -278,12 +280,12 @@ function ConnectDomainFromDashboard({ open, onOpenChange, sites }: { open: boole
 
 export function BillingPage() {
   const { sites, invoices } = useAccountState()
-  const paid = sites.filter((s) => planInfo(s.plan).price > 0)
-  const total = paid.reduce((n, s) => n + planInfo(s.plan).price, 0)
+  const addonTotal = (s: (typeof sites)[number]) => (s.modules ?? []).reduce((n, m) => n + moduleById(m.id).price, 0)
+  const total = sites.reduce((n, s) => n + planInfo(s.plan).price + (s.status === "live" ? addonTotal(s) : 0), 0)
   const siteName = (id: string) => sites.find((s) => s.id === id)?.name ?? id
   return (
     <PanelPage>
-      <PanelHeader title="Billings" description="One payment method for the account. Each website is billed for its own plan." />
+      <PanelHeader title="Billings" description="One payment method for the account. Each website is billed for its own plan and add-ons." />
 
       <PanelSection title="Payment method" actions={<Button size="sm" variant="secondary">Update</Button>}>
         <div className="flex items-center gap-4">
@@ -299,12 +301,12 @@ export function BillingPage() {
         </div>
       </PanelSection>
 
-      <PanelSection title="Plans by website" actions={<span className="type-label-md text-fg-primary tabular-nums">${total} / month</span>}>
+      <PanelSection title="Plans and add-ons by website" actions={<span className="type-label-md text-fg-primary tabular-nums">${total} / month</span>}>
         <ul className="flex flex-col divide-y divide-line-default">
           {sites.map((s) => {
             const p = planInfo(s.plan)
             return (
-              <li key={s.id} className="flex flex-col gap-2 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:gap-4">
+              <li key={s.id} className="flex flex-col gap-2 py-3 first:pt-0 last:pb-0 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
                 <span className="flex min-w-0 flex-1 items-center gap-3">
                   <SiteMark site={s} className="size-8" />
                   <span className="flex min-w-0 flex-col">
@@ -323,6 +325,26 @@ export function BillingPage() {
                     <Link href={`/sites/${s.id}?tab=plan`}>Change</Link>
                   </Button>
                 </span>
+                {!!s.modules?.length && (
+                  <ul className="flex flex-col gap-1.5 pl-11 sm:basis-full sm:pl-11">
+                    {s.modules.map((m) => {
+                      const def = moduleById(m.id)
+                      return (
+                        <li key={m.id} className="flex items-center gap-3 type-body-sm text-fg-secondary">
+                          <span className="flex-1">+ {def.name} add-on</span>
+                          {m.status === "test" && <Badge tone="warning">Test mode</Badge>}
+                          <span className="w-20 text-right tabular-nums">{def.price ? `$${def.price}/mo` : "Free"}</span>
+                          <span className="hidden w-[76px] sm:block" />
+                        </li>
+                      )
+                    })}
+                    <li className="flex justify-end">
+                      <Button asChild size="sm" variant="link" className="type-label-sm">
+                        <Link href={`/sites/${s.id}?tab=modules`}>Manage modules</Link>
+                      </Button>
+                    </li>
+                  </ul>
+                )}
               </li>
             )
           })}

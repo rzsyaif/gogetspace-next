@@ -11,7 +11,7 @@ import { AccountSiteProvider } from "./editor-site"
 import { Shell } from "./generate-app"
 import type { Tab } from "./workspace"
 
-const TABS: Tab[] = ["agent", "analytics", "enquiries", "plan", "domain", "database", "settings"]
+const TABS: Tab[] = ["agent", "analytics", "enquiries", "plan", "modules", "domain", "database", "settings"]
 
 /** /sites/[id] — the editor for an existing website; `?tab=` opens Analytics, Enquiries, Plan… directly. */
 export function SiteEditor({ siteId }: { siteId: string }) {
@@ -41,6 +41,8 @@ export function SiteEditor({ siteId }: { siteId: string }) {
             account: { name: ACCOUNT.name, email: ACCOUNT.email },
             domain: siteUrl(site),
             credits: site.creditsUsed,
+            styleId: site.themeId,
+            modules: site.modules,
           })
         }
       >

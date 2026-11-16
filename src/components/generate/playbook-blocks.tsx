@@ -28,6 +28,7 @@ import {
 import type { Slot, Source } from "@/lib/playbooks/types"
 import { ModuleCard, priceLabel } from "@/components/playbook/module-card"
 import { useGen } from "./gen-provider"
+import { useEditorSite } from "./editor-site"
 
 const card = "flex flex-col gap-4 rounded-lg border border-line-default bg-surface p-4 shadow-[0_2px_0_0_var(--color-shadow-block)] sm:p-5"
 const SOURCE_TONE: Record<Source, "neutral" | "brand" | "success" | "warning"> = { prompt: "brand", search: "success", owner: "brand", default: "warning" }
@@ -433,6 +434,7 @@ export function PatchCard({ m, compact }: { m: Extract<Msg, { type: "pb-patch" }
 /** after the build: tools that need the owner's own accounts run in test mode until connected */
 export function ActivationCard({ compact }: { compact?: boolean }) {
   const { s, dispatch } = useGen()
+  const { modules: api } = useEditorSite()
   const pb = s.pb!
   const mods = Object.entries(pb.decisions)
     .filter(([id, d]) => d === "added" && moduleById(id).needsAccount)
@@ -460,7 +462,7 @@ export function ActivationCard({ compact }: { compact?: boolean }) {
               {live ? (
                 <Badge tone="success">Live</Badge>
               ) : (
-                <Button size="sm" variant="secondary" onClick={() => dispatch({ type: "pbActivate", module: x.id })}>
+                <Button size="sm" variant="secondary" onClick={() => (api ? api.activate(x.id) : dispatch({ type: "pbActivate", module: x.id }))}>
                   {x.needsAccount!.connect}
                 </Button>
               )}
