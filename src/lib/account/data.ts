@@ -46,6 +46,14 @@ export interface Site {
   renews?: string
   /** a downgrade waiting for the end of the paid period */
   scheduledPlan?: { plan: Plan; on: string }
+  /** add-on modules (niche playbook sites), each billed monthly with this website */
+  modules?: SiteModule[]
+}
+
+/** an add-on on a website: "test" until the owner connects the account it needs (WhatsApp, payouts) */
+export interface SiteModule {
+  id: string
+  status: "live" | "test"
 }
 
 export const SITES: Site[] = [
@@ -68,17 +76,22 @@ export const SITES: Site[] = [
   {
     id: "rahma-dental",
     name: "Rahma Family Dental",
-    status: "draft",
-    plan: "free",
-    freeDomain: "rahma-dental.get.space",
+    status: "live",
+    plan: "starter",
+    freeDomain: "rahma-family-dental.get.space",
     domain: null,
-    themeId: null,
-    built: false,
-    prompt: "Website for a family dental clinic in Penang",
+    themeId: "calm-clinical",
+    built: true,
+    prompt: "Website for a family dental clinic in Penang called Rahma Family Dental. Patients should book online.",
     lastEdited: "5 days ago",
-    pagesBuilt: 0,
-    pagesPlanned: 6,
-    creditsUsed: 8,
+    pagesBuilt: 5,
+    pagesPlanned: 15,
+    creditsUsed: 34,
+    renews: "12 Nov 2026",
+    modules: [
+      { id: "appointments", status: "test" },
+      { id: "reviews", status: "live" },
+    ],
   },
   {
     id: "lim-partners",
@@ -279,6 +292,7 @@ export interface Invoice {
 }
 
 export const INVOICES: Invoice[] = [
+  { id: "INV-2026-1012", date: "12 Oct 2026", siteId: "rahma-dental", description: "Starter plan + Appointments, Reviews · October", amount: 25, status: "paid" },
   { id: "INV-2026-1001", date: "1 Oct 2026", siteId: "bakti-analisa", description: "Starter plan · October", amount: 9, status: "paid" },
   { id: "INV-2026-0901", date: "1 Sep 2026", siteId: "bakti-analisa", description: "Starter plan · September", amount: 9, status: "paid" },
   { id: "INV-2026-0801", date: "1 Aug 2026", siteId: "bakti-analisa", description: "Starter plan · August", amount: 9, status: "paid" },

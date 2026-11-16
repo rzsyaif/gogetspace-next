@@ -31,7 +31,7 @@ export function SitemapStep() {
   const [renaming, setRenaming] = useState<string | null>(null)
   const [active, setActive] = useState<string | null>(null)
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set())
-  const unlocked = unlockedIds(s.sitemap, s.plan)
+  const unlocked = unlockedIds(s.sitemap, s.plan, s.pagePriority)
   const pages = flatten(s.sitemap)
   const locked = Math.max(0, pages.length - unlocked.size)
   const sectionCount = pages.filter((p) => unlocked.has(p.id)).reduce((n, p) => n + sectionsOf(p).length, 0)

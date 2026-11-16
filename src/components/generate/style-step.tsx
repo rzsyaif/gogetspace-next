@@ -5,10 +5,10 @@ import { motion } from "motion/react"
 import { ImageIcon, Loader, Monitor, RefreshCw, Smartphone, Sparkles } from "lucide-react"
 import { AttachmentChip, Button, PromptAttachButton, PromptBox, PromptSendButton, RadioDot, SegmentedControl } from "@/components/ui"
 import { cn } from "@/lib/cn"
-import { ALT_THEMES, CUSTOM_THEME, THEMES, type SiteTheme } from "@/lib/bakti/themes"
+import { ALT_THEMES, CUSTOM_THEME, DENTAL_THEMES, THEMES, type SiteTheme } from "@/lib/bakti/themes"
 import { FONT_STACK, siteFontVars } from "@/components/bakti-site/site-fonts"
 import { useGen } from "./gen-provider"
-import { HeroPreview } from "@/components/bakti-site/hero-preview"
+import { FlowHero } from "./flow-hero"
 import { useMedia } from "@/lib/use-media"
 import { StyleCarousel } from "./style-carousel"
 
@@ -25,7 +25,7 @@ export function StyleStep() {
   const [reference, setReference] = useState(false)
   const [making, setMaking] = useState(false)
 
-  const options: SiteTheme[] = [...(s.hasCustom ? [CUSTOM_THEME] : []), ...(s.styleSet === "a" ? THEMES : ALT_THEMES)]
+  const options: SiteTheme[] = [...(s.hasCustom ? [CUSTOM_THEME] : []), ...(s.styleSet === "a" ? (s.pb ? DENTAL_THEMES : THEMES) : ALT_THEMES)]
 
   const shuffle = () => {
     setShuffling(true)
@@ -105,7 +105,7 @@ export function StyleStep() {
           {selected && <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-16 bg-linear-to-t from-canvas to-transparent lg:hidden" aria-hidden />}
           {selected ? (
             <motion.div key={`${selected.id}-${device}`} initial={{ opacity: 0.4 }} animate={{ opacity: 1 }} transition={{ duration: 0.25 }} className={cn("w-full overflow-hidden rounded-md border border-line-default shadow-soft-md", device === "mobile" && "max-w-[390px]")}>
-              <HeroPreview theme={selected} viewport={device === "desktop" ? 1280 : 390} />
+              <FlowHero theme={selected} viewport={device === "desktop" ? 1280 : 390} />
             </motion.div>
           ) : (
             <div className="flex flex-col items-center justify-center gap-2 p-4 text-center">

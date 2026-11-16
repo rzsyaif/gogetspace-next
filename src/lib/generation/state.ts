@@ -4,6 +4,26 @@
  */
 import { DEFAULT_BRIEF, DEFAULT_QUESTIONS, countAssumptions, type BriefSection, type OpenQuestion } from "./brief"
 import { SITEMAP, flatten, unlockedIds, type PageNode, type Plan } from "@/lib/bakti/sitemap"
+import { DENTIST } from "@/lib/playbooks/dentist"
+import {
+  analyze,
+  checkGuardrails,
+  decide,
+  detect,
+  goalLabel,
+  initialPlaybookState,
+  moduleById,
+  newGoals,
+  nextQuestion,
+  offerFor,
+  optionLabel,
+  presetOf,
+  withDefaults,
+  type Decision,
+  type PlaybookState,
+} from "@/lib/playbooks/engine"
+import { RAHMA, clinicName, dentistBrief, dentistPriority, dentistQuestions, dentistSitemap, domainFor, isDemoClinic } from "@/lib/playbooks/dentist-plan"
+import type { NicheId, Slot } from "@/lib/playbooks/types"
 
 export type Scenario =
   | "happy"
@@ -64,6 +84,19 @@ export type Msg =
   | { id: string; type: "credits-out"; resolved?: "upgrade" | "stop" }
   /** "How did it turn out?" card after the first build; `answer` once sent or skipped */
   | { id: string; type: "feedback"; answer?: FeedbackAnswer | "skipped" }
+  /* ----- playbook conversation (dentist) ----- */
+  /** a gate before planning: a directory instead of one practice, or two businesses in one prompt */
+  | { id: string; type: "pb-gate"; kind: "directory" | "two-sites" | "directory-retry"; answer?: string }
+  /** one of the playbook's questions (Q1 goals, Q2 focus, Q3 scale, Q4 the goal's follow-up) */
+  | { id: string; type: "pb-question"; qid: string; slot: Slot; variant?: string; answer?: string }
+  /** a guardrail: declines a claim or field, offers the compliant alternative */
+  | { id: string; type: "pb-guard"; rule: string; quote: string; resolved?: "accepted" | "declined" }
+  /** the plan card: assumptions with Edit, the module offer and the running total */
+  | { id: string; type: "pb-plan"; confirmed?: boolean }
+  /** new goals after the plan: offers only their modules and patches the plan */
+  | { id: string; type: "pb-patch"; goals: string[]; resolved?: "added" | "declined" }
+  /** after the build: modules waiting for the owner's accounts (test mode) */
+  | { id: string; type: "pb-activate" }
 
 export interface FeedbackAnswer {
   rating: "good" | "fine" | "bad"
@@ -78,8 +111,13 @@ export type ArtifactKey = "brief" | "style" | "sitemap"
 export type PageStatus = "queued" | "building" | "built" | "failed" | "locked" | "skipped"
 
 export interface GenState {
-  v: 2
+  v: 3
   prompt: string
+  /** the niche playbook this site is planned with (null: the general flow) */
+  niche: NicheId | null
+  pb: PlaybookState | null
+  /** which pages each plan builds first (the playbook's order; general flow uses its own) */
+  pagePriority?: string[]
   scenario: Scenario
   speed: number
   phase: "plan" | "create"
@@ -122,6 +160,23 @@ export const BUSINESS_MATCHES = [
   { id: "kl", name: "Analisa Bakti Consulting", place: "Petaling Jaya, Selangor", kind: "Data consultancy" },
 ]
 
+/** what the web search looks for and finds, by niche (the dentist demo clinic is Rahma Family Dental) */
+export function searchOf(s: Pick<GenState, "niche" | "pb">): { query: string; results: { title: string; site: string }[]; none?: string } {
+  if (!s.pb) return { query: SEARCH_QUERY, results: SEARCH_RESULTS }
+  const pb = s.pb
+  if (!pb.business) return { query: `dental clinic ${pb.place ?? ""}`.trim(), results: [], none: "No clinic name yet — I'll use placeholders you can change in the brief" }
+  const query = `${pb.business} ${pb.place ?? "dental clinic"}`
+  if (!isDemoClinic(pb)) return { query, results: [], none: `Nothing found online for ${pb.business} — I'll work from your description` }
+  return {
+    query,
+    results: [
+      { title: `${RAHMA.name} — ${RAHMA.rating.replace(" from", " ·")}`, site: "www.google.com/maps" },
+      { title: `${RAHMA.name} · ${RAHMA.dentists.join(" & ")}`, site: "www.facebook.com" },
+      { title: `${RAHMA.dentists[0]} — dental practitioner register`, site: "mdc.moh.gov.my" },
+    ],
+  }
+}
+
 const planTasks = (): Task[] => [
   { id: "read", label: "Reading & analyzing the prompt", status: "running" },
   { id: "search", label: "Searching the web", status: "pending" },
@@ -155,11 +210,19 @@ export function detectScenario(prompt: string): Scenario {
 
 export const DEFAULT_PROMPT = "Website for clinical laboratory in penang named BAKTI ANALISA"
 
-export function initialState(prompt = DEFAULT_PROMPT, scenario: Scenario = detectScenario(prompt), speed = 1): GenState {
+export function initialState(prompt = DEFAULT_PROMPT, scenario?: Scenario, speed = 1): GenState {
+  const niche = detect(prompt).niche
+  const pb = niche ? initialPlaybookState(prompt) : null
+  // a short dental prompt isn't vague — the playbook asks its own goal question
+  const sc = scenario ?? (niche && detectScenario(prompt) === "vague" ? "happy" : detectScenario(prompt))
+  const brief = pb ? dentistBrief(withDefaults(pb)) : structuredClone(DEFAULT_BRIEF)
   return {
-    v: 2,
+    v: 3,
     prompt,
-    scenario,
+    niche,
+    pb,
+    pagePriority: pb ? dentistPriority(withDefaults(pb)) : undefined,
+    scenario: sc,
     speed,
     phase: "plan",
     msgs: [
@@ -172,22 +235,25 @@ export function initialState(prompt = DEFAULT_PROMPT, scenario: Scenario = detec
     searchShown: 0,
     failedOnce: false,
     artifacts: { brief: "awaiting", style: "awaiting", sitemap: "awaiting" },
-    brief: structuredClone(DEFAULT_BRIEF),
-    questions: structuredClone(DEFAULT_QUESTIONS),
+    brief,
+    questions: pb ? dentistQuestions(pb) : structuredClone(DEFAULT_QUESTIONS),
     styleSet: "a",
     styleId: null,
     hasCustom: false,
-    sitemap: structuredClone(SITEMAP),
+    sitemap: pb ? dentistSitemap(withDefaults(pb)) : structuredClone(SITEMAP),
     plan: "free",
     review: { open: false, step: 0 },
-    credits: scenario === "credits-out" ? 86 : scenario === "credits-low" ? 82 : 40,
+    credits: sc === "credits-out" ? 86 : sc === "credits-low" ? 82 : 40,
     pages: {},
     queued: [],
     account: null,
-    publish: { status: "idle", domain: "bakti-analisa.get.space" },
+    publish: { status: "idle", domain: pb ? domainFor(pb) : "bakti-analisa.get.space" },
     seq: 10,
   }
 }
+
+/** the business the site is for, as the builder names it */
+export const siteName = (s: Pick<GenState, "pb">) => (s.pb ? clinicName(s.pb) : "Bakti Analisa")
 
 /* ---------- actions ---------- */
 
@@ -230,6 +296,16 @@ export type Action =
   | { type: "published"; domain: string }
   | { type: "feedback"; id: string; answer: FeedbackAnswer | "skipped" }
   | { type: "jump"; to: JumpTarget; scenario?: Scenario; plan?: Plan }
+  /* playbook conversation */
+  | { type: "pbAnswer"; id: string; value: string | string[]; text?: string }
+  | { type: "pbGate"; id: string; answer: string }
+  | { type: "pbGuard"; id: string; resolution: "accepted" | "declined" }
+  | { type: "pbEdit"; slot: Slot | "style"; value: string | string[] }
+  | { type: "pbDecide"; module: string; decision: Decision }
+  | { type: "pbConsent"; module: string }
+  | { type: "pbConfirmPlan" }
+  | { type: "pbPatch"; id: string; decisions: Record<string, Decision> | null }
+  | { type: "pbActivate"; module: string }
 
 export type JumpTarget = "generating" | "ready" | "review-brief" | "review-style" | "review-sitemap" | "creating" | "built" | "published"
 
@@ -256,7 +332,7 @@ function finishPlan(s: GenState): GenState {
 
 function startBuild(s: GenState, homepageOnly = false): GenState {
   const id = Math.max(...Object.keys(s.runs).map(Number)) + 1
-  const unlocked = homepageOnly ? new Set(["home"]) : unlockedIds(s.sitemap, s.plan)
+  const unlocked = homepageOnly ? new Set(["home"]) : unlockedIds(s.sitemap, s.plan, s.pagePriority)
   const pages: Record<string, PageStatus> = {}
   for (const p of flatten(s.sitemap)) pages[p.id] = unlocked.has(p.id) ? "queued" : "locked"
   let next: GenState = {
@@ -278,7 +354,7 @@ function allConfirmed(s: GenState) {
 export function reducer(s: GenState, a: Action): GenState {
   switch (a.type) {
     case "reset":
-      return initialState(a.prompt ?? s.prompt, a.scenario ?? (a.prompt ? detectScenario(a.prompt) : s.scenario), s.speed)
+      return initialState(a.prompt ?? s.prompt, a.scenario ?? (a.prompt ? undefined : s.scenario), s.speed)
     case "load":
       return a.state
     case "speed":
@@ -296,6 +372,7 @@ export function reducer(s: GenState, a: Action): GenState {
       const i = current(r)
       if (i < 0 || r.status !== "running") return s
       const t = r.tasks[i]
+      if (s.pb && s.scenario !== "restricted" && (t.id === "read" || t.id === "search")) return t.id === "read" ? pbRead(s, i) : pbSearched(s, i)
       if (t.id === "read") {
         if (s.scenario === "restricted") {
           const n = updateRun(s, r.id, (r) => ({ ...r, status: "blocked", tasks: r.tasks.map((x, j) => (j === i ? { ...x, status: "done", duration: "6s" } : x)) }))
@@ -351,6 +428,10 @@ export function reducer(s: GenState, a: Action): GenState {
     case "followUp": {
       const text = a.text.trim()
       if (!text) return s
+      if (s.pb) {
+        const handled = pbFollowUp(s, text)
+        if (handled) return handled
+      }
       if (s.phase === "create") {
         const build = s.buildRun ? s.runs[s.buildRun] : null
         if (build && build.status !== "done") {
@@ -454,10 +535,10 @@ export function reducer(s: GenState, a: Action): GenState {
       const pages = { ...s.pages }
       let credits = s.credits
       if (building) {
-        pages[building] = s.scenario === "page-fail" && building === "corporate" && !s.failedOnce ? "failed" : "built"
+        pages[building] = s.scenario === "page-fail" && building === failingPage(s) && !s.failedOnce ? "failed" : "built"
         credits = Math.min(100, credits + 3)
       }
-      let n: GenState = { ...s, pages, credits, failedOnce: s.failedOnce || (s.scenario === "page-fail" && building === "corporate") }
+      let n: GenState = { ...s, pages, credits, failedOnce: s.failedOnce || (s.scenario === "page-fail" && building === failingPage(s)) }
       if (credits >= 100 && order.some((id) => pages[id] === "queued")) {
         n = updateRun(n, r.id, (r) => ({ ...r, status: "paused" }))
         return push(n, { type: "credits-out" })
@@ -512,8 +593,345 @@ export function reducer(s: GenState, a: Action): GenState {
 
     case "jump":
       return jump(a.scenario ? { ...s, scenario: a.scenario } : s, a.to, a.plan)
+
+    /* ----- playbook conversation ----- */
+    case "pbAnswer":
+      return pbAnswer(s, a.id, a.value, a.text)
+    case "pbGate":
+      return pbGate(s, a.id, a.answer)
+    case "pbGuard":
+      return pbGuard(s, a.id, a.resolution)
+    case "pbEdit":
+      return pbEdit(s, a.slot, a.value)
+    case "pbDecide":
+      return s.pb ? { ...s, pb: { ...s.pb, decisions: decide(s.pb.decisions, a.module, a.decision, s.pb.goals) } } : s
+    case "pbConsent":
+      return s.pb ? { ...s, pb: { ...s.pb, consent: [...new Set([...s.pb.consent, a.module])], decisions: decide(s.pb.decisions, a.module, "added", s.pb.goals) } } : s
+    case "pbConfirmPlan":
+      return pbConfirmPlan(s)
+    case "pbPatch":
+      return pbPatch(s, a.id, a.decisions)
+    case "pbActivate":
+      if (!s.pb || s.pb.activated.includes(a.module)) return s
+      return push({ ...s, pb: { ...s.pb, activated: [...s.pb.activated, a.module] } }, { type: "agent", text: `Connected — ${moduleById(a.module).name} is out of test mode and live.` })
   }
 }
+
+/* ---------- playbook conversation (dentist) ---------- */
+
+const DECIDE_REASON: Record<string, string> = {
+  focus: "it covers most clinics",
+  scale: "it's the simplest setup — adding dentists later is easy",
+  prices: "most clinics show from-prices for routine care and invite a consultation for bigger treatments",
+  emergency: "patients calling you first is the safest default",
+  insurance: "you can list insurers later if you take them",
+}
+
+const isPending = (m: Msg) => (m.type === "pb-question" || m.type === "pb-gate") && !m.answer
+const searchDone = (s: GenState) => {
+  const t = s.runs[s.planRun]?.tasks.find((x) => x.id === "search")
+  return t?.status === "done" || t?.status === "warning"
+}
+const quoteOf = (re: RegExp, text: string) => text.match(re)?.[0] ?? ""
+const joinAnd = (xs: string[]) => (xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`)
+const lower = (t: string) => t.charAt(0).toLowerCase() + t.slice(1)
+
+/** asks the next playbook question, or shows the plan card when there's nothing left to ask */
+function askNext(s: GenState): GenState {
+  const pb = s.pb!
+  if (pb.planConfirmed) return s
+  const q = nextQuestion(pb)
+  if (q) return push({ ...s, pb: { ...pb, asked: [...pb.asked, q.id] } }, { type: "pb-question", qid: q.id, slot: q.slot, variant: q.variant })
+  return maybePlanCard(s)
+}
+
+/** the plan card waits for the search (it fills answers) and for any open question */
+function maybePlanCard(s: GenState): GenState {
+  if (!s.pb || s.pb.planConfirmed || s.msgs.some(isPending) || !searchDone(s) || s.msgs.some((m) => m.type === "pb-plan")) return s
+  const raw = s.pb
+  const pb = withDefaults(raw)
+  const name = clinicName(pb)
+  let text: string
+  if (raw.justBuild) text = "Sure. I'll assume your main goal is getting more patients to book online, and I'll use sensible defaults for a general dental clinic. Every assumption is listed so you can change it."
+  else if (raw.goalsSource === "prompt" && !raw.asked.includes("Q1"))
+    text = `Got it. I read your goals as ${joinAnd(pb.goals.map((g) => lower(goalLabel(g))))}. Here's what I'll build for ${name}, and why — change anything that's off, then pick the tools you want.`
+  else text = `Here's my plan for ${name}${pb.found ? ", including what I found online" : ""}. Anything marked “My default” is a guess — change it with Edit. Then pick the tools you want; nothing paid is added unless you tap Add.`
+  return push({ ...s, pb }, { type: "agent", text }, { type: "pb-plan" })
+}
+
+function resumeSearch(s: GenState): GenState {
+  return updateRun(s, s.planRun, (r) => ({ ...r, status: "running", tasks: r.tasks.map((t) => (t.id === "search" && t.status === "pending" ? { ...t, status: "running" } : t)) }))
+}
+
+/** the agent opens the conversation once it has read the prompt */
+function opening(s: GenState): GenState {
+  const pb = s.pb!
+  const next = nextQuestion(pb)
+  if (!next) return s
+  if (pb.candidates?.kind === "several") return push(s, { type: "agent", text: "You've asked for a lot — let's start with the one that matters most right now. I'll set that up first and keep the rest under Add later." })
+  if (pb.candidates?.kind === "vague") return s
+  if (next.id === "Q1") return push(s, { type: "agent", text: "I'll build a website for a single dental clinic. Before I choose the tools you need, one question — I'll look you up online meanwhile." })
+  if (pb.goals.length) return push(s, { type: "agent", text: `Got it — I read your goal${pb.goals.length > 1 ? "s" : ""} as ${joinAnd(pb.goals.map((g) => lower(goalLabel(g))))}. A quick question while I look you up.` })
+  return s
+}
+
+function pbRead(s: GenState, i: number): GenState {
+  const pb = s.pb!
+  const d = detect(s.prompt)
+  let n = updateRun(s, s.planRun, (r) => advance(r, i, { detail: `Looks like a ${DENTIST.unit} — I'll plan it with the Dentist playbook` }))
+  for (const g of checkGuardrails(s.prompt)) n = push(n, { type: "pb-guard", rule: g.id, quote: quoteOf(g.match, s.prompt) })
+  if (pb.unsupported.length)
+    n = push(n, { type: "agent", text: `${pb.unsupported.join(", ")} isn't something I can set up yet. I can link to your existing shop instead — and I'll carry on with the rest.` })
+  if (d.otherNiche || d.directory) {
+    n = updateRun(n, s.planRun, (r) => ({ ...r, status: "waiting", tasks: r.tasks.map((t) => (t.id === "search" ? { ...t, status: "pending" } : t)) }))
+    return push(n, { type: "pb-gate", kind: d.otherNiche ? "two-sites" : "directory" })
+  }
+  return askNext(opening(n))
+}
+
+function pbSearched(s: GenState, i: number): GenState {
+  let pb = s.pb!
+  const so = searchOf(s)
+  const failed = s.scenario === "search-fail"
+  let detail = failed ? "Search isn't available right now — I'll work from your description" : so.none
+  if (!failed && !so.none) {
+    detail = `Found ${RAHMA.name}: ${RAHMA.rating}, ${RAHMA.dentists.length} dentists`
+    pb = { ...pb, found: { rating: RAHMA.rating, dentists: RAHMA.dentists.length, branches: 1, hours: RAHMA.hours } }
+    if (!pb.answers.scale) pb = { ...pb, answers: { ...pb.answers, scale: { value: "dentists", source: "search" } } }
+    if (!pb.place) pb = { ...pb, place: RAHMA.place }
+  }
+  let n: GenState = updateRun({ ...s, pb }, s.planRun, (r) => advance(r, i, failed ? { status: "warning", detail, duration: undefined } : { detail }))
+  if (!pb.planConfirmed) n = updateRun(n, s.planRun, (r) => ({ ...r, status: "waiting", tasks: r.tasks.map((t) => (t.id === "brief" ? { ...t, status: "pending" } : t)) }))
+  return maybePlanCard(n)
+}
+
+function markAnswered(s: GenState, id: string, answer: string): GenState {
+  return { ...s, msgs: s.msgs.map((m) => (m.id === id && (m.type === "pb-question" || m.type === "pb-gate") ? { ...m, answer } : m)) }
+}
+
+function pbAnswer(s: GenState, id: string, value: string | string[], typed?: string): GenState {
+  const m = s.msgs.find((x) => x.id === id)
+  if (!s.pb || !m || m.type !== "pb-question" || m.answer) return s
+  let pb = s.pb
+  let label: string
+  let reply: string | null = null
+  if (m.slot === "goals") {
+    if (value === "decide") {
+      pb = { ...pb, goals: [DENTIST.defaultGoal, DENTIST.defaultSecondary], goalsSource: "default" }
+      label = "You decide"
+      reply = "Done. I chose getting more patients booking online, with being found and trusted as a second goal — that's where most clinics start. You can change it any time."
+    } else {
+      const goals = (Array.isArray(value) ? value : [value]).slice(0, 3)
+      const several = pb.candidates?.kind === "several"
+      pb = { ...pb, goals, goalsSource: "owner" }
+      label = goals.length === 1 ? goalLabel(goals[0]) : `${goalLabel(goals[0])} — that's the main one. Also: ${goals.slice(1).map((g) => lower(goalLabel(g))).join(", ")}`
+      if (several) reply = `Let's start with that. I'll set it up first and keep the rest under Add later.`
+      else if (pb.candidates?.kind === "vague") reply = "More patients is a great goal. I'll start with online booking and a strong first impression, then add reminders and reviews."
+    }
+    pb = { ...pb, candidates: null }
+  } else {
+    const slot = m.slot as Exclude<Slot, "goals">
+    if (value === "decide") {
+      const v = DENTIST.defaults[slot as keyof typeof DENTIST.defaults] ?? "one"
+      pb = { ...pb, answers: { ...pb.answers, [slot]: { value: v, source: "default" } } }
+      label = "You decide"
+      reply = `Done. I chose “${optionLabel(slot, v)}” because ${DECIDE_REASON[slot] ?? "it's the usual choice"}. You can change it any time.`
+    } else {
+      const v = String(value)
+      pb = { ...pb, answers: { ...pb.answers, [slot]: { value: v, source: "owner" } } }
+      label = optionLabel(slot, v)
+    }
+  }
+  let n = markAnswered({ ...s, pb }, id, label)
+  n = push(n, { type: "user", text: typed ?? label })
+  if (reply) n = push(n, { type: "agent", text: reply })
+  return askNext(n)
+}
+
+function pbGate(s: GenState, id: string, answer: string): GenState {
+  const m = s.msgs.find((x) => x.id === id)
+  if (!s.pb || !m || m.type !== "pb-gate" || m.answer) return s
+  const LABEL: Record<string, string> = {
+    one: "One practice",
+    directory: "A directory",
+    two: "Two separate websites — start with the dental clinic",
+    only: "Just the dental clinic",
+  }
+  let n = push(markAnswered(s, id, LABEL[answer] ?? answer), { type: "user", text: LABEL[answer] ?? answer })
+  if (answer === "directory") {
+    n = push(n, { type: "agent", text: "A directory needs listings and search for many practices — GoGetSpace doesn't build those yet. If you run one of the practices, I can build its website instead." }, { type: "pb-gate", kind: "directory-retry" })
+    return n
+  }
+  if (answer === "two") n = push(n, { type: "agent", text: "I'll build the dental clinic first and keep the two separate — start the other website from your dashboard afterwards." })
+  n = { ...n, pb: { ...n.pb!, answers: { ...n.pb!.answers, build: { value: "one", source: "owner" } } } }
+  n = resumeSearch(n)
+  return askNext(opening(n))
+}
+
+function pbGuard(s: GenState, id: string, resolution: "accepted" | "declined"): GenState {
+  const m = s.msgs.find((x) => x.id === id)
+  if (!s.pb || !m || m.type !== "pb-guard" || m.resolved) return s
+  const rule = DENTIST.guardrails.find((g) => g.id === m.rule)!
+  let pb = s.pb
+  let n: GenState = { ...s, msgs: s.msgs.map((x) => (x.id === id && x.type === "pb-guard" ? { ...x, resolved: resolution } : x)) }
+  if (resolution === "accepted") {
+    pb = { ...pb, notes: [...new Set([...pb.notes, rule.note])] }
+    if (rule.id === "before-after") pb = { ...pb, consent: [...new Set([...pb.consent, "gallery"])], decisions: decide(pb.decisions, "gallery", "added", pb.goals) }
+    if (rule.id === "discount") pb = { ...pb, notes: pb.notes }
+    n = { ...n, pb }
+    if (pb.planConfirmed) n = { ...n, brief: dentistBrief(pb), artifacts: { ...n.artifacts, brief: n.artifacts.brief === "confirmed" ? "awaiting" : n.artifacts.brief } }
+    return push(n, { type: "agent", text: rule.id === "before-after" ? "Thanks — the before-and-after gallery is on, with a “results vary” note on every pair." : "Done — I'll use that wording." })
+  }
+  return push({ ...n, pb }, { type: "agent", text: "OK — I'll leave it out." })
+}
+
+function pbEdit(s: GenState, slot: Slot | "style", value: string | string[]): GenState {
+  if (!s.pb) return s
+  let pb = s.pb
+  if (slot === "style") pb = { ...pb, style: String(value) }
+  else if (slot === "goals") {
+    const goals = (Array.isArray(value) ? value : [value]).slice(0, 3)
+    const keep = new Set(offerFor(goals).flatMap((g) => g.modules.map((m) => m.id)))
+    const decisions = Object.fromEntries(Object.entries(pb.decisions).filter(([k]) => keep.has(k)))
+    pb = { ...pb, goals, goalsSource: "owner", decisions }
+  } else pb = { ...pb, answers: { ...pb.answers, [slot]: { value: String(value), source: "owner" } } }
+  return { ...s, pb }
+}
+
+function pbConfirmPlan(s: GenState): GenState {
+  if (!s.pb || s.pb.planConfirmed) return s
+  const pb = withDefaults({ ...s.pb, planConfirmed: true })
+  const kept = Object.entries(pb.decisions)
+    .filter(([, d]) => d === "added")
+    .map(([id]) => moduleById(id).name)
+  const total = Object.entries(pb.decisions).reduce((sum, [id, d]) => sum + (d === "added" ? moduleById(id).price : 0), 0)
+  let n: GenState = {
+    ...s,
+    pb,
+    brief: dentistBrief(pb),
+    questions: dentistQuestions(pb),
+    sitemap: dentistSitemap(pb),
+    pagePriority: dentistPriority(pb),
+    // the plan card's style preset is preselected in the style step
+    styleId: s.styleId ?? presetOf(pb),
+    msgs: s.msgs.map((m) => (m.type === "pb-plan" ? { ...m, confirmed: true } : m)),
+  }
+  n = push(
+    n,
+    { type: "user", text: "Looks right — create the plan." },
+    {
+      type: "agent",
+      text: kept.length
+        ? `Writing the brief, style and page plan with ${joinAnd(kept)}. ${total ? `The add-ons come to $${total}/month, charged from when you publish.` : "Everything you added is free."}`
+        : "No problem — I'll plan the free parts now, and the rest will wait under Add later.",
+    },
+  )
+  return updateRun(n, n.planRun, (r) => (r.status === "waiting" ? { ...r, status: "running", tasks: r.tasks.map((t) => (t.id === "brief" && t.status === "pending" ? { ...t, status: "running" } : t)) } : r))
+}
+
+/** reads a typed answer to the open question, or null if it doesn't match an option */
+function parseAnswer(m: Extract<Msg, { type: "pb-question" }>, text: string): string | string[] | null {
+  if (/\b(you decide|not sure|whatever|up to you|anything)\b/i.test(text)) return "decide"
+  const a = analyze(text)
+  if (m.slot === "goals") return a.goals.length ? a.goals.slice(0, 3) : a.vagueGoal ? [DENTIST.defaultGoal, DENTIST.defaultSecondary] : null
+  const slot = m.slot as Exclude<Slot, "goals">
+  if (a.answers[slot]) return a.answers[slot]!.value
+  const q = DENTIST.questions.find((x) => x.slot === m.slot)
+  const hit = q?.options.find((o) => new RegExp(`\\b${o.label.split(" ")[0]}`, "i").test(text))
+  return hit?.id ?? null
+}
+
+/** typed messages during the playbook conversation: answers, guardrails, new goals and notes */
+function pbFollowUp(s: GenState, text: string): GenState | null {
+  let pb = s.pb!
+  const hits = checkGuardrails(text)
+  if (hits.length) {
+    let n = push(s, { type: "user", text })
+    for (const g of hits) n = push(n, { type: "pb-guard", rule: g.id, quote: quoteOf(g.match, text) })
+    return n
+  }
+  const open = s.msgs.find(isPending)
+  if (open?.type === "pb-question") {
+    const v = parseAnswer(open, text)
+    if (v !== null) return pbAnswer(s, open.id, v, text)
+    const q = DENTIST.questions.find((x) => x.slot === open.slot && (!open.variant || x.variant === open.variant))
+    const opts = open.slot === "goals" ? [goalLabel("G1"), goalLabel("G6")] : (q?.options ?? []).slice(0, 2).map((o) => o.label)
+    return push(s, { type: "user", text }, { type: "agent", text: `I'm not sure I understood. Do you mean “${opts[0]}” or “${opts[1]}”? You can also tap one of the options.` })
+  }
+  if (open?.type === "pb-gate") {
+    const ans = /director|platform|many/i.test(text) ? "directory" : /two|both|separate/i.test(text) ? "two" : "one"
+    return pbGate(s, open.id, open.kind === "two-sites" ? (ans === "two" ? "two" : "only") : ans)
+  }
+  const goals = newGoals(text, pb)
+  if (!pb.planConfirmed) {
+    if (!s.msgs.some((m) => m.type === "pb-plan")) return null
+    if (goals.length) {
+      pb = { ...pb, goals: [...pb.goals, ...goals].slice(0, 4), goalsSource: "owner" }
+      return push({ ...s, pb }, { type: "user", text }, { type: "agent", text: `Added ${joinAnd(goals.map((g) => lower(goalLabel(g))))} to your goals — the plan below is updated.` })
+    }
+    pb = { ...pb, notes: [...pb.notes, `From your note: ${text}`] }
+    return push({ ...s, pb }, { type: "user", text }, { type: "agent", text: "Noted — that goes into the brief." })
+  }
+  if (goals.length) return push(s, { type: "user", text }, { type: "pb-patch", goals })
+  if (s.phase === "plan") {
+    pb = { ...pb, notes: [...pb.notes, `From your note: ${text}`] }
+    const n: GenState = { ...s, pb, brief: dentistBrief(pb), artifacts: { ...s.artifacts, brief: s.artifacts.brief === "confirmed" ? "awaiting" : s.artifacts.brief } }
+    return push(n, { type: "user", text }, { type: "agent", text: "Added to the brief — nothing else changes." })
+  }
+  return null
+}
+
+/** new goals after the plan: adds only their modules and patches the plan (and the site, if it's built) */
+function pbPatch(s: GenState, id: string, decisions: Record<string, Decision> | null): GenState {
+  const m = s.msgs.find((x) => x.id === id)
+  if (!s.pb || !m || m.type !== "pb-patch" || m.resolved) return s
+  if (!decisions || !Object.values(decisions).includes("added")) {
+    const n: GenState = { ...s, msgs: s.msgs.map((x) => (x.id === id && x.type === "pb-patch" ? { ...x, resolved: "declined" as const } : x)) }
+    return push(n, { type: "agent", text: "No problem — nothing changes. You can add these later from the Modules tab." })
+  }
+  let pb: PlaybookState = { ...s.pb, goals: [...new Set([...s.pb.goals, ...m.goals])] }
+  for (const [mod, d] of Object.entries(decisions)) pb = { ...pb, decisions: decide(pb.decisions, mod, d, pb.goals) }
+  const fresh = dentistSitemap(pb)
+  const have = new Set(flatten(s.sitemap).map((p) => p.id))
+  const extra = (fresh.children ?? []).filter((c) => !have.has(c.id))
+  const children = [...(s.sitemap.children ?? [])]
+  const at = Math.max(0, children.findIndex((c) => c.id === "privacy"))
+  children.splice(at === 0 && children[0]?.id !== "privacy" ? children.length : at, 0, ...extra)
+  let n: GenState = {
+    ...s,
+    pb,
+    brief: dentistBrief(pb),
+    sitemap: { ...s.sitemap, sections: fresh.sections, children },
+    pagePriority: dentistPriority(pb),
+    msgs: s.msgs.map((x) => (x.id === id && x.type === "pb-patch" ? { ...x, resolved: "added" as const } : x)),
+  }
+  const names = Object.entries(decisions)
+    .filter(([, d]) => d === "added")
+    .map(([k]) => moduleById(k).name)
+  if (s.phase === "plan") {
+    n = { ...n, artifacts: { ...n.artifacts, brief: n.artifacts.brief === "confirmed" ? "awaiting" : n.artifacts.brief, sitemap: extra.length && n.artifacts.sitemap === "confirmed" ? "awaiting" : n.artifacts.sitemap } }
+    return push(n, { type: "agent", text: `Added. This only affects ${joinAnd(names)}${extra.length ? ` and adds ${extra.length === 1 ? "a page" : `${extra.length} pages`} to the plan` : ""} — nothing else changes.` })
+  }
+  const pages = { ...n.pages }
+  for (const p of extra) pages[p.id] = "queued"
+  n = { ...n, pages }
+  if (s.buildRun && s.runs[s.buildRun].status === "done" && !Object.values(pages).includes("building")) n = startNextPage(n)
+  return push(n, { type: "agent", text: `Added. This only affects ${joinAnd(names)}${extra.length ? ` — building ${extra.length === 1 ? "its page" : `${extra.length} new pages`} now` : ""}. Nothing else changes.` })
+}
+
+/** a dentist site planned with defaults, for the prototype's jumps and the editor's existing sites */
+function fastForwardPlaybook(s: GenState): GenState {
+  let pb = withDefaults({ ...s.pb!, candidates: null })
+  if (isDemoClinic(pb)) pb = { ...pb, found: { rating: RAHMA.rating, dentists: RAHMA.dentists.length, branches: 1, hours: RAHMA.hours }, answers: { ...pb.answers, scale: pb.answers.scale?.source === "default" ? { value: "dentists", source: "search" } : pb.answers.scale } }
+  if (!Object.keys(pb.decisions).length)
+    for (const g of offerFor(pb.goals)) for (const mod of g.modules) if (mod.id !== "gallery") pb = { ...pb, decisions: decide(pb.decisions, mod.id, "added", pb.goals) }
+  pb = { ...pb, planConfirmed: true }
+  const n: GenState = { ...s, pb, brief: dentistBrief(pb), questions: dentistQuestions(pb), sitemap: dentistSitemap(pb), pagePriority: dentistPriority(pb), styleId: s.styleId ?? presetOf(pb) }
+  return push(n, { type: "pb-plan", confirmed: true })
+}
+
+/** the page the "A page fails" edge case breaks: Corporate for the lab, the fourth page otherwise */
+const failingPage = (s: GenState) => (s.pb ? flatten(s.sitemap)[3]?.id : "corporate")
 
 function startNextPage(s: GenState): GenState {
   const next = flatten(s.sitemap).find((p) => s.pages[p.id] === "queued")
@@ -528,6 +946,8 @@ function finishBuild(s: GenState): GenState {
   text += " Have a look around the preview, then publish when you're happy."
   let n = push(s, { type: "agent", text })
   for (const q of s.queued) n = push(n, { type: "agent", text: `Done — I've applied your note: “${q}”.` })
+  // modules that need the owner's own accounts start in test mode
+  if (n.pb && !n.msgs.some((m) => m.type === "pb-activate") && Object.entries(n.pb.decisions).some(([id, d]) => d === "added" && moduleById(id).needsAccount)) n = push(n, { type: "pb-activate" })
   // ask how it went once, after the first build only
   if (!n.msgs.some((m) => m.type === "feedback")) n = push(n, { type: "feedback" })
   return { ...n, queued: [] }
@@ -537,6 +957,7 @@ function finishBuild(s: GenState): GenState {
 function jump(s: GenState, to: JumpTarget, plan: Plan = "business"): GenState {
   let n = initialState(s.prompt, s.scenario === "restricted" || s.scenario === "vague" ? "happy" : s.scenario, s.speed)
   if (to === "generating") return n
+  if (n.pb) n = fastForwardPlaybook(n)
   // finish the plan run
   n = updateRun(n, 1, (r) => ({ ...r, status: "done", tasks: r.tasks.map((t) => ({ ...t, status: "done", duration: DURATIONS[t.id], detail: t.id === "brief" ? `Drafted a profile from assumptions, flagging ${countAssumptions(n.brief)} details to confirm` : t.id === "style" ? "Sketched 4 style options, including colors, fonts, and vibe" : t.id === "sitemap" ? `Planned ${flatten(n.sitemap).length} pages, including the structure` : undefined })) }))
   n = { ...n, searchShown: SEARCH_RESULTS.length, autoReviewed: n.planRun }
@@ -545,7 +966,7 @@ function jump(s: GenState, to: JumpTarget, plan: Plan = "business"): GenState {
   if (to === "review-brief") return { ...n, review: { open: true, step: 0 } }
   n = { ...n, artifacts: { ...n.artifacts, brief: "confirmed" } }
   if (to === "review-style") return { ...n, review: { open: true, step: 1 } }
-  n = { ...n, styleId: n.styleId ?? "clinical-clarity", artifacts: { ...n.artifacts, style: "confirmed" } }
+  n = { ...n, styleId: n.styleId ?? (n.pb ? presetOf(n.pb) : "clinical-clarity"), artifacts: { ...n.artifacts, style: "confirmed" } }
   if (to === "review-sitemap") return { ...n, review: { open: true, step: 2 } }
   n = startBuild({ ...n, artifacts: { ...n.artifacts, sitemap: "confirmed" }, plan })
   if (to === "creating") return n
@@ -555,7 +976,7 @@ function jump(s: GenState, to: JumpTarget, plan: Plan = "business"): GenState {
   n = updateRun(n, n.buildRun!, (r) => ({ ...r, status: "done", tasks: r.tasks.map((t) => ({ ...t, status: "done", duration: DURATIONS[t.id], detail: t.id === "pages" ? `Built ${Object.values(pages).filter((p) => p === "built").length} pages` : undefined })) }))
   n = finishBuild(n)
   if (to === "built") return n
-  return { ...n, account: { name: "Kiki", email: "kiki@example.com" }, publish: { status: "live", domain: "bakti-analisa.get.space" } }
+  return { ...n, account: { name: "Kiki", email: "kiki@example.com" }, publish: { status: "live", domain: n.publish.domain } }
 }
 
 export const isPlanActive = (s: GenState) => s.runs[s.planRun]?.status === "running"
@@ -565,8 +986,23 @@ export { nextId }
  * A finished site, as the standalone editor opens it: planned, built with the site's plan and (when live)
  * published. `ready` gives a site that is still waiting for its plan to be reviewed.
  */
-export function siteState(opts: { prompt: string; plan: Plan; live: boolean; built: boolean; account: { name: string; email: string }; domain: string; credits: number }): GenState {
-  const base = initialState(opts.prompt, "happy")
+export function siteState(opts: {
+  prompt: string
+  plan: Plan
+  live: boolean
+  built: boolean
+  account: { name: string; email: string }
+  domain: string
+  credits: number
+  styleId?: string | null
+  /** a playbook site's add-ons, as the account has them */
+  modules?: { id: string; status: "live" | "test" }[]
+}): GenState {
+  let base = initialState(opts.prompt, "happy")
+  if (base.pb && opts.modules) {
+    const decisions = Object.fromEntries(opts.modules.map((m) => [m.id, "added" as Decision]))
+    base = { ...base, styleId: opts.styleId ?? null, pb: { ...withDefaults(base.pb), decisions, activated: opts.modules.filter((m) => m.status === "live").map((m) => m.id) } }
+  }
   const n = opts.built ? reducer(base, { type: "jump", to: opts.live ? "published" : "built", plan: opts.plan }) : reducer(base, { type: "jump", to: "ready" })
   // existing websites were rated (or skipped) back when they were first built
   const msgs = n.msgs.map((m) => (m.type === "feedback" ? { ...m, answer: "skipped" as const } : m))

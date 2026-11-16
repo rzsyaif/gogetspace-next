@@ -53,9 +53,9 @@ export function flatten(node: PageNode, depth = 0, out: (PageNode & { depth: num
 }
 
 /** ids of the pages the plan includes */
-export function unlockedIds(root: PageNode, plan: Plan): Set<string> {
+export function unlockedIds(root: PageNode, plan: Plan, priority: string[] = PAGE_PRIORITY): Set<string> {
   const all = flatten(root).map((p) => p.id)
-  const ordered = [...PAGE_PRIORITY.filter((id) => all.includes(id)), ...all.filter((id) => !PAGE_PRIORITY.includes(id))]
+  const ordered = [...priority.filter((id) => all.includes(id)), ...all.filter((id) => !priority.includes(id))]
   return new Set(ordered.slice(0, PLAN_PAGE_LIMIT[plan]))
 }
 

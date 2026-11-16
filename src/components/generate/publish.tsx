@@ -4,6 +4,8 @@ import { useEffect, useEffectEvent, useState } from "react"
 import { Check, Copy, ExternalLink, Globe, Link2, Loader } from "lucide-react"
 import { AuthForm } from "@/components/auth/login-dialog"
 import { Button, Dialog, DialogContent, Input, RadioCard } from "@/components/ui"
+import { siteName } from "@/lib/generation/state"
+import { previewUrl } from "@/lib/generation/preview-url"
 import { useGen } from "./gen-provider"
 
 type Stage = "signup" | "publish" | "publishing" | "live"
@@ -119,12 +121,12 @@ function Live({ styleId, onClose }: { styleId: string; onClose: () => void }) {
   return (
     <DialogContent
       title="Your site is live 🎉"
-      description={`Bakti Analisa is now online${s.account ? `, ${s.account.name.split(" ")[0]}` : ""}. Share the link with your team and patients.`}
+      description={`${siteName(s)} is now online${s.account ? `, ${s.account.name.split(" ")[0]}` : ""}. Share the link with your team and patients.`}
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>Keep editing</Button>
           <Button asChild>
-            <a href={`/preview/${styleId}`} target="_blank" rel="noreferrer">
+            <a href={previewUrl({ ...s, styleId })} target="_blank" rel="noreferrer">
               Open site <ExternalLink />
             </a>
           </Button>

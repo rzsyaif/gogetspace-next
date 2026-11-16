@@ -10,7 +10,7 @@ import { ENQUIRIES, INVOICES, OWNED_DOMAINS, SITES, type EnquiryStatus, type Inv
  * dashboard and the editor, kept in sessionStorage so a plan change shows up everywhere until the tab closes.
  */
 export interface AccountState {
-  v: 2
+  v: 3
   sites: Site[]
   /** domains bought through GoGetSpace (used or not) */
   domains: OwnedDomain[]
@@ -20,7 +20,7 @@ export interface AccountState {
 
 const KEY = "gogetspace-account"
 const SEED: AccountState = {
-  v: 2,
+  v: 3,
   sites: SITES,
   domains: OWNED_DOMAINS,
   enquiryStatus: Object.fromEntries(ENQUIRIES.map((e) => [e.id, e.status])),
@@ -35,7 +35,7 @@ function read(): AccountState {
   try {
     const raw = sessionStorage.getItem(KEY)
     const saved = raw ? (JSON.parse(raw) as AccountState) : null
-    state = saved?.v === 2 ? saved : SEED
+    state = saved?.v === 3 ? saved : SEED
   } catch {
     state = SEED
   }
@@ -100,6 +100,27 @@ export const accountActions = {
   cancelScheduledPlan(siteId: string) {
     const s = read()
     write({ ...s, sites: s.sites.map((x) => (x.id === siteId ? { ...x, scheduledPlan: undefined } : x)) })
+  },
+  /** adds an add-on to a website; it's billed from today, prorated to the website's renewal date */
+  addModule(siteId: string, id: string, price: number, name: string, needsAccount: boolean) {
+    const s = read()
+    const site = s.sites.find((x) => x.id === siteId)
+    if (!site || site.modules?.some((m) => m.id === id)) return
+    const invoices =
+      price > 0 && site.status === "live"
+        ? [{ id: `INV-${siteId.slice(0, 4).toUpperCase()}-${s.invoices.length + 1}`, date: "Today", siteId, description: `${name} add-on · prorated to ${site.renews ?? "renewal"}`, amount: Math.round(price * 0.5 * 100) / 100, status: "paid" as const }, ...s.invoices]
+        : s.invoices
+    write({ ...s, invoices, sites: s.sites.map((x) => (x.id === siteId ? { ...x, modules: [...(x.modules ?? []), { id, status: needsAccount ? "test" : "live" }] } : x)) })
+  },
+  /** removes an add-on; it stops at the end of the period already paid for */
+  removeModule(siteId: string, id: string) {
+    const s = read()
+    write({ ...s, sites: s.sites.map((x) => (x.id === siteId ? { ...x, modules: (x.modules ?? []).filter((m) => m.id !== id) } : x)) })
+  },
+  /** the owner connected the account a module needs: out of test mode */
+  activateModule(siteId: string, id: string) {
+    const s = read()
+    write({ ...s, sites: s.sites.map((x) => (x.id === siteId ? { ...x, modules: (x.modules ?? []).map((m) => (m.id === id ? { ...m, status: "live" as const } : m)) } : x)) })
   },
   setEnquiryStatus(id: string, status: EnquiryStatus) {
     const s = read()

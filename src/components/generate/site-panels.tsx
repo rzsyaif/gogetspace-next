@@ -8,16 +8,22 @@ import { EnquiriesPanel } from "@/components/account/enquiries"
 import { PlanPanel } from "@/components/account/plan-panel"
 import { PanelPage } from "@/components/account/panel"
 import { useEditorSite } from "./editor-site"
+import { useGen } from "./gen-provider"
+import { moduleById } from "@/lib/playbooks/engine"
+import { ModulesPanel } from "@/components/playbook/modules-panel"
 import type { Tab } from "./workspace"
 
 /** The editor's full-width tabs: Analytics, Enquiries and Plan for the open website. */
 export function SitePanel({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) {
-  const { site, plan, setPlan, usage, billing } = useEditorSite()
+  const { site, plan, setPlan, usage, billing, modules } = useEditorSite()
+  const { s } = useGen()
+  const addons = modules?.list.map((m) => ({ id: m.id, name: moduleById(m.id).name, price: moduleById(m.id).price, status: m.status }))
   return (
     <PanelPage>
       {tab === "analytics" && <AnalyticsPanel site={site} plan={plan} onUpgrade={() => onTab("plan")} />}
       {tab === "enquiries" && <EnquiriesPanel siteId={site.id} live={site.status === "live"} />}
-      {tab === "plan" && <PlanPanel siteName={site.name} plan={plan} usage={usage} billing={billing} onChange={setPlan} onManageDomain={() => onTab("domain")} />}
+      {tab === "plan" && <PlanPanel siteName={site.name} plan={plan} usage={usage} billing={billing} onChange={setPlan} onManageDomain={() => onTab("domain")} addons={addons} onManageAddons={() => onTab("modules")} />}
+      {tab === "modules" && modules && s.pb && <ModulesPanel siteName={site.name} api={modules} billed={billing.billed} goals={s.pb.goals} />}
     </PanelPage>
   )
 }

@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "motion/react"
 import { FlaskConical, RotateCcw, X } from "lucide-react"
 import { Button, IconButton, SegmentedControl } from "@/components/ui"
 import { cn } from "@/lib/cn"
-import { SCENARIOS, type JumpTarget, type Scenario } from "@/lib/generation/state"
+import { DEFAULT_PROMPT, SCENARIOS, type JumpTarget, type Scenario } from "@/lib/generation/state"
 import { useGen } from "./gen-provider"
 
 const JUMPS: { to: JumpTarget; label: string }[] = [
@@ -17,6 +17,23 @@ const JUMPS: { to: JumpTarget; label: string }[] = [
   { to: "creating", label: "Creating" },
   { to: "built", label: "Built" },
   { to: "published", label: "Published" },
+]
+
+/** the dentist playbook's evals (§11) as ready-made prompts */
+const DENTIST_PROMPTS: { id: string; label: string; prompt: string }[] = [
+  { id: "demo", label: "Rahma (demo)", prompt: "Website for a family dental clinic in Penang called Rahma Family Dental" },
+  { id: "E1", label: "Vague", prompt: "Create a website for a dentist" },
+  { id: "E2", label: "Ortho, 2 branches", prompt: "Website for my 2-branch orthodontic clinic. Patients should book consultations online and I want to show price ranges." },
+  { id: "E3", label: "Just build it", prompt: "Just build it, I'm a dentist" },
+  { id: "E4", label: "“Best”, “painless”", prompt: "Website for Rahma Family Dental in Penang. Say we're the best dentist in town and our treatments are painless" },
+  { id: "E6", label: "Children's clinic", prompt: "Website for my children's dental clinic" },
+  { id: "E7", label: "24h emergencies", prompt: "Dental clinic website — we take emergency patients 24 hours" },
+  { id: "E8", label: "Directory", prompt: "I need a platform to list dentists in my city" },
+  { id: "E9", label: "Dentist + lawyer", prompt: "A site for a dentist and a lawyer" },
+  { id: "E15", label: "More patients", prompt: "I'm a dentist and I want more patients" },
+  { id: "E16", label: "Many goals + shop", prompt: "Dental clinic: I want bookings, payments, an online shop and emergency slots" },
+  { id: "E17", label: "Check-ups", prompt: "I'm a dentist. I want patients to come back for check-ups" },
+  { id: "lab", label: "Bakti lab", prompt: DEFAULT_PROMPT },
 ]
 
 /** Prototype-only panel: replay the flow with an edge case, jump to any stage, change the pace. */
@@ -44,6 +61,25 @@ export function ScenarioPanel() {
               <p className="type-label-md text-fg-primary">Prototype controls</p>
               <IconButton aria-label="Close" size="sm" onClick={() => setOpen(false)}><X /></IconButton>
             </div>
+
+            <section className="flex flex-col gap-2">
+              <p className="type-label-sm text-fg-tertiary">PROMPT · DENTIST PLAYBOOK EVALS</p>
+              <div className="flex flex-wrap gap-1.5">
+                {DENTIST_PROMPTS.map((d) => (
+                  <button
+                    key={d.id}
+                    type="button"
+                    title={d.prompt}
+                    aria-pressed={s.prompt === d.prompt}
+                    onClick={() => { dispatch({ type: "reset", prompt: d.prompt, scenario: "happy" }); setOpen(false) }}
+                    className={cn("rounded-full border px-2.5 py-1 type-body-sm hover:border-blue-500 hover:text-fg-link", s.prompt === d.prompt ? "border-blue-500 bg-accent-blue-subtle text-fg-link" : "border-line-default text-fg-primary")}
+                  >
+                    {d.id !== "demo" && d.id !== "lab" && <span className="mr-1 text-fg-tertiary">{d.id}</span>}
+                    {d.label}
+                  </button>
+                ))}
+              </div>
+            </section>
 
             <section className="flex flex-col gap-2">
               <p className="type-label-sm text-fg-tertiary">EDGE CASE</p>

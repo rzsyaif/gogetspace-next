@@ -31,6 +31,8 @@ export function PlanPanel({
   billing,
   onChange,
   onManageDomain,
+  addons,
+  onManageAddons,
 }: {
   siteName: string
   plan: Plan
@@ -40,6 +42,9 @@ export function PlanPanel({
   onChange: (p: Plan, charge?: number) => void
   /** open the editor's Domain tab */
   onManageDomain: () => void
+  /** add-on modules on this website (playbook sites), each with its own monthly price */
+  addons?: { id: string; name: string; price: number; status: "live" | "test" }[]
+  onManageAddons?: () => void
 }) {
   const [pick, setPick] = useState<Plan | null>(null)
   const [done, setDone] = useState<{ plan: Plan; text: string } | null>(null)
@@ -148,6 +153,34 @@ export function PlanPanel({
           )}
         </PanelSection>
       </div>
+
+      {addons && (
+        <PanelSection
+          title="Add-ons on this website"
+          actions={onManageAddons && <Button size="sm" variant="secondary" onClick={onManageAddons}>Manage modules</Button>}
+        >
+          {addons.length ? (
+            <ul className="flex flex-col divide-y divide-line-default">
+              {addons.map((a) => (
+                <li key={a.id} className="flex items-center gap-3 py-2.5 first:pt-0">
+                  <span className="flex-1 type-body-md text-fg-primary">{a.name}</span>
+                  {a.status === "test" && <Badge tone="warning">Test mode</Badge>}
+                  <span className="w-20 text-right type-body-sm text-fg-primary tabular-nums">{a.price ? `$${a.price}/mo` : "Free"}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="type-body-sm text-fg-secondary">No add-ons yet.</p>
+          )}
+          <div className="flex flex-wrap items-baseline justify-between gap-2 border-t border-line-default pt-3">
+            <span className="type-body-sm text-fg-secondary">
+              {current.name} {current.price ? `$${current.price}` : "$0"} + add-ons ${addons.reduce((n, a) => n + a.price, 0)}
+              {billing.billed ? "" : " · charged from when you publish"}
+            </span>
+            <span className="type-label-lg text-fg-primary tabular-nums">${current.price + addons.reduce((n, a) => n + a.price, 0)} / month</span>
+          </div>
+        </PanelSection>
+      )}
 
       <ul className="grid gap-4 lg:grid-cols-3">
         {PLANS.map((p) => {

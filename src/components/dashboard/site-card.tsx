@@ -4,6 +4,8 @@ import Link from "next/link"
 import { ExternalLink, NotebookPen } from "lucide-react"
 import { Badge, Button, Card, Tooltip } from "@/components/ui"
 import { HeroPreview } from "@/components/bakti-site/hero-preview"
+import { DentalHeroPreview } from "@/components/dental-site/hero-preview"
+import { dentalConfigOf, sitePreviewUrl } from "@/lib/account/preview"
 import { getTheme } from "@/lib/bakti/themes"
 import { planInfo } from "@/lib/plans"
 import { dailyStats, siteUrl, type Site } from "@/lib/account/data"
@@ -18,7 +20,11 @@ export function SiteCard({ site, newEnquiries }: { site: Site; newEnquiries: num
       <div className="relative aspect-[1440/900] overflow-hidden rounded-[20px] bg-subtle">
         {site.built && site.themeId ? (
           <div className="pointer-events-none absolute inset-0 select-none" aria-hidden>
-            <HeroPreview theme={getTheme(site.themeId)} viewport={1280} />
+            {dentalConfigOf(site) ? (
+              <DentalHeroPreview theme={getTheme(site.themeId)} viewport={1280} c={dentalConfigOf(site)!} cta="Book an appointment" />
+            ) : (
+              <HeroPreview theme={getTheme(site.themeId)} viewport={1280} />
+            )}
           </div>
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center">
@@ -62,7 +68,7 @@ export function SiteCard({ site, newEnquiries }: { site: Site; newEnquiries: num
           <Tooltip content={live ? "Open the live site" : "Not published yet"}>
             {live ? (
               <Button asChild size="icon-md" variant="secondary" aria-label={`Open ${site.name}`}>
-                <a href={`/preview/${site.themeId}`} target="_blank" rel="noreferrer">
+                <a href={sitePreviewUrl(site)} target="_blank" rel="noreferrer">
                   <ExternalLink />
                 </a>
               </Button>
