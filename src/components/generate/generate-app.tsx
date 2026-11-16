@@ -207,7 +207,10 @@ function ChatColumn({ compact }: { compact: boolean }) {
   const doneCount = run?.tasks.filter((t) => t.status === "done").length ?? 0
   const pagesBuilt = Object.values(s.pages).filter((p) => p === "built").length
   useEffect(() => {
-    end.current?.scrollIntoView({ behavior: "smooth", block: "end" })
+    // an open question card is read from its top (on phones it's taller than the screen)
+    const card = document.querySelector("[data-question-open]")
+    if (card) card.scrollIntoView({ behavior: "smooth", block: "start" })
+    else end.current?.scrollIntoView({ behavior: "smooth", block: "end" })
   }, [count, shown, doneCount, pagesBuilt, compact])
   return (
     <>

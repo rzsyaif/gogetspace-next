@@ -240,6 +240,31 @@ export function nextQuestion(st: PlaybookState, pb: Playbook = DENTIST): Questio
   return null
 }
 
+/**
+ * Where the owner is in the series of questions: the open question's number and how many there will probably be.
+ * Later questions depend on the answers, so the total assumes the usual answers and can change by one as they come in.
+ */
+export function questionProgress(st: PlaybookState, currentSlot?: Slot, pb: Playbook = DENTIST): { index: number; total: number } {
+  const counted = st.asked.filter((q) => q !== "Q0")
+  let sim = st
+  const fill = (q: Question) => {
+    if (q.slot === "goals") sim = { ...sim, goals: sim.goals.length ? sim.goals : sim.candidates?.goals.slice(0, 1) ?? [pb.defaultGoal, pb.defaultSecondary] }
+    else if (!sim.answers[q.slot as Exclude<Slot, "goals">])
+      sim = { ...sim, answers: { ...sim.answers, [q.slot]: { value: pb.defaults[q.slot as keyof Playbook["defaults"]] ?? "one", source: "default" } } }
+  }
+  const current = pb.questions.find((q) => q.slot === currentSlot)
+  if (current) fill(current)
+  let extra = 0
+  for (let i = 0; i < 6; i++) {
+    const q = nextQuestion(sim, pb)
+    if (!q) break
+    sim = { ...sim, asked: [...sim.asked, q.id] }
+    fill(q)
+    if (q.id !== "Q0") extra++
+  }
+  return { index: Math.max(1, counted.length), total: Math.max(1, counted.length + extra) }
+}
+
 /** fills every unanswered slot with the playbook default, so the plan card can show (and flag) it */
 export function withDefaults(st: PlaybookState, pb: Playbook = DENTIST): PlaybookState {
   const answers = { ...st.answers }

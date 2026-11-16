@@ -99,3 +99,32 @@ describe("every eval prompt reaches a plan and a build", () => {
       expect(s.phase).toBe("create")
     })
 })
+
+describe("the question card", () => {
+  it("answers quietly, goes back to undo, and skips the rest", () => {
+    let s = go(initialState("Create a website for a dentist"), { type: "planStepDone" })
+    const q1 = open(s)!
+    s = go(s, { type: "pbAnswer", id: q1.id, value: ["G4"] })
+    expect(s.msgs.some((m) => m.type === "user" && m.text.includes("coming back"))).toBe(false)
+    const q2 = open(s)!
+    expect(q2.qid).toBe("Q2")
+    s = go(s, { type: "pbBack", id: q2.id })
+    expect(open(s)?.id).toBe(q1.id)
+    expect(open(s)?.value).toEqual(["G4"])
+    expect(s.pb!.goals).toEqual([])
+    s = go(s, { type: "pbAnswer", id: q1.id, value: ["G1"] })
+    s = go(s, { type: "pbSkipAll" })
+    expect(open(s)).toBeUndefined()
+    s = tick(s)
+    expect(s.msgs.filter((m) => m.type === "pb-plan")).toHaveLength(1)
+  })
+  it("a written answer is matched, or asked again", () => {
+    let s = go(initialState("Create a website for a dentist"), { type: "planStepDone" })
+    s = go(s, { type: "pbAnswer", id: open(s)!.id, value: ["G1"] })
+    const q2 = open(s)!
+    s = go(s, { type: "pbAnswerText", id: q2.id, text: "qwerty" })
+    expect(open(s)?.unclear).toBe("qwerty")
+    s = go(s, { type: "pbAnswerText", id: q2.id, text: "mostly braces" })
+    expect(s.pb!.answers.focus?.value).toBe("ortho")
+  })
+})
