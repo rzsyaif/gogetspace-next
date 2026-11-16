@@ -95,7 +95,7 @@ function GoalPicker({ st, onDone }: { st: PlaybookState; onDone: (goals: string[
       {several && <p className="type-body-sm text-fg-secondary">You mentioned these — which one matters most right now?</p>}
       <div className="flex flex-wrap gap-2">
         {options.map((g) => (
-          <Chip key={g} selected={picked.includes(g)} onClick={() => toggle(g)}>
+          <Chip key={g} selected={picked.includes(g)} onClick={() => toggle(g)} className="h-auto min-h-[38px] py-1.5 text-left">
             {DENTIST.goals.find((x) => x.id === g)!.chip}
           </Chip>
         ))}
@@ -380,7 +380,7 @@ function GoalEdit({ st, onDone }: { st: PlaybookState; onDone: (goals: string[])
         {DENTIST.goals.map((g) => (
           <Chip
             key={g.id}
-            className="h-8 px-2.5 type-body-sm"
+            className="h-auto min-h-8 px-2.5 py-1 text-left type-body-sm"
             selected={picked.includes(g.id)}
             onClick={() => setPicked((p) => (p.includes(g.id) ? p.filter((x) => x !== g.id) : p.length < 3 ? [...p, g.id] : p))}
           >

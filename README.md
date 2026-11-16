@@ -19,6 +19,7 @@ pnpm dev          # http://localhost:3000
 | `pnpm build` / `pnpm start` | Production build / serve it |
 | `pnpm lint` | ESLint |
 | `pnpm typecheck` | Generate route types, then `tsc --noEmit` |
+| `pnpm test` | Vitest: the playbook evals and the dentist conversation flow |
 | `pnpm tokens` | Regenerate `src/styles/tokens.css` from `tokens/baseplate.tokens.json` |
 
 Routes:
@@ -28,6 +29,7 @@ Routes:
 | `/` | Marketing homepage (ported from the Framer site) |
 | `/generate?q=…` | Generation flow: plan → review brief, style, sitemap → build → publish |
 | `/preview/[style]/[page]` | The generated Bakti Analisa site — 11 pages in every style option |
+| `/preview/dental/[style]/[page]?n=…` | A generated dental practice site (dentist playbook), configured from the plan in the query string |
 | `/dashboard` | Account home: new-site prompt and all websites; also `/websites`, `/domains`, `/billing`, `/settings`, `/inbox` |
 | `/sites/[id]` | The editor for one website (`?tab=analytics`, `enquiries`, `plan`, `domain`…) |
 | `/screens` | Index of the prototype screens |
@@ -160,6 +162,43 @@ request, low or exhausted credits, a page that fails to build), jumps to any sta
 The generated site lives in `src/components/bakti-site` and reads only theme variables, so every style option restyles
 all pages. Content is in `src/lib/bakti`.
 
+## Niche playbooks (dentist)
+
+The builder is sharper for specific professionals through **playbooks**: data files that tell the agent how to plan
+a website for one kind of practice. The first is the dentist playbook (v0.3), in `src/lib/playbooks`:
+
+- `types.ts` — the shape of a playbook; `dentist.ts` — the dentist playbook itself: detection signals, scenarios
+  (S1–S8), questions (Q0–Q4), goals (G1–G8) and the modules each brings, module prices, defaults, guardrails and the
+  Malaysian market overlay (MDC, 999, PDPA 2010). Adding a niche is adding a file like it.
+- `engine.ts` — plain functions over a playbook: detect the niche, read what the prompt already answers, pick the
+  next question (at most four, never one the prompt or the web search answered), map goals to modules (fixed, and
+  dependencies kept together — Payments needs Appointments or Estimates), the main button and its fallback, the
+  monthly add-on total, and the guardrail checks. The prompt is read with patterns here; a model fills the same
+  interface in production.
+- `dentist-plan.ts` — the brief, sitemap, page priority and open questions generated from the answers, plus the
+  treatment library by focus and the demo clinic (Rahma Family Dental).
+- `site-config.ts` — what the generated dental site needs, encoded in its preview URL.
+
+In `/generate`, a dental prompt runs the playbook conversation (`components/generate/playbook-blocks.tsx`):
+
+1. The agent reads the prompt and starts the web search; **questions are asked while it searches**, and the search
+   fills answers too (e.g. the number of dentists). Every question has "You decide" and accepts a typed answer.
+2. Claims and data the site can't publish ("best dentist", "painless", medical history on a form, before-and-after
+   photos without consent…) get a guardrail card with the reason and a compliant alternative.
+3. One **"Here's my plan"** card: assumptions tagged with where they came from (your message, found online, you chose,
+   my default) with Edit (four lines on phones, "Show all assumptions"), then the tools grouped by goal, each with its
+   own monthly price and Add / Not now, "Included free", "Add later", and a running total — nothing is charged until
+   publish. Declining the main goal's tool switches the main button to "Call or message us".
+4. Confirming writes the brief, style and page plan from the playbook, and the review and build continue as before
+   — with the dental styles and the Rahma Family Dental site in the preview. New goals after the plan become a patch
+   card that only adds their modules (and pages). After the build, tools that need the owner's accounts (WhatsApp,
+   payouts) run in **test mode** until connected.
+
+Each add-on is **billed per website**: the editor's **Modules** tab (`components/playbook/modules-panel.tsx`) adds,
+removes and connects them, the Plan tab itemises plan + add-ons, and Dashboard → Billings lists the add-ons under each
+website. Module prices in `dentist.ts` are placeholders. The prototype panel has every eval prompt (E1–E17) as a preset;
+`pnpm test` runs the evals against the engine and walks the reducer through each one.
+
 ## Dashboard and editor
 
 An account has several websites and **each website has its own plan** (`src/lib/plans.ts`, shared with the pricing
@@ -218,8 +257,11 @@ src/
   components/ui/    Baseplate components
   components/site/  marketing homepage sections (Pixel Blocks, AI prompt input, feature cards, …)
   components/generate/   generation flow (chat, review sheet, workspace, publish, prototype controls)
-  components/bakti-site/ the generated client site
+  components/bakti-site/ the generated client site (lab)
+  components/dental-site/ the generated dental practice site
+  components/playbook/   module cards and the editor's Modules tab
   lib/generation/   flow state and the brief; lib/bakti/ site content, themes, sitemap
+  lib/playbooks/    niche playbooks (dentist), the engine and its evals
   components/       app-level pieces (theme toggle, …)
   fonts/            self-hosted font files + licenses
   lib/              helpers (cn)

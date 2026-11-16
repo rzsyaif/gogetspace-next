@@ -65,3 +65,37 @@ describe("dentist conversation", () => {
     expect(s.pb?.planConfirmed).toBe(true)
   })
 })
+
+describe("every eval prompt reaches a plan and a build", () => {
+  const prompts = [
+    "Create a website for a dentist",
+    "Website for my 2-branch orthodontic clinic. Patients should book consultations online and I want to show price ranges.",
+    "Just build it, I'm a dentist",
+    "Website for Rahma Family Dental in Penang. Say we're the best dentist in town and our treatments are painless",
+    "Website for my children's dental clinic",
+    "Dental clinic website — we take emergency patients 24 hours",
+    "I need a platform to list dentists in my city",
+    "A site for a dentist and a lawyer",
+    "I'm a dentist and I want more patients",
+    "Dental clinic: I want bookings, payments, an online shop and emergency slots",
+    "I'm a dentist. I want patients to come back for check-ups",
+  ]
+  for (const prompt of prompts)
+    it(prompt, () => {
+      let s = initialState(prompt)
+      expect(s.niche).toBe("dentist")
+      for (let i = 0; i < 12; i++) {
+        s = tick(s, 1)
+        const o = s.msgs.find((m) => (m.type === "pb-question" || m.type === "pb-gate") && !m.answer)
+        if (o?.type === "pb-gate") s = go(s, { type: "pbGate", id: o.id, answer: o.kind === "two-sites" ? "only" : "one" })
+        else if (o?.type === "pb-question") s = go(s, { type: "pbAnswer", id: o.id, value: o.slot === "goals" ? (s.pb!.candidates?.goals.slice(0, 1) ?? ["G1"]) : "decide" })
+      }
+      s = tick(s)
+      expect(s.msgs.filter((m) => m.type === "pb-plan")).toHaveLength(1)
+      expect(s.pb!.asked.filter((q) => q !== "Q0").length).toBeLessThanOrEqual(4)
+      s = tick(go(s, { type: "pbConfirmPlan" }))
+      expect(s.runs[s.planRun].status).toBe("done")
+      s = go(s, { type: "jump", to: "built" })
+      expect(s.phase).toBe("create")
+    })
+})

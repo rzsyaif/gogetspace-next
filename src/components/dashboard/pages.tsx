@@ -331,9 +331,9 @@ export function BillingPage() {
                       const def = moduleById(m.id)
                       return (
                         <li key={m.id} className="flex items-center gap-3 type-body-sm text-fg-secondary">
-                          <span className="flex-1">+ {def.name} add-on</span>
-                          {m.status === "test" && <Badge tone="warning">Test mode</Badge>}
-                          <span className="w-20 text-right tabular-nums">{def.price ? `$${def.price}/mo` : "Free"}</span>
+                          <span className="min-w-0 flex-1 truncate">+ {def.name}</span>
+                          {m.status === "test" && <Badge tone="warning" className="shrink-0">Test mode</Badge>}
+                          <span className="w-16 shrink-0 text-right tabular-nums sm:w-20">{def.price ? `$${def.price}/mo` : "Free"}</span>
                           <span className="hidden w-[76px] sm:block" />
                         </li>
                       )
