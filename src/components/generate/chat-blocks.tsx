@@ -5,7 +5,6 @@ import { AnimatePresence, motion } from "motion/react"
 import {
   ArrowUpRight,
   Building2,
-  CalendarCheck,
   CircleCheck,
   Frown,
   Meh,
@@ -15,11 +14,8 @@ import {
   FileText,
   FolderTree,
   Globe,
-  Info,
   Loader,
   Lock,
-  MessageSquare,
-  Pencil,
   Play,
   RotateCcw,
   ShieldAlert,
@@ -27,24 +23,10 @@ import {
   X,
   Zap,
 } from "lucide-react"
-import { Alert, Badge, Button, Card, Checkbox, Chip, Field, Input, Step, StepList, Textarea } from "@/components/ui"
+import { Alert, Badge, Button, Checkbox, Chip, Field, Input, Step, StepList, Textarea } from "@/components/ui"
 import { cn } from "@/lib/cn"
 import { flatten } from "@/lib/bakti/sitemap"
-import {
-  BUSINESS_MATCHES,
-  DENTIST_GOALS,
-  GOAL_CHIPS,
-  MODULE_OFFER,
-  SEARCH_QUERY,
-  SEARCH_RESULTS,
-  type ArtifactKey,
-  type AssumptionsCard,
-  type FeedbackAnswer,
-  type GoalId,
-  type Msg,
-  type Run,
-  type Task,
-} from "@/lib/generation/state"
+import { BUSINESS_MATCHES, SEARCH_QUERY, SEARCH_RESULTS, type ArtifactKey, type FeedbackAnswer, type Msg, type Run, type Task } from "@/lib/generation/state"
 import { RATING, type Rating } from "@/lib/admin/data"
 import { submitFeedback } from "@/lib/admin/store"
 import { useEditorSite } from "./editor-site"
@@ -61,6 +43,7 @@ export function Messages({ compact }: { compact?: boolean }) {
   return (
     <div className={cn("flex flex-col", compact ? "gap-6" : "gap-9")}>
       {s.msgs.map((m, i) => (
+        // the first bubble arrives with the homepage launch animation, so it doesn't fade in again
         <motion.div key={m.id} initial={i === 0 ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
           <Block m={m} compact={compact} />
         </motion.div>
@@ -80,12 +63,6 @@ function Block({ m, compact }: { m: Msg; compact?: boolean }) {
       )
     case "agent":
       return <p className={cn("type-body-md text-fg-primary", !compact && "pr-20")}>{m.text}</p>
-    case "goal-question":
-      return <GoalQuestion answered={m.answers.length > 0 ? m.answers : undefined} />
-    case "assumptions":
-      return <AssumptionsBlock card={m.card} accepted={m.accepted} />
-    case "module-offer":
-      return <ModuleOffer goals={m.goals} accepted={m.accepted} />
     case "plan":
       return <PlanBlock run={s.runs[m.runId]} compact={compact} />
     case "artifacts":
@@ -103,239 +80,6 @@ function Block({ m, compact }: { m: Msg; compact?: boolean }) {
     case "feedback":
       return <FeedbackCard id={m.id} answer={m.answer} compact={compact} />
   }
-}
-
-/* ---------------- goal question (dentist playbook Q1) ---------------- */
-
-function GoalQuestion({ answered }: { answered?: GoalId[] }) {
-  const { dispatch } = useGen()
-  const [selected, setSelected] = useState<GoalId[]>([])
-
-  const toggle = (id: GoalId) => {
-    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id].slice(0, 3)))
-  }
-
-  if (answered && answered.length > 0) {
-    return (
-      <div className="flex flex-col gap-3 pr-4 sm:pr-20">
-        <p className="type-body-md text-fg-primary">What do you most want this website to do for your clinic?</p>
-        <div className="flex flex-wrap gap-2">
-          {answered.map((id) => {
-            const goal = DENTIST_GOALS.find((g) => g.id === id)
-            return (
-              <Chip key={id} selected icon={<Check />} className="cursor-default">
-                {goal?.label}
-              </Chip>
-            )
-          })}
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="flex flex-col gap-4 pr-4 sm:pr-20">
-      <div className="flex flex-col gap-1">
-        <p className="type-body-md text-fg-primary">What do you most want this website to do for your clinic?</p>
-        <p className="type-body-sm text-fg-secondary">Pick up to three, then I&apos;ll set up the right tools for what you choose. You can change this later.</p>
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {GOAL_CHIPS.map(({ id, label }) => (
-          <Chip
-            key={id}
-            selected={selected.includes(id)}
-            icon={selected.includes(id) ? <Check /> : undefined}
-            onClick={() => toggle(id)}
-            disabled={!selected.includes(id) && selected.length >= 3}
-          >
-            {label}
-          </Chip>
-        ))}
-      </div>
-      <div className="flex flex-wrap items-center gap-3">
-        <Button
-          size="sm"
-          disabled={selected.length === 0}
-          onClick={() => dispatch({ type: "selectGoals", goals: selected })}
-        >
-          Confirm goals
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => dispatch({ type: "selectGoals", goals: ["G1"] })}
-        >
-          You decide
-        </Button>
-      </div>
-    </div>
-  )
-}
-
-/* ---------------- assumptions card (dentist playbook §10.3) ---------------- */
-
-function AssumptionsBlock({ card, accepted }: { card: AssumptionsCard; accepted?: boolean }) {
-  const { dispatch } = useGen()
-  const mainGoal = DENTIST_GOALS.find((g) => g.id === card.mainGoal)
-
-  if (accepted) {
-    return (
-      <p className="flex items-center gap-2 type-body-sm text-fg-secondary">
-        <CircleCheck className="mt-0.5 size-4 shrink-0 text-status-success-text" />
-        Plan confirmed. Setting up your module options now.
-      </p>
-    )
-  }
-
-  const rows: { label: string; value: string }[] = [
-    { label: "Build", value: card.build },
-    { label: "Main goal", value: mainGoal?.label ?? card.mainGoal },
-    { label: "Main button", value: card.mainButton },
-    { label: "Specialty", value: card.specialty },
-    { label: "Prices", value: card.prices },
-    { label: "Emergency path", value: card.emergencies ? "Yes — phone and WhatsApp first, same-day slots" : "No" },
-    { label: "Insurance", value: card.insurance ? "Yes — insurance page included" : "No" },
-    { label: "Style", value: card.stylePreset },
-    { label: "Reminders", value: card.reminders.length > 0 ? card.reminders.join(", ") : "None" },
-  ]
-
-  if (card.secondaryGoals.length > 0) {
-    const labels = card.secondaryGoals.map((g) => DENTIST_GOALS.find((d) => d.id === g)?.label ?? g).join(", ")
-    rows.splice(2, 0, { label: "Also doing", value: labels })
-  }
-
-  return (
-    <div className="flex flex-col gap-4 pr-4 sm:pr-20">
-      <div className="flex flex-col gap-1">
-        <p className="type-body-md text-fg-primary">Here&apos;s what I&apos;ll build, and why. Change anything that&apos;s off.</p>
-      </div>
-      <Card className="flex flex-col divide-y divide-line-default overflow-hidden">
-        {rows.map(({ label, value }) => (
-          <div key={label} className="flex items-start gap-3 px-4 py-3">
-            <span className="w-32 shrink-0 type-label-sm text-fg-tertiary">{label}</span>
-            <span className="flex-1 type-body-sm text-fg-primary">{value}</span>
-            <button type="button" className="ml-2 shrink-0 text-fg-secondary hover:text-fg-primary" aria-label={`Edit ${label}`}>
-              <Pencil className="size-3.5" />
-            </button>
-          </div>
-        ))}
-      </Card>
-      <div className="flex flex-wrap gap-2">
-        <Button size="sm" leadingIcon={<CalendarCheck />} onClick={() => dispatch({ type: "acceptAssumptions" })}>
-          Looks right, create the plan
-        </Button>
-        <Button size="sm" variant="secondary" leadingIcon={<Pencil />}>
-          Edit something
-        </Button>
-      </div>
-    </div>
-  )
-}
-
-/* ---------------- module offer (dentist playbook §4.3) ---------------- */
-
-function ModuleOffer({ goals, accepted }: { goals: GoalId[]; accepted: Record<string, boolean> }) {
-  const { dispatch } = useGen()
-  const [localAccepted, setLocalAccepted] = useState<Record<string, boolean>>(accepted)
-  const [confirmed, setConfirmed] = useState(false)
-
-  if (confirmed) {
-    const addedCount = Object.values(localAccepted).filter(Boolean).length
-    return (
-      <p className="flex items-center gap-2 type-body-sm text-fg-secondary">
-        <CircleCheck className="mt-0.5 size-4 shrink-0 text-status-success-text" />
-        {addedCount > 0 ? `${addedCount} module${addedCount > 1 ? "s" : ""} added — building your plan now.` : "No extras added — building the free parts now."}
-      </p>
-    )
-  }
-
-  const toggle = (name: string) => {
-    const next = { ...localAccepted, [name]: !localAccepted[name] }
-    setLocalAccepted(next)
-    dispatch({ type: "toggleModule", name, accepted: !!next[name] })
-  }
-
-  const handleConfirm = () => {
-    setConfirmed(true)
-    dispatch({ type: "confirmModules" })
-  }
-
-  // collect all unique modules across selected goals, grouped by goal
-  const groups = goals.map((gid) => ({
-    gid,
-    goal: DENTIST_GOALS.find((g) => g.id === gid),
-    modules: MODULE_OFFER[gid] ?? [],
-  }))
-
-  const FREE_ALWAYS = ["Services and Prices", "Contact and Locations"]
-
-  return (
-    <div className="flex flex-col gap-5 pr-4 sm:pr-20">
-      <p className="type-body-md text-fg-primary">Here are the tools I&apos;d add for your goals. Pick what you want — you can add the rest later.</p>
-
-      {/* always-included free modules */}
-      <div className="flex flex-col gap-2">
-        <p className="type-label-sm text-fg-tertiary uppercase tracking-wide">Always included · Free</p>
-        <div className="flex flex-col gap-2">
-          {FREE_ALWAYS.map((name) => (
-            <div key={name} className="flex items-center gap-3 rounded-lg border border-line-default bg-subtle px-4 py-3">
-              <CircleCheck className="size-4 shrink-0 text-status-success-text" />
-              <span className="flex-1 type-body-sm text-fg-primary">{name}</span>
-              <Badge tone="success" dot={false}>Included</Badge>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* goal-grouped offered modules */}
-      {groups.map(({ gid, goal, modules }) =>
-        modules.length === 0 ? null : (
-          <div key={gid} className="flex flex-col gap-2">
-            <p className="type-label-sm text-fg-tertiary">Because you want to <span className="text-fg-secondary">{goal?.label.toLowerCase()}</span></p>
-            <div className="flex flex-col gap-2">
-              {modules.map((mod) => (
-                <Card key={mod.name} className={cn("flex flex-col gap-3 p-4 transition-colors", localAccepted[mod.name] && "border-blue-300 bg-accent-blue-subtle")}>
-                  <div className="flex items-start gap-3">
-                    <div className="flex flex-1 flex-col gap-1">
-                      <div className="flex items-center gap-2">
-                        <span className="type-label-md text-fg-primary">{mod.name}</span>
-                        {mod.dependsOn && (
-                          <span className="type-caption text-fg-tertiary flex items-center gap-1">
-                            <Info className="size-3" /> includes {mod.dependsOn}
-                          </span>
-                        )}
-                      </div>
-                      <p className="type-body-sm text-fg-secondary">{mod.included}</p>
-                    </div>
-                    <Badge tone={mod.price === "Free" ? "success" : "brand"} dot={false}>{mod.price}</Badge>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant={localAccepted[mod.name] ? "primary" : "secondary"}
-                      leadingIcon={localAccepted[mod.name] ? <Check /> : undefined}
-                      onClick={() => toggle(mod.name)}
-                    >
-                      {localAccepted[mod.name] ? "Added" : "Add"}
-                    </Button>
-                    {localAccepted[mod.name] && (
-                      <Button size="sm" variant="ghost" onClick={() => toggle(mod.name)}>
-                        Not now
-                      </Button>
-                    )}
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )
-      )}
-
-      <Button size="lg" leadingIcon={<Zap />} onClick={handleConfirm}>
-        Build with these tools
-      </Button>
-    </div>
-  )
 }
 
 /* ---------------- task list ---------------- */
@@ -386,7 +130,7 @@ function PlanBlock({ run, compact }: { run: Run; compact?: boolean }) {
     <div className={cn("flex flex-col gap-6", !compact && "pr-20")}>
       {finished ? (
         <div className="flex flex-col gap-4 type-body-md text-fg-primary">
-          <p>I&apos;ve drafted three things for you to review before I start: a brief, some style options, and a page plan.</p>
+          <p>Hi! Let&apos;s build the website for Bakti Analisa. I&apos;ve drafted three things for you to review before I start: a brief, some style options, and a page plan.</p>
           <p>Open each one and change anything that doesn&apos;t fit — nothing gets built until you confirm.</p>
         </div>
       ) : (
@@ -522,16 +266,16 @@ function ArtifactList() {
 /* ---------------- edge cases in the plan ---------------- */
 
 const CLARIFY_CHIPS = [
-  "A general dental clinic in Kuala Lumpur",
+  "A clinical laboratory in Penang called Bakti Analisa",
   "A family dental clinic in Penang",
-  "A cosmetic and implants practice in Johor Bahru",
+  "A small law firm in Jakarta",
 ]
 
 function Clarify({ answered }: { answered?: string }) {
   const { dispatch } = useGen()
   return (
     <div className="flex flex-col gap-4 pr-4 sm:pr-20">
-      <p className="type-body-md text-fg-primary">Happy to help! Before I plan, tell me a little more — what kind of dental practice is it, and where is it?</p>
+      <p className="type-body-md text-fg-primary">Happy to help! Before I plan, tell me a little more — what&apos;s the business, and where is it?</p>
       {!answered && (
         <div className="flex flex-wrap gap-2">
           {CLARIFY_CHIPS.map((c) => (
@@ -550,7 +294,7 @@ function PickBusiness({ picked }: { picked?: string }) {
   const { dispatch } = useGen()
   return (
     <div className="flex flex-col gap-4 pr-4 sm:pr-20">
-      <p className="type-body-md text-fg-primary">I found a few clinics with a similar name. Which one is yours?</p>
+      <p className="type-body-md text-fg-primary">I found a few businesses with a similar name. Which one is yours?</p>
       <ul className="grid gap-2 sm:grid-cols-3">
         {BUSINESS_MATCHES.map((b) => (
           <li key={b.id}>
@@ -574,7 +318,7 @@ function PickBusiness({ picked }: { picked?: string }) {
       </ul>
       {!picked && (
         <Button variant="ghost" size="sm" className="self-start" onClick={() => dispatch({ type: "pickBusiness", id: "none" })}>
-          None of these — it&apos;s a new clinic
+          None of these — it&apos;s a new business
         </Button>
       )}
     </div>
@@ -583,8 +327,8 @@ function PickBusiness({ picked }: { picked?: string }) {
 
 function Refused() {
   return (
-    <Alert tone="error" icon={<ShieldAlert />} title="I can't build this one" className="sm:mr-20">
-      GoGetSpace doesn&apos;t make websites for gambling, vaping or counterfeit goods. If I&apos;ve misunderstood, tell me more about what the practice does and I&apos;ll start again.
+    <Alert tone="error" icon={<ShieldAlert />} title="I can’t build this one" className="sm:mr-20">
+      GoGetSpace doesn&apos;t make websites for gambling, vaping or counterfeit goods. If I&apos;ve misunderstood, tell me more about what the business does and I&apos;ll start again.
     </Alert>
   )
 }
@@ -640,7 +384,7 @@ function CreditsOut({ resolved }: { resolved?: "upgrade" | "stop" }) {
   if (resolved)
     return <p className="type-body-sm text-fg-tertiary">{resolved === "upgrade" ? "Credits topped up — carrying on with the build." : "Stopped here. The pages already built are ready to preview and publish."}</p>
   return (
-    <Alert tone="warning" title="You've run out of credits">
+    <Alert tone="warning" title="You’ve run out of credits">
       <p>
         I built {built} {built === 1 ? "page" : "pages"}; {left} still to go. Top up to finish them, or stop here and publish what&apos;s built.
       </p>
@@ -672,7 +416,7 @@ function FeedbackCard({ id, answer, compact }: { id: string; answer?: FeedbackAn
   const [comment, setComment] = useState("")
   const [research, setResearch] = useState(false)
   const [email, setEmail] = useState("")
-  const emailOk = !!s.account || /^[^\@\s]+@[^\@\s]+\.[^\@\s]+$/.test(email.trim())
+  const emailOk = !!s.account || /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())
 
   if (answer === "skipped") return null
   if (answer)
@@ -745,7 +489,7 @@ function FeedbackCard({ id, answer, compact }: { id: string; answer?: FeedbackAn
               rows={2}
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder={rating === "bad" ? "e.g. the opening hours are wrong" : rating === "fine" ? "e.g. I'd like our own photos" : "e.g. the treatments page is spot on"}
+              placeholder={rating === "bad" ? "e.g. the opening hours are wrong" : rating === "fine" ? "e.g. I'd like our own photos" : "e.g. the services page is spot on"}
             />
           </Field>
           <Checkbox

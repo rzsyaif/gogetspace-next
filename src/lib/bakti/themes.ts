@@ -1,11 +1,7 @@
 /**
- * Style options the agent proposes for a dental practice.
- * Three presets align with the Dentist Playbook (§7):
- *   - Calm Clinical   → S1, S2, S4, S6, S7, S8
- *   - Warm Family     → S2, S3 (paediatric / family)
- *   - Modern Premium  → S5 (cosmetic & implants)
- * The first four THEMES form the main offer; ALT_THEMES appear on "Show me different options".
- * "custom" is returned by "Create your own style". All values are read by the site renderer.
+ * Style options the agent proposes for Bakti Analisa. The first four match the Figma "Design & Style" step;
+ * the second set appears after "Show me different options"; "custom" is what "Create your own style" returns.
+ * The generated site reads everything from these values, so a theme fully restyles every page.
  */
 
 export type FontKey = "jakarta" | "inter" | "fraunces" | "dmSans" | "spaceGrotesk" | "plexSans" | "dmSerif" | "sourceSans" | "bricolage" | "geist"
@@ -26,31 +22,26 @@ export interface SiteTheme {
   buttonRadius: number
   /** hero layout flavour */
   hero: "split" | "centered" | "banner"
-  /** playbook preset tag for display */
-  preset?: "calm-clinical" | "warm-family" | "modern-premium"
 }
 
 export const THEMES: SiteTheme[] = [
-  // ── Calm Clinical (default; S1, S2, S4, S6, S7, S8) ──────────────────────
   {
-    id: "calm-clinical",
-    name: "Calm Clinical",
-    vibe: "Clean whites, soft blue and a warm accent — trustworthy and approachable",
+    id: "clinical-clarity",
+    name: "Clinical Clarity",
+    vibe: "Calm blues, crisp and trustworthy",
     heading: "jakarta",
     body: "inter",
     headingWeight: 700,
-    palette: ["#0E6DC4", "#C8E3FA", "#F2A541", "#0F1E2E", "#F4F8FB"],
+    palette: ["#0E5FA8", "#4FB3BF", "#F2A541", "#0F1E2E", "#F4F8FB"],
     onPrimary: "#FFFFFF",
     radius: 12,
     buttonRadius: 8,
     hero: "split",
-    preset: "calm-clinical",
   },
-  // ── Warm Family (S2, S3; paediatric / family dental) ─────────────────────
   {
-    id: "warm-family",
-    name: "Warm Family",
-    vibe: "Warm neutrals, soft green and rounded shapes — friendly and relaxed",
+    id: "warm-care",
+    name: "Warm Care",
+    vibe: "Soft greens, friendly and reassuring",
     heading: "fraunces",
     body: "dmSans",
     headingWeight: 600,
@@ -59,96 +50,87 @@ export const THEMES: SiteTheme[] = [
     radius: 20,
     buttonRadius: 999,
     hero: "centered",
-    preset: "warm-family",
   },
-  // ── Modern Premium (S5; cosmetic & implants) ──────────────────────────────
   {
-    id: "modern-premium",
-    name: "Modern Premium",
-    vibe: "Deep neutral and off-white with one restrained accent — refined and confident",
-    heading: "dmSerif",
-    body: "sourceSans",
-    headingWeight: 400,
-    palette: ["#1A1A2E", "#E8E4DC", "#C8A96E", "#1A1A2E", "#F9F7F3"],
-    onPrimary: "#FFFFFF",
-    radius: 4,
-    buttonRadius: 2,
-    hero: "banner",
-    preset: "modern-premium",
-  },
-  // ── Teal Fresh (calm-clinical variant with a teal primary) ────────────────
-  {
-    id: "teal-fresh",
-    name: "Teal Fresh",
-    vibe: "Crisp teal on white — clean, modern and easy to trust",
+    id: "precision-lab",
+    name: "Precision Lab",
+    vibe: "Bold indigo, technical and modern",
     heading: "spaceGrotesk",
     body: "plexSans",
     headingWeight: 700,
-    palette: ["#0B7A73", "#BFEDE7", "#F97316", "#0D2622", "#F3FBF9"],
+    palette: ["#3B3FE0", "#8EA2FF", "#19C29B", "#10121A", "#F5F6FA"],
     onPrimary: "#FFFFFF",
-    radius: 8,
-    buttonRadius: 6,
+    radius: 6,
+    buttonRadius: 4,
+    hero: "banner",
+  },
+  {
+    id: "penang-heritage",
+    name: "Penang Heritage",
+    vibe: "Teal and terracotta, local and established",
+    heading: "dmSerif",
+    body: "sourceSans",
+    headingWeight: 400,
+    palette: ["#0F6B6B", "#E6C27A", "#C8553D", "#1E2A2A", "#FAF6EE"],
+    onPrimary: "#FFFFFF",
+    radius: 4,
+    buttonRadius: 2,
     hero: "split",
-    preset: "calm-clinical",
   },
 ]
 
 export const ALT_THEMES: SiteTheme[] = [
   {
-    id: "sky-care",
-    name: "Sky Care",
-    vibe: "Light blue and white, very airy and approachable",
+    id: "fresh-mint",
+    name: "Fresh Mint",
+    vibe: "Light and airy, very approachable",
     heading: "jakarta",
     body: "dmSans",
     headingWeight: 800,
-    palette: ["#2563EB", "#DBEAFE", "#F59E0B", "#0C1A3A", "#F0F7FF"],
+    palette: ["#0B8F7A", "#BFEDE3", "#FFB547", "#0D2622", "#F3FBF8"],
     onPrimary: "#FFFFFF",
-    radius: 16,
+    radius: 24,
     buttonRadius: 999,
     hero: "centered",
-    preset: "calm-clinical",
   },
   {
-    id: "coral-smile",
-    name: "Coral Smile",
-    vibe: "Warm coral with rounded shapes — bright and child-friendly",
+    id: "night-shift",
+    name: "Night Shift",
+    vibe: "Deep navy with bright highlights",
+    heading: "spaceGrotesk",
+    body: "inter",
+    headingWeight: 700,
+    palette: ["#2563EB", "#BFD3FF", "#F43F5E", "#0B1220", "#EEF2F8"],
+    onPrimary: "#FFFFFF",
+    radius: 10,
+    buttonRadius: 10,
+    hero: "banner",
+  },
+  {
+    id: "paper-ink",
+    name: "Paper & Ink",
+    vibe: "Editorial and quiet, like a printed report",
+    heading: "fraunces",
+    body: "sourceSans",
+    headingWeight: 500,
+    palette: ["#1E1C19", "#E4E1DA", "#C8553D", "#1E1C19", "#FBFAF7"],
+    onPrimary: "#FFFFFF",
+    radius: 0,
+    buttonRadius: 0,
+    hero: "split",
+  },
+  {
+    id: "coral-health",
+    name: "Coral Health",
+    vibe: "Warm coral, energetic and caring",
     heading: "bricolage",
     body: "geist",
     headingWeight: 700,
     palette: ["#D9482B", "#FFD9CF", "#2F5BFF", "#2A1712", "#FFF8F5"],
     onPrimary: "#FFFFFF",
-    radius: 20,
-    buttonRadius: 999,
+    radius: 16,
+    buttonRadius: 12,
     hero: "centered",
-    preset: "warm-family",
-  },
-  {
-    id: "slate-gold",
-    name: "Slate & Gold",
-    vibe: "Deep slate with gold accents — quiet confidence for premium practices",
-    heading: "fraunces",
-    body: "sourceSans",
-    headingWeight: 500,
-    palette: ["#1E293B", "#E2E8F0", "#D4A853", "#1E293B", "#FAFAF9"],
-    onPrimary: "#FFFFFF",
-    radius: 0,
-    buttonRadius: 0,
-    hero: "split",
-    preset: "modern-premium",
-  },
-  {
-    id: "mint-calm",
-    name: "Mint Calm",
-    vibe: "Soft mint on white — gentle and reassuring",
-    heading: "jakarta",
-    body: "inter",
-    headingWeight: 700,
-    palette: ["#059669", "#D1FAE5", "#F59E0B", "#064E3B", "#F0FDF8"],
-    onPrimary: "#FFFFFF",
-    radius: 12,
-    buttonRadius: 8,
-    hero: "split",
-    preset: "calm-clinical",
   },
 ]
 
@@ -159,7 +141,7 @@ export const CUSTOM_THEME: SiteTheme = {
   heading: "dmSerif",
   body: "inter",
   headingWeight: 400,
-  palette: ["#0E6DC4", "#C8E3FA", "#F2A541", "#0F1E2E", "#F4F8FB"],
+  palette: ["#6D3FC0", "#DCCEF7", "#F0A23B", "#1B1329", "#FAF8FE"],
   onPrimary: "#FFFFFF",
   radius: 14,
   buttonRadius: 999,
