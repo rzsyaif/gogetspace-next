@@ -215,7 +215,8 @@ function ChatColumn({ compact }: { compact: boolean }) {
   const run = s.runs[s.planRun]
   const doneCount = run?.tasks.filter((t) => t.status === "done").length ?? 0
   const pagesBuilt = Object.values(s.pages).filter((p) => p === "built").length
-  const asking = s.msgs.some((m) => (m.type === "pb-question" || m.type === "pb-gate") && !m.answer)
+  // the questions and the plan that concludes them are answered on their cards, so the chat input steps aside
+  const asking = s.msgs.some((m) => ((m.type === "pb-question" || m.type === "pb-gate") && !m.answer) || (m.type === "pb-plan" && !m.confirmed))
   useEffect(() => {
     // an open question card is read from its top (on phones it's taller than the screen)
     const card = document.querySelector("[data-question-open]")
@@ -232,7 +233,7 @@ function ChatColumn({ compact }: { compact: boolean }) {
         </div>
       </div>
       <div className={cn("shrink-0", compact ? "p-4 pt-0" : "px-4 pt-2 pb-4 sm:pb-8")}>
-        {/* while a question card is open, answers (including "Something else") are written on the card */}
+        {/* while a question card or the plan is open, answers (including "Something else") go on the card */}
         {!asking && <ChatInput credits={compact} className={cn(!compact && "mx-auto w-full max-w-[760px]")} />}
       </div>
     </>

@@ -116,7 +116,8 @@ export function RecommendedTools({
           </h3>
           <p className="type-body-sm text-fg-secondary">I recommend these tools for your goals. Nothing paid is added unless you add it.</p>
         </div>
-        {tools.length > 1 && (
+        {/* only when the cards don't all fit */}
+        {!(edges.start && edges.end) && (
           <div className="hidden shrink-0 gap-2 sm:flex">
             <Button size="icon-md" variant="secondary" aria-label="Previous tools" disabled={edges.start} onClick={() => page(-1)}>
               <ChevronLeft />

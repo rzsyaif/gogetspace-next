@@ -194,7 +194,7 @@ In `/generate`, a dental prompt runs the playbook conversation (`components/gene
    (`components/playbook/recommended-tools.tsx`, Figma 185:1960): one card per tool with its own monthly price and
    Add / Added, in a row with previous/next buttons on desktop and swipe on phones; what's included for free; tools
    that can be connected later; and the running total with "Skip. Choose later" and "Create Website Plan". Nothing is
-   charged until publish. Declining the main goal's tool switches the main button to "Call or message us".
+   charged until publish. The plan concludes the questions: the chat input stays hidden until it's confirmed. Declining the main goal's tool switches the main button to "Call or message us".
 4. Confirming writes the brief, style and page plan from the playbook, and the review and build continue as before
    — with the dental styles and the Rahma Family Dental site in the preview. New goals after the plan become a patch
    card that only adds their modules (and pages). After the build, tools that need the owner's accounts (WhatsApp,

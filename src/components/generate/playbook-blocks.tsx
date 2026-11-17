@@ -154,12 +154,13 @@ export function PlanCard({ m, compact }: { m: Extract<Msg, { type: "pb-plan" }>;
   )
 
   return (
-    <div className={cn("flex flex-col gap-4", !compact && "sm:mr-20")}>
-      <section aria-label="Here's my plan" className={cn(card, "gap-5")}>
+    // the conclusion of the questions: read from its top, like the question cards
+    <div data-question-open className={cn("flex flex-col gap-4", !compact && "sm:mr-20")}>
+      <section aria-label="Here's my plan" className={cn(card, "gap-5 rounded-[24px] sm:p-6")}>
         <div className="flex flex-col gap-1">
-          <h3 className="type-h6 text-fg-primary">Here&apos;s my plan</h3>
+          <h3 className="type-h5 text-fg-primary">Here&apos;s my plan</h3>
           <p className="type-body-sm text-fg-secondary">
-            For {clinicName(pb)}
+            From your answers{pb.found ? " and what I found online" : ""}, for {clinicName(pb)}
             {pb.place ? `, ${pb.place}` : ""}. Main button: <span className="text-fg-primary">“{btn.label}”</span>
           </p>
         </div>
