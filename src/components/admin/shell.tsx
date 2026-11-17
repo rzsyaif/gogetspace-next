@@ -31,7 +31,7 @@ import { useAdmin, useToast } from "@/lib/admin/store"
 export function AdminShell({ children }: { children: ReactNode }) {
   return (
     <TooltipProvider>
-      <div data-theme="light" className="flex h-svh flex-col overflow-hidden bg-canvas text-fg-primary lg:flex-row">
+      <div data-theme="light" className="relative flex h-svh flex-col overflow-hidden bg-canvas text-fg-primary lg:flex-row">
         <aside aria-label="Admin" className="hidden w-[260px] shrink-0 flex-col lg:flex">
           <Brand />
           <div className="px-3 pb-2">

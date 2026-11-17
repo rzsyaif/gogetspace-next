@@ -86,7 +86,9 @@ export function Shell({ initialTab = "agent" }: { initialTab?: Tab }) {
 
   return (
     <EditorNavProvider goTo={goTo}>
-      <div data-theme="light" className="flex h-svh flex-col overflow-hidden bg-canvas text-fg-primary">
+      {/* relative: absolutely positioned bits inside (sr-only labels, menus) stay in the editor instead of
+          lengthening the page, which would let the whole editor scroll away */}
+      <div data-theme="light" className="relative flex h-svh flex-col overflow-hidden bg-canvas text-fg-primary">
         {/* planning top bar — folds away in the editor */}
         <motion.header
           initial={false}
@@ -171,7 +173,7 @@ export function Shell({ initialTab = "agent" }: { initialTab?: Tab }) {
 
           {fullPanel && (
             <section aria-label={tab} className="flex min-h-0 min-w-0 flex-1 flex-col p-1">
-              <div className="min-h-0 flex-1 overflow-y-auto rounded-xl border border-line-default bg-surface">
+              <div className="relative min-h-0 flex-1 overflow-y-auto rounded-xl border border-line-default bg-surface">
                 <SitePanel tab={tab} onTab={setTab} />
               </div>
             </section>
@@ -209,7 +211,6 @@ export function Shell({ initialTab = "agent" }: { initialTab?: Tab }) {
 
 function ChatColumn({ compact }: { compact: boolean }) {
   const { s } = useGen()
-  const end = useRef<HTMLDivElement>(null)
   const count = s.msgs.length
   const shown = s.searchShown
   const run = s.runs[s.planRun]
@@ -217,19 +218,39 @@ function ChatColumn({ compact }: { compact: boolean }) {
   const pagesBuilt = Object.values(s.pages).filter((p) => p === "built").length
   // the questions and the plan that concludes them are answered on their cards, so the chat input steps aside
   const asking = s.msgs.some((m) => ((m.type === "pb-question" || m.type === "pb-gate") && !m.answer) || (m.type === "pb-plan" && !m.confirmed))
+  const scroller = useRef<HTMLDivElement>(null)
+  // follow new messages only while the reader is at the bottom; if they scrolled up to read, leave them there
+  const following = useRef(true)
+  const lastCount = useRef(count)
+  const lastTop = useRef(0)
   useEffect(() => {
-    // an open question card is read from its top (on phones it's taller than the screen)
-    const card = document.querySelector("[data-question-open]")
-    if (card) card.scrollIntoView({ behavior: "smooth", block: "start" })
-    else end.current?.scrollIntoView({ behavior: "smooth", block: "end" })
+    const el = scroller.current
+    if (!el) return
+    const newMessage = count !== lastCount.current
+    lastCount.current = count
+    if (!following.current && !newMessage) return
+    // an open question card is read from its top (on phones it's taller than the screen); scroll only the chat
+    const card = el.querySelector<HTMLElement>("[data-question-open]")
+    const top = card ? card.getBoundingClientRect().top - el.getBoundingClientRect().top + el.scrollTop - 16 : el.scrollHeight
+    el.scrollTo({ top, behavior: "smooth" })
   }, [count, shown, doneCount, pagesBuilt, compact])
   return (
     <>
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div
+        ref={scroller}
+        onScroll={(e) => {
+          // scrolling up stops following; coming back near the bottom resumes it (our own smooth scrolls only go down,
+          // or up to an open question card, which should hold still anyway)
+          const el = e.currentTarget
+          if (el.scrollHeight - el.scrollTop - el.clientHeight < 120) following.current = true
+          else if (el.scrollTop < lastTop.current - 2) following.current = false
+          lastTop.current = el.scrollTop
+        }}
+        className="relative min-h-0 flex-1 overflow-y-auto"
+      >
         <div className={cn("mx-auto w-full", compact ? "px-4 pb-6" : "max-w-[792px] px-4 pt-6 pb-10 sm:pt-12")}>
           {!compact && <h1 className="sr-only">Planning your website</h1>}
           <Messages compact={compact} />
-          <div ref={end} />
         </div>
       </div>
       <div className={cn("shrink-0", compact ? "p-4 pt-0" : "px-4 pt-2 pb-4 sm:pb-8")}>

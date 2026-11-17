@@ -39,7 +39,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false)
   return (
     <TooltipProvider>
-      <div data-theme="light" className="flex h-svh flex-col overflow-hidden bg-canvas text-fg-primary lg:flex-row">
+      <div data-theme="light" className="relative flex h-svh flex-col overflow-hidden bg-canvas text-fg-primary lg:flex-row">
         <aside
           aria-label="Dashboard"
           className={cn("hidden shrink-0 flex-col transition-[width] duration-300 ease-out lg:flex", collapsed ? "w-[72px]" : "w-[280px]")}
