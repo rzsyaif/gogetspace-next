@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { motion } from "motion/react"
-import { ChevronDown, CircleCheck, FlaskConical, Pencil, ShieldCheck, Star, TriangleAlert } from "lucide-react"
+import { ChevronDown, CircleCheck, FlaskConical, Pencil, ShieldCheck, Star } from "lucide-react"
 import { Alert, Badge, Button, Chip } from "@/components/ui"
 import { cn } from "@/lib/cn"
 import type { Msg } from "@/lib/generation/state"
@@ -10,7 +10,6 @@ import { DENTIST } from "@/lib/playbooks/dentist"
 import { clinicName, presetName } from "@/lib/playbooks/dentist-plan"
 import {
   SOURCE_LABEL,
-  addLater,
   bringsWith,
   coreModules,
   goalLabel,
@@ -26,6 +25,7 @@ import {
 } from "@/lib/playbooks/engine"
 import type { Slot, Source } from "@/lib/playbooks/types"
 import { ModuleCard, priceLabel } from "@/components/playbook/module-card"
+import { RecommendedTools, type OfferedTool } from "@/components/playbook/recommended-tools"
 import { useGen } from "./gen-provider"
 import { useEditorSite } from "./editor-site"
 
@@ -136,127 +136,88 @@ export function PlanCard({ m, compact }: { m: Extract<Msg, { type: "pb-plan" }>;
   const shown = all ? lines : lines.slice(0, 4)
   const offer = offerFor(st.goals)
   const offered = new Set(offer.flatMap((g) => g.modules.map((x) => x.id)))
-  const later = addLater(st).filter((x) => !offered.has(x.id))
-  const undecided = [...offered].filter((id) => !pb.decisions[id])
   const decideOne = (id: string, d: Decision) => {
     if (d === "added" && moduleById(id).id === "gallery" && !pb.consent.includes("gallery")) return dispatch({ type: "pbConsent", module: id })
     dispatch({ type: "pbDecide", module: id, decision: d })
   }
 
-  return (
-    <section aria-label="Here's my plan" className={cn(card, "gap-5", !compact && "sm:mr-20")}>
-      <div className="flex flex-col gap-1">
-        <h3 className="type-h6 text-fg-primary">Here&apos;s my plan</h3>
-        <p className="type-body-sm text-fg-secondary">
-          For {clinicName(pb)}
-          {pb.place ? `, ${pb.place}` : ""}. Main button: <span className="text-fg-primary">“{btn.label}”</span>
-        </p>
-      </div>
+  // the tools for the goals, in goal order, each once
+  const seen = new Set<string>()
+  const tools: OfferedTool[] = offer.flatMap((g) =>
+    g.modules
+      .filter((mod) => !seen.has(mod.id) && seen.add(mod.id))
+      .map((mod) => {
+        const dep = bringsWith(mod.id, pb.decisions, st.goals)
+        const consent = mod.id === "gallery" && !pb.consent.includes("gallery") ? "Adding this asks you to confirm you have written patient consent." : undefined
+        return { m: mod, goal: g.goal, decision: pb.decisions[mod.id], note: dep && pb.decisions[mod.id] !== "added" ? `Comes with ${dep.name} — it needs one to work.` : consent }
+      }),
+  )
 
-      {/* assumptions */}
-      <dl className="flex flex-col divide-y divide-line-default rounded-md border border-line-default">
-        {shown.map((l) => (
-          <div key={l.key} className="flex flex-col gap-2 px-3 py-2.5">
-            <div className="flex items-start gap-3">
-              <dt className="w-28 shrink-0 type-body-sm text-fg-tertiary sm:w-36">{l.label}</dt>
-              <dd className="min-w-0 flex-1 type-body-sm text-fg-primary">{l.value}</dd>
-              <span className="hidden sm:inline-flex">
-                <SourceTag source={l.source} />
-              </span>
-              {l.key !== "found" && (
-                <Button size="sm" variant="link" className="type-label-sm" leadingIcon={<Pencil className="size-3.5" />} onClick={() => setEditing(editing === l.key ? null : l.key)} aria-expanded={editing === l.key}>
-                  Edit
-                </Button>
+  return (
+    // the conclusion of the questions: read from its top, like the question cards
+    <div data-question-open className={cn("flex flex-col gap-4", !compact && "sm:mr-20")}>
+      <section aria-label="Here's my plan" className={cn(card, "gap-5 rounded-[24px] sm:p-6")}>
+        <div className="flex flex-col gap-1">
+          <h3 className="type-h5 text-fg-primary">Here&apos;s my plan</h3>
+          <p className="type-body-sm text-fg-secondary">
+            From your answers{pb.found ? " and what I found online" : ""}, for {clinicName(pb)}
+            {pb.place ? `, ${pb.place}` : ""}. Main button: <span className="text-fg-primary">“{btn.label}”</span>
+          </p>
+        </div>
+
+        {/* assumptions */}
+        <dl className="flex flex-col divide-y divide-line-default rounded-md border border-line-default">
+          {shown.map((l) => (
+            <div key={l.key} className="flex flex-col gap-2 px-3 py-2.5">
+              <div className="flex items-start gap-3">
+                <dt className="w-28 shrink-0 type-body-sm text-fg-tertiary sm:w-36">{l.label}</dt>
+                <dd className="min-w-0 flex-1 type-body-sm text-fg-primary">{l.value}</dd>
+                <span className="hidden sm:inline-flex">
+                  <SourceTag source={l.source} />
+                </span>
+                {l.key !== "found" && (
+                  <Button size="sm" variant="link" className="type-label-sm" leadingIcon={<Pencil className="size-3.5" />} onClick={() => setEditing(editing === l.key ? null : l.key)} aria-expanded={editing === l.key}>
+                    Edit
+                  </Button>
+                )}
+              </div>
+              {editing === l.key && (
+                <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="flex flex-wrap gap-2 pb-1 sm:pl-36">
+                  {l.key === "goals" ? (
+                    <GoalEdit st={st} onDone={(g) => (dispatch({ type: "pbEdit", slot: "goals", value: g }), setEditing(null))} />
+                  ) : (
+                    l.options?.map((o) => (
+                      <Chip key={o.id} className="h-8 px-2.5 type-body-sm" selected={o.label === l.value} onClick={() => (dispatch({ type: "pbEdit", slot: l.key as Slot | "style", value: o.id }), setEditing(null))}>
+                        {o.label}
+                      </Chip>
+                    ))
+                  )}
+                </motion.div>
               )}
             </div>
-            {editing === l.key && (
-              <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="flex flex-wrap gap-2 pb-1 sm:pl-36">
-                {l.key === "goals" ? (
-                  <GoalEdit st={st} onDone={(g) => (dispatch({ type: "pbEdit", slot: "goals", value: g }), setEditing(null))} />
-                ) : (
-                  l.options?.map((o) => (
-                    <Chip key={o.id} className="h-8 px-2.5 type-body-sm" selected={o.label === l.value} onClick={() => (dispatch({ type: "pbEdit", slot: l.key as Slot | "style", value: o.id }), setEditing(null))}>
-                      {o.label}
-                    </Chip>
-                  ))
-                )}
-              </motion.div>
-            )}
-          </div>
-        ))}
-        {lines.length > 4 && (
-          <button type="button" onClick={() => setAll((a) => !a)} aria-expanded={all} className="flex items-center gap-1 px-3 py-2.5 type-label-sm text-fg-secondary">
-            {all ? "Show fewer" : `Show all assumptions (${lines.length})`} <ChevronDown className={cn("size-4 transition-transform", all && "rotate-180")} />
-          </button>
-        )}
-      </dl>
-
-      {/* the offer, per goal */}
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h4 className="type-label-lg text-fg-primary">Tools for your goals</h4>
-          {undecided.length > 1 && (
-            <Button size="sm" variant="link" className="type-label-sm" onClick={() => undecided.forEach((id) => decideOne(id, "added"))}>
-              Add all
-            </Button>
+          ))}
+          {lines.length > 4 && (
+            <button type="button" onClick={() => setAll((a) => !a)} aria-expanded={all} className="flex items-center gap-1 px-3 py-2.5 type-label-sm text-fg-secondary">
+              {all ? "Show fewer" : `Show all assumptions (${lines.length})`} <ChevronDown className={cn("size-4 transition-transform", all && "rotate-180")} />
+            </button>
           )}
-        </div>
-        {offer.map((g) => (
-          <div key={g.goal} className="flex flex-col gap-2">
-            <p className="type-label-sm text-fg-secondary">{g.label}</p>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {g.modules.map((mod) => {
-                const dep = bringsWith(mod.id, pb.decisions, st.goals)
-                const consentNote = mod.id === "gallery" && !pb.consent.includes("gallery") ? "Adding this asks you to confirm you have written patient consent." : undefined
-                return (
-                  <ModuleCard
-                    key={mod.id}
-                    m={mod}
-                    goal={g.goal}
-                    decision={pb.decisions[mod.id]}
-                    onDecide={(d) => decideOne(mod.id, d)}
-                    note={dep && pb.decisions[mod.id] !== "added" ? `Comes with ${dep.name} — it needs one to work.` : consentNote}
-                  />
-                )
-              })}
-            </div>
-          </div>
-        ))}
-        {btn.fallback && (
-          <Alert tone="warning" size="sm" icon={<TriangleAlert />}>
-            Without {btn.module?.name}, the main button becomes “{btn.label}” — patients reach you directly instead.
-          </Alert>
-        )}
-        <div className="flex flex-col gap-1 rounded-md bg-subtle px-3 py-2.5">
-          <p className="type-label-sm text-fg-primary">Included free</p>
-          <p className="type-body-sm text-fg-secondary">{coreModules().map((x) => x.name).join(" · ")}</p>
-        </div>
-        {later.length > 0 && (
-          <details className="group rounded-md border border-line-default px-3 py-2.5">
-            <summary className="flex cursor-pointer list-none items-center justify-between type-label-sm text-fg-secondary">
-              Add later ({later.length}) <ChevronDown className="size-4 transition-transform group-open:rotate-180" />
-            </summary>
-            <ul className="mt-2 flex flex-col gap-1">
-              {later.map((x) => (
-                <li key={x.id} className="flex justify-between gap-3 type-body-sm text-fg-secondary">
-                  <span>{x.name}</span>
-                  <span className="tabular-nums">{priceLabel(x)}</span>
-                </li>
-              ))}
-            </ul>
-          </details>
-        )}
-      </div>
+        </dl>
 
-      {/* total + confirm */}
-      <div className="flex flex-col gap-3 border-t border-line-default pt-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-col" aria-live="polite">
-          <p className="type-label-lg text-fg-primary tabular-nums">{total ? `$${total}/month in add-ons` : "No add-ons yet"}</p>
-          <p className="type-caption text-fg-tertiary">Nothing is charged until you publish.</p>
-        </div>
-        <Button onClick={() => dispatch({ type: "pbConfirmPlan" })}>Looks right — create the plan</Button>
-      </div>
-    </section>
+      </section>
+      <RecommendedTools
+        tools={tools}
+        core={coreModules().filter((x) => x.id !== "inbox")}
+        total={total}
+        onDecide={decideOne}
+        fallback={btn.fallback ? `Without ${btn.module?.name}, the main button becomes “${btn.label}” — patients reach you directly instead.` : undefined}
+        onSkip={() => {
+          // nothing paid: everything still open waits under Add later
+          for (const id of offered) if (pb.decisions[id] !== "added") dispatch({ type: "pbDecide", module: id, decision: "later" })
+          dispatch({ type: "pbConfirmPlan" })
+        }}
+        onConfirm={() => dispatch({ type: "pbConfirmPlan" })}
+      />
+    </div>
   )
 }
 

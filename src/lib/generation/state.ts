@@ -112,6 +112,8 @@ export type Msg =
   | { id: string; type: "pb-patch"; goals: string[]; resolved?: "added" | "declined" }
   /** after the build: modules waiting for the owner's accounts (test mode) */
   | { id: string; type: "pb-activate" }
+  /** after the first build: the checklist of what's left before customers can use the site */
+  | { id: string; type: "next-steps" }
 
 export interface FeedbackAnswer {
   rating: "good" | "fine" | "bad"
@@ -1009,8 +1011,8 @@ function finishBuild(s: GenState): GenState {
   text += " Have a look around the preview, then publish when you're happy."
   let n = push(s, { type: "agent", text })
   for (const q of s.queued) n = push(n, { type: "agent", text: `Done — I've applied your note: “${q}”.` })
-  // modules that need the owner's own accounts start in test mode
-  if (n.pb && !n.msgs.some((m) => m.type === "pb-activate") && Object.entries(n.pb.decisions).some(([id, d]) => d === "added" && moduleById(id).needsAccount)) n = push(n, { type: "pb-activate" })
+  // what's left before customers can use the site (publish, domain, accounts for test-mode tools…), once
+  if (!n.msgs.some((m) => m.type === "next-steps")) n = push(n, { type: "next-steps" })
   // ask how it went once, after the first build only
   if (!n.msgs.some((m) => m.type === "feedback")) n = push(n, { type: "feedback" })
   return { ...n, queued: [] }

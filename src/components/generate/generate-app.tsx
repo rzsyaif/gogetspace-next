@@ -10,6 +10,7 @@ import { useMedia } from "@/lib/use-media"
 import { GenProvider, useGen } from "./gen-provider"
 import { Messages } from "./chat-blocks"
 import { ChatInput } from "./chat-input"
+import { EditorNavProvider } from "./editor-nav"
 import { ReviewSheet } from "./review-sheet"
 import { AccountButton, FULL_TABS, MobileNav, PreviewPane, ProjectHeader, Rail, SidePanel, type Tab } from "./workspace"
 import { FlowSiteProvider, useEditorSite } from "./editor-site"
@@ -77,124 +78,132 @@ export function Shell({ initialTab = "agent" }: { initialTab?: Tab }) {
   const sidebar = xl ? 380 : 340
   const chatWidth = !create || !wide ? "100%" : chatOpen && !fullPanel ? sidebar : 0
 
+  const goTo = (t: Tab) => {
+    setTab(t)
+    setChatOpen(true)
+    if (!FULL_TABS.includes(t)) setMobileView("chat")
+  }
+
   return (
-    <div data-theme="light" className="flex h-svh flex-col overflow-hidden bg-canvas text-fg-primary">
-      {/* planning top bar — folds away in the editor */}
-      <motion.header
-        initial={false}
-        animate={{ height: create ? 0 : 72, opacity: create ? 0 : 1 }}
-        transition={{ duration: 0.45, ease: EASE }}
-        className="z-30 flex shrink-0 items-center justify-between overflow-hidden px-4 sm:px-6"
-        aria-hidden={create}
-      >
-        <Link href="/" aria-label="GoGetSpace home" tabIndex={create ? -1 : 0} className="rounded-md focus-visible:outline-none focus-visible:focus-ring">
-          <Logo markOnly size={36} />
-        </Link>
-        {s.account ? <AccountButton compact /> : (
-          <Button asChild variant="link" size="sm">
-            <a href="#" tabIndex={create ? -1 : 0}>Log in</a>
-          </Button>
+    <EditorNavProvider goTo={goTo}>
+      <div data-theme="light" className="flex h-svh flex-col overflow-hidden bg-canvas text-fg-primary">
+        {/* planning top bar — folds away in the editor */}
+        <motion.header
+          initial={false}
+          animate={{ height: create ? 0 : 72, opacity: create ? 0 : 1 }}
+          transition={{ duration: 0.45, ease: EASE }}
+          className="z-30 flex shrink-0 items-center justify-between overflow-hidden px-4 sm:px-6"
+          aria-hidden={create}
+        >
+          <Link href="/" aria-label="GoGetSpace home" tabIndex={create ? -1 : 0} className="rounded-md focus-visible:outline-none focus-visible:focus-ring">
+            <Logo markOnly size={36} />
+          </Link>
+          {s.account ? <AccountButton compact /> : (
+            <Button asChild variant="link" size="sm">
+              <a href="#" tabIndex={create ? -1 : 0}>Log in</a>
+            </Button>
+          )}
+        </motion.header>
+
+        {/* phone editor bar: logo, chat/preview switch, menu (tabs + account) */}
+        {create && !wide && (
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 border-b border-line-default px-4 py-3">
+            <Link href="/dashboard" aria-label="Back to the dashboard"><Logo markOnly size={32} /></Link>
+            <SegmentedControl
+              as="tablist"
+              label="Editor view"
+              size="sm"
+              fill
+              className="flex-1"
+              value={fullPanel ? null : mobileView}
+              onChange={(v) => {
+                setMobileView(v)
+                if (fullPanel) setTab("agent")
+              }}
+              options={[
+                { value: "chat", label: "Chat" },
+                { value: "preview", label: "Preview" },
+              ]}
+            />
+            <MobileNav
+              tab={tab}
+              onTab={(t) => {
+                setTab(t)
+                if (!FULL_TABS.includes(t)) setMobileView("chat")
+              }}
+            />
+          </motion.div>
         )}
-      </motion.header>
 
-      {/* phone editor bar: logo, chat/preview switch, menu (tabs + account) */}
-      {create && !wide && (
-        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 border-b border-line-default px-4 py-3">
-          <Link href="/dashboard" aria-label="Back to the dashboard"><Logo markOnly size={32} /></Link>
-          <SegmentedControl
-            as="tablist"
-            label="Editor view"
-            size="sm"
-            fill
-            className="flex-1"
-            value={fullPanel ? null : mobileView}
-            onChange={(v) => {
-              setMobileView(v)
-              if (fullPanel) setTab("agent")
-            }}
-            options={[
-              { value: "chat", label: "Chat" },
-              { value: "preview", label: "Preview" },
-            ]}
-          />
-          <MobileNav
-            tab={tab}
-            onTab={(t) => {
-              setTab(t)
-              if (!FULL_TABS.includes(t)) setMobileView("chat")
-            }}
-          />
-        </motion.div>
-      )}
+        <div className="flex min-h-0 flex-1">
+          <AnimatePresence initial={false}>
+            {create && wide && (
+              <motion.div key="rail" initial={{ width: 0, opacity: 0 }} animate={{ width: 84, opacity: 1 }} exit={{ width: 0, opacity: 0 }} transition={{ duration: 0.55, ease: EASE }} className="shrink-0 overflow-hidden">
+                <Rail tab={tab} onTab={(t) => { setTab(t); setChatOpen(true) }} />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-      <div className="flex min-h-0 flex-1">
-        <AnimatePresence initial={false}>
-          {create && wide && (
-            <motion.div key="rail" initial={{ width: 0, opacity: 0 }} animate={{ width: 84, opacity: 1 }} exit={{ width: 0, opacity: 0 }} transition={{ duration: 0.55, ease: EASE }} className="shrink-0 overflow-hidden">
-              <Rail tab={tab} onTab={(t) => { setTab(t); setChatOpen(true) }} />
+          <motion.section
+            aria-label="Chat with the agent"
+            initial={false}
+            animate={{ width: chatWidth }}
+            transition={{ duration: 0.6, ease: EASE }}
+            className={cn("flex min-h-0 shrink-0 flex-col overflow-hidden", create && !wide && (mobileView !== "chat" || fullPanel) && "hidden")}
+          >
+            <div className={cn("flex min-h-0 flex-1 flex-col", create && wide && "min-w-[340px]")}>
+              <AnimatePresence initial={false}>
+                {create && (
+                  <motion.div key="project" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} transition={{ delay: 0.3, duration: 0.35 }}>
+                    <ProjectHeader onHide={() => setChatOpen(false)} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              {create && (tab === "domain" || tab === "database" || tab === "settings") ? (
+                <SidePanel tab={tab} onBack={() => setTab("agent")} onOpenPlan={() => setTab("plan")} />
+              ) : editor.site.built || flow ? (
+                <ChatColumn compact={create} />
+              ) : (
+                <DraftChat />
+              )}
+            </div>
+          </motion.section>
+
+          {fullPanel && (
+            <section aria-label={tab} className="flex min-h-0 min-w-0 flex-1 flex-col p-1">
+              <div className="min-h-0 flex-1 overflow-y-auto rounded-xl border border-line-default bg-surface">
+                <SitePanel tab={tab} onTab={setTab} />
+              </div>
+            </section>
+          )}
+
+          <AnimatePresence initial={false}>
+            {create && !fullPanel && (
+              <motion.section
+                key="preview"
+                aria-label="Preview"
+                initial={{ opacity: 0, x: 64 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2, duration: 0.6, ease: EASE }}
+                className={cn("min-h-0 min-w-0 flex-1 flex-col gap-1 p-1", wide || mobileView === "preview" ? "flex" : "hidden")}
+              >
+                {editor.site.built || flow ? <PreviewPane chatOpen={chatOpen} onShowChat={() => setChatOpen(true)} onToast={setToast} /> : <DraftPreview />}
+              </motion.section>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {flow && <ReviewSheet />}
+        {flow && <ScenarioPanel />}
+        <AnimatePresence>
+          {toast && (
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 12 }} className="fixed bottom-24 left-1/2 z-[60] -translate-x-1/2">
+              <Toast tone="success" message={toast} />
             </motion.div>
           )}
         </AnimatePresence>
-
-        <motion.section
-          aria-label="Chat with the agent"
-          initial={false}
-          animate={{ width: chatWidth }}
-          transition={{ duration: 0.6, ease: EASE }}
-          className={cn("flex min-h-0 shrink-0 flex-col overflow-hidden", create && !wide && (mobileView !== "chat" || fullPanel) && "hidden")}
-        >
-          <div className={cn("flex min-h-0 flex-1 flex-col", create && wide && "min-w-[340px]")}>
-            <AnimatePresence initial={false}>
-              {create && (
-                <motion.div key="project" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} transition={{ delay: 0.3, duration: 0.35 }}>
-                  <ProjectHeader onHide={() => setChatOpen(false)} />
-                </motion.div>
-              )}
-            </AnimatePresence>
-            {create && (tab === "domain" || tab === "database" || tab === "settings") ? (
-              <SidePanel tab={tab} onBack={() => setTab("agent")} onOpenPlan={() => setTab("plan")} />
-            ) : editor.site.built || flow ? (
-              <ChatColumn compact={create} />
-            ) : (
-              <DraftChat />
-            )}
-          </div>
-        </motion.section>
-
-        {fullPanel && (
-          <section aria-label={tab} className="flex min-h-0 min-w-0 flex-1 flex-col p-1">
-            <div className="min-h-0 flex-1 overflow-y-auto rounded-xl border border-line-default bg-surface">
-              <SitePanel tab={tab} onTab={setTab} />
-            </div>
-          </section>
-        )}
-
-        <AnimatePresence initial={false}>
-          {create && !fullPanel && (
-            <motion.section
-              key="preview"
-              aria-label="Preview"
-              initial={{ opacity: 0, x: 64 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2, duration: 0.6, ease: EASE }}
-              className={cn("min-h-0 min-w-0 flex-1 flex-col gap-1 p-1", wide || mobileView === "preview" ? "flex" : "hidden")}
-            >
-              {editor.site.built || flow ? <PreviewPane chatOpen={chatOpen} onShowChat={() => setChatOpen(true)} onToast={setToast} /> : <DraftPreview />}
-            </motion.section>
-          )}
-        </AnimatePresence>
       </div>
-
-      {flow && <ReviewSheet />}
-      {flow && <ScenarioPanel />}
-      <AnimatePresence>
-        {toast && (
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 12 }} className="fixed bottom-24 left-1/2 z-[60] -translate-x-1/2">
-            <Toast tone="success" message={toast} />
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+    </EditorNavProvider>
   )
 }
 
@@ -206,7 +215,8 @@ function ChatColumn({ compact }: { compact: boolean }) {
   const run = s.runs[s.planRun]
   const doneCount = run?.tasks.filter((t) => t.status === "done").length ?? 0
   const pagesBuilt = Object.values(s.pages).filter((p) => p === "built").length
-  const asking = s.msgs.some((m) => (m.type === "pb-question" || m.type === "pb-gate") && !m.answer)
+  // the questions and the plan that concludes them are answered on their cards, so the chat input steps aside
+  const asking = s.msgs.some((m) => ((m.type === "pb-question" || m.type === "pb-gate") && !m.answer) || (m.type === "pb-plan" && !m.confirmed))
   useEffect(() => {
     // an open question card is read from its top (on phones it's taller than the screen)
     const card = document.querySelector("[data-question-open]")
@@ -223,7 +233,7 @@ function ChatColumn({ compact }: { compact: boolean }) {
         </div>
       </div>
       <div className={cn("shrink-0", compact ? "p-4 pt-0" : "px-4 pt-2 pb-4 sm:pb-8")}>
-        {/* while a question card is open, answers (including "Something else") are written on the card */}
+        {/* while a question card or the plan is open, answers (including "Something else") go on the card */}
         {!asking && <ChatInput credits={compact} className={cn(!compact && "mx-auto w-full max-w-[760px]")} />}
       </div>
     </>
