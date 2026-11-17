@@ -210,6 +210,13 @@ export function dentistBrief(st: PlaybookState): BriefSection[] {
       items: [
         item(`Treatments: [${treatmentsFor(st).map((t) => t.title).join(", ")}] — remove any you don't offer; nothing unconfirmed is published`),
         item(`Prices: ${PRICE_TEXT[a.prices?.value ?? "from"]}`),
+        ...(a.prices?.value === "ask"
+          ? []
+          : st.priceList?.file
+            ? [item(`Price list: from your file “${st.priceList.file.name}” — every treatment uses these prices`)]
+            : st.priceList?.text
+              ? [item(`Price list: ${st.priceList.text.split("\n").filter(Boolean).join("; ")}`)]
+              : [item("Price list: [I'll draft typical prices for each treatment — check them before you publish]")]),
         ...(a.insurance?.value === "list" ? [item("Insurance: [the insurers and company panels you accept]")] : []),
       ],
     },

@@ -58,7 +58,7 @@ export function SiteCard({ site, newEnquiries }: { site: Site; newEnquiries: num
           </p>
           {newEnquiries > 0 && (
             <Button asChild variant="link" size="sm" className="self-start type-body-sm">
-              <Link href={`/sites/${site.id}?tab=enquiries`}>
+              <Link href={`/sites/${site.id}?tab=modules&view=enquiries`}>
                 {newEnquiries} new {newEnquiries === 1 ? "enquiry" : "enquiries"}
               </Link>
             </Button>

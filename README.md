@@ -185,7 +185,9 @@ In `/generate`, a dental prompt runs the playbook conversation (`components/gene
    fills answers too (e.g. the number of dentists). Questions come **one at a time on a card**
    (`question-series.tsx`, Figma 125:982): a counter ("2 / 4"), the answers as a radio list (checkboxes for goals,
    with a main goal), "Something else" with a text field, "You decide", Back to change the previous answer, and
-   "Skip these questions" to let the agent decide the rest. The chat input is hidden while a card is open. Once
+   "Skip these questions" to let the agent decide the rest. On the prices question, choosing a way to show prices
+   opens a follow-up to upload a price list (PDF, sheet or photo) or type it; without one, the brief drafts typical
+   prices to check. The chat input is hidden while a card is open. Once
    done, the answers fold into one summary.
 2. Claims and data the site can't publish ("best dentist", "painless", medical history on a form, before-and-after
    photos without consent…) get a guardrail card with the reason and a compliant alternative.
@@ -193,7 +195,7 @@ In `/generate`, a dental prompt runs the playbook conversation (`components/gene
    my default) with Edit (four lines on phones, "Show all assumptions"). Under it, **Recommended Tools**
    (`components/playbook/recommended-tools.tsx`, Figma 185:1960): one card per tool with its own monthly price and
    Add / Added, in a row with previous/next buttons on desktop and swipe on phones; what's included for free; tools
-   that can be connected later; and the running total with "Skip. Choose later" and "Create Website Plan". Nothing is
+   that can be connected later; and the running total with "Later" and "Create Website Plan". Nothing is
    charged until publish. The plan concludes the questions: the chat input stays hidden until it's confirmed. Declining the main goal's tool switches the main button to "Call or message us".
 4. Confirming writes the brief, style and page plan from the playbook, and the review and build continue as before
    — with the dental styles and the Rahma Family Dental site in the preview. New goals after the plan become a patch
@@ -218,8 +220,9 @@ statuses and invoices in sessionStorage so the dashboard and the editor stay in 
 - `/dashboard` (Figma 94:2350, `components/dashboard`): sidebar with New Website, Websites, Domains, the account's
   websites with Live/Draft, Billings, Settings, the account menu and the inbox; it collapses to icons on desktop and
   becomes a drawer on phones. Home greets by name with the prompt and lists the websites (plan + status on each card).
-- `/sites/[id]`: the editor on its own. The rail adds **Analytics**, **Enquiries** and **Plan**, which open full-width
-  pages (`components/account`); the logo goes back to the dashboard and the site picker switches websites. Drafts
+- `/sites/[id]`: the editor on its own. The rail is Agent, **Analytics**, **Plan**, **Modules**, Domain and Settings.
+  Analytics, Plan and Modules open full-width pages (`components/account`); Modules has two tabs, the site's tools and
+  its **Enquiries** inbox (`?tab=modules&view=enquiries`). the logo goes back to the dashboard and the site picker switches websites. Drafts
   that haven't been built show where planning stopped. The editor at the end of `/generate` is the same component.
 - Connecting a domain bought elsewhere (editor Domain tab, or Dashboard → Domains) is a 3-step dialog
   (`account/connect-domain.tsx`): domain + provider → the A/CNAME records with copy buttons and where that provider

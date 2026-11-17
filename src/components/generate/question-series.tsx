@@ -1,13 +1,13 @@
 "use client"
 
-import { useState, type ReactNode } from "react"
+import { useRef, useState, type ReactNode } from "react"
 import { motion } from "motion/react"
-import { ArrowLeft, Check, ChevronDown, CircleHelp, Sparkles } from "lucide-react"
+import { ArrowLeft, Check, ChevronDown, CircleHelp, FileSpreadsheet, Pencil, Sparkles, Upload, X } from "lucide-react"
 import { Badge, Button, Input, RadioDot, Tooltip } from "@/components/ui"
 import { cn } from "@/lib/cn"
 import type { Msg } from "@/lib/generation/state"
 import { DENTIST } from "@/lib/playbooks/dentist"
-import { goalChips, questionProgress } from "@/lib/playbooks/engine"
+import { goalChips, questionProgress, type PriceList } from "@/lib/playbooks/engine"
 import { useGen } from "./gen-provider"
 
 type QuestionMsg = Extract<Msg, { type: "pb-question" }>
@@ -138,6 +138,8 @@ export function QuestionCard({ m, compact }: { m: QuestionMsg; compact?: boolean
   )
   const [other, setOther] = useState(m.unclear ?? "")
   const [more, setMore] = useState(false)
+  // the prices question: the owner can hand over their own price list (uploaded or typed)
+  const [prices, setPrices] = useState<PriceList>(() => pb.priceList ?? {})
   const { index, total } = questionProgress(pb, m.slot)
   const canGoBack = s.msgs.slice(0, s.msgs.indexOf(m)).some((x) => x.type === "pb-question" && x.answer && x.prev)
   const last = index >= total
@@ -148,7 +150,8 @@ export function QuestionCard({ m, compact }: { m: QuestionMsg; compact?: boolean
     if (!valid) return
     if (choice === OTHER) return dispatch({ type: "pbAnswerText", id: m.id, text: other.trim() })
     if (choice === DECIDE) return dispatch({ type: "pbAnswer", id: m.id, value: DECIDE })
-    dispatch({ type: "pbAnswer", id: m.id, value: goals ? picked : choice })
+    const list = m.slot === "prices" && choice !== "ask" && (prices.file || prices.text?.trim()) ? prices : undefined
+    dispatch({ type: "pbAnswer", id: m.id, value: goals ? picked : choice, prices: list })
   }
   const pickOne = (id: string) => setPicked([id])
   const toggleGoal = (g: string) =>
@@ -222,7 +225,11 @@ export function QuestionCard({ m, compact }: { m: QuestionMsg; compact?: boolean
                 />
               )
             })
-          : q.options.map((o) => <Row key={o.id} checked={choice === o.id} label={o.label} onSelect={() => pickOne(o.id)} />)}
+          : q.options.map((o) => (
+              <Row key={o.id} checked={choice === o.id} label={o.label} onSelect={() => pickOne(o.id)}>
+                {m.slot === "prices" && o.id !== "ask" ? <PriceListInput value={prices} onChange={setPrices} /> : undefined}
+              </Row>
+            ))}
         {goals && !several && !more && (
           <button type="button" onClick={() => setMore(true)} className="flex items-center gap-3 p-4 text-left type-label-md text-fg-link hover:bg-subtle">
             <ChevronDown className="size-5" /> Show {chips.more.length} more goals
@@ -253,6 +260,71 @@ export function QuestionCard({ m, compact }: { m: QuestionMsg; compact?: boolean
         />
       </Options>
     </Shell>
+  )
+}
+
+/* ---------------- price list follow-up (Figma 190:1569) ---------------- */
+
+const PRICE_FILES = ".pdf,.xls,.xlsx,.csv,.doc,.docx,.jpg,.jpeg,.png"
+const fileSize = (b: number) => (b > 1e6 ? `${(b / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1e3))} KB`)
+
+/** under a chosen price option: upload a price list, or type it — or leave it and the agent drafts one */
+function PriceListInput({ value, onChange }: { value: PriceList; onChange: (v: PriceList) => void }) {
+  const file = useRef<HTMLInputElement>(null)
+  const [typing, setTyping] = useState(!!value.text)
+  return (
+    <div className="flex flex-col gap-3">
+      <input
+        ref={file}
+        type="file"
+        accept={PRICE_FILES}
+        className="sr-only"
+        tabIndex={-1}
+        aria-hidden
+        onChange={(e) => {
+          const f = e.target.files?.[0]
+          if (f) onChange({ ...value, file: { name: f.name, size: f.size } })
+          e.target.value = ""
+        }}
+      />
+      {value.file ? (
+        <div className="flex items-center gap-3 self-start rounded-md border border-line-default bg-surface py-2 pr-2 pl-3">
+          <FileSpreadsheet className="size-5 shrink-0 text-fg-secondary" strokeWidth={1.5} />
+          <span className="flex min-w-0 flex-col">
+            <span className="max-w-[220px] truncate type-label-md text-fg-primary">{value.file.name}</span>
+            <span className="type-caption text-fg-tertiary">{fileSize(value.file.size)}</span>
+          </span>
+          <Button size="icon-sm" variant="ghost" aria-label={`Remove ${value.file.name}`} onClick={() => onChange({ ...value, file: undefined })}>
+            <X />
+          </Button>
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" variant="secondary" leadingIcon={<Upload />} onClick={() => file.current?.click()}>
+            Upload pricing document
+          </Button>
+          {!typing && (
+            <Button size="sm" variant="secondary" leadingIcon={<Pencil />} onClick={() => setTyping(true)}>
+              Type manually
+            </Button>
+          )}
+        </div>
+      )}
+      {typing && !value.file && (
+        <label className="flex flex-col gap-2">
+          <span className="type-label-md text-fg-primary">Your prices</span>
+          <textarea
+            autoFocus
+            rows={4}
+            value={value.text ?? ""}
+            onChange={(e) => onChange({ ...value, text: e.target.value })}
+            placeholder={"One per line, e.g.\nScaling and polishing — RM 120\nTooth-coloured filling — from RM 150"}
+            className="w-full resize-y rounded-md border border-line-strong bg-surface px-4 py-3 type-body-md text-fg-primary placeholder:text-fg-tertiary focus-visible:border-line-focus focus-visible:outline-none focus-visible:focus-ring"
+          />
+        </label>
+      )}
+      {!value.file && !value.text?.trim() && <p className="type-caption text-fg-tertiary">No list yet? Leave this — I&apos;ll draft typical prices in the brief for you to check.</p>}
+    </div>
   )
 }
 
