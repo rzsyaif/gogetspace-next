@@ -2,12 +2,12 @@
 
 import { useRef, useState, type ReactNode } from "react"
 import { motion } from "motion/react"
-import { ArrowLeft, Check, ChevronDown, CircleHelp, FileSpreadsheet, Pencil, Sparkles, Upload, X } from "lucide-react"
+import { ArrowLeft, Check, ChevronDown, CircleHelp, FileSpreadsheet, Pencil, Plus, Sparkles, Upload, X } from "lucide-react"
 import { Badge, Button, Input, RadioDot, Tooltip } from "@/components/ui"
 import { cn } from "@/lib/cn"
 import type { Msg } from "@/lib/generation/state"
 import { DENTIST } from "@/lib/playbooks/dentist"
-import { goalChips, questionProgress, type PriceList } from "@/lib/playbooks/engine"
+import { goalChips, questionProgress, type PriceList, type TeamList, type TeamMember } from "@/lib/playbooks/engine"
 import { useGen } from "./gen-provider"
 
 type QuestionMsg = Extract<Msg, { type: "pb-question" }>
@@ -140,6 +140,8 @@ export function QuestionCard({ m, compact }: { m: QuestionMsg; compact?: boolean
   const [more, setMore] = useState(false)
   // the prices question: the owner can hand over their own price list (uploaded or typed)
   const [prices, setPrices] = useState<PriceList>(() => pb.priceList ?? {})
+  // the size question: with several dentists or branches, the owner can hand over their team list
+  const [team, setTeam] = useState<TeamList>(() => pb.team ?? {})
   const { index, total } = questionProgress(pb, m.slot)
   const canGoBack = s.msgs.slice(0, s.msgs.indexOf(m)).some((x) => x.type === "pb-question" && x.answer && x.prev)
   const last = index >= total
@@ -151,7 +153,9 @@ export function QuestionCard({ m, compact }: { m: QuestionMsg; compact?: boolean
     if (choice === OTHER) return dispatch({ type: "pbAnswerText", id: m.id, text: other.trim() })
     if (choice === DECIDE) return dispatch({ type: "pbAnswer", id: m.id, value: DECIDE })
     const list = m.slot === "prices" && choice !== "ask" && (prices.file || prices.text?.trim()) ? prices : undefined
-    dispatch({ type: "pbAnswer", id: m.id, value: goals ? picked : choice, prices: list })
+    const people = (team.people ?? []).filter((p) => p.name.trim())
+    const teamList = m.slot === "scale" && choice !== "solo" && (team.file || people.length) ? { ...team, people } : undefined
+    dispatch({ type: "pbAnswer", id: m.id, value: goals ? picked : choice, prices: list, team: teamList })
   }
   const pickOne = (id: string) => setPicked([id])
   const toggleGoal = (g: string) =>
@@ -227,7 +231,11 @@ export function QuestionCard({ m, compact }: { m: QuestionMsg; compact?: boolean
             })
           : q.options.map((o) => (
               <Row key={o.id} checked={choice === o.id} label={o.label} onSelect={() => pickOne(o.id)}>
-                {m.slot === "prices" && o.id !== "ask" ? <PriceListInput value={prices} onChange={setPrices} /> : undefined}
+                {m.slot === "prices" && o.id !== "ask" ? (
+                  <PriceListInput value={prices} onChange={setPrices} />
+                ) : m.slot === "scale" && o.id !== "solo" ? (
+                  <TeamListInput value={team} onChange={setTeam} branches={o.id === "branches"} />
+                ) : undefined}
               </Row>
             ))}
         {goals && !several && !more && (
@@ -324,6 +332,83 @@ function PriceListInput({ value, onChange }: { value: PriceList; onChange: (v: P
         </label>
       )}
       {!value.file && !value.text?.trim() && <p className="type-caption text-fg-tertiary">No list yet? Leave this — I&apos;ll draft typical prices in the brief for you to check.</p>}
+    </div>
+  )
+}
+
+/* ---------------- team follow-up (several dentists or branches) ---------------- */
+
+const TEAM_FILES = ".xls,.xlsx,.csv,.pdf,.doc,.docx"
+const REG = DENTIST.market.registration
+
+/** under "Several dentists" / "Several branches": upload the team list, or add the dentists here — or skip */
+function TeamListInput({ value, onChange, branches }: { value: TeamList; onChange: (v: TeamList) => void; branches: boolean }) {
+  const file = useRef<HTMLInputElement>(null)
+  const people = value.people ?? []
+  const typing = people.length > 0
+  const set = (i: number, patch: Partial<TeamMember>) => onChange({ ...value, people: people.map((p, k) => (k === i ? { ...p, ...patch } : p)) })
+  const field = "h-10 w-full min-w-0 rounded-md border border-line-strong bg-surface px-3 type-body-sm text-fg-primary placeholder:text-fg-tertiary focus-visible:border-line-focus focus-visible:outline-none focus-visible:focus-ring"
+  return (
+    <div className="flex flex-col gap-3">
+      <input
+        ref={file}
+        type="file"
+        accept={TEAM_FILES}
+        className="sr-only"
+        tabIndex={-1}
+        aria-hidden
+        onChange={(e) => {
+          const f = e.target.files?.[0]
+          if (f) onChange({ file: { name: f.name, size: f.size } })
+          e.target.value = ""
+        }}
+      />
+      {value.file ? (
+        <div className="flex items-center gap-3 self-start rounded-md border border-line-default bg-surface py-2 pr-2 pl-3">
+          <FileSpreadsheet className="size-5 shrink-0 text-fg-secondary" strokeWidth={1.5} />
+          <span className="flex min-w-0 flex-col">
+            <span className="max-w-[220px] truncate type-label-md text-fg-primary">{value.file.name}</span>
+            <span className="type-caption text-fg-tertiary">{fileSize(value.file.size)}</span>
+          </span>
+          <Button size="icon-sm" variant="ghost" aria-label={`Remove ${value.file.name}`} onClick={() => onChange({})}>
+            <X />
+          </Button>
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" variant="secondary" leadingIcon={<Upload />} onClick={() => file.current?.click()}>
+            Upload team list
+          </Button>
+          {!typing && (
+            <Button size="sm" variant="secondary" leadingIcon={<Pencil />} onClick={() => onChange({ people: [{ name: "" }] })}>
+              Add them myself
+            </Button>
+          )}
+        </div>
+      )}
+      {typing && !value.file && (
+        <div className="flex flex-col gap-2">
+          <div className={cn("hidden gap-2 type-label-sm text-fg-secondary sm:grid", branches ? "grid-cols-[1.3fr_1fr_1fr_36px]" : "grid-cols-[1.3fr_1fr_36px]")}>
+            <span>Dentist&apos;s name</span>
+            <span>Registration no. (optional)</span>
+            {branches && <span>Branch</span>}
+          </div>
+          {people.map((p, i) => (
+            <div key={i} className={cn("grid gap-2 rounded-md border border-line-default bg-surface p-2 sm:border-0 sm:bg-transparent sm:p-0", branches ? "sm:grid-cols-[1.3fr_1fr_1fr_36px]" : "sm:grid-cols-[1.3fr_1fr_36px]")}>
+              <input autoFocus={i === people.length - 1 && !p.name} aria-label={`Dentist ${i + 1} name`} placeholder="Dr. Aisyah Rahman" value={p.name} onChange={(e) => set(i, { name: e.target.value })} className={field} />
+              <input aria-label={`Dentist ${i + 1} ${REG}`} placeholder={`${REG.split(" ")[0]} no. (optional)`} value={p.reg ?? ""} onChange={(e) => set(i, { reg: e.target.value })} className={field} />
+              {branches && <input aria-label={`Dentist ${i + 1} branch`} placeholder="e.g. Air Itam" value={p.branch ?? ""} onChange={(e) => set(i, { branch: e.target.value })} className={field} />}
+              <Button size="icon-sm" variant="ghost" aria-label={`Remove dentist ${i + 1}`} className="justify-self-end" onClick={() => onChange({ ...value, people: people.filter((_, k) => k !== i) })}>
+                <X />
+              </Button>
+            </div>
+          ))}
+          <Button size="sm" variant="ghost" leadingIcon={<Plus />} className="self-start" onClick={() => onChange({ ...value, people: [...people, { name: "" }] })}>
+            Add another dentist
+          </Button>
+        </div>
+      )}
+      {!value.file && !people.some((p) => p.name.trim()) && <p className="type-caption text-fg-tertiary">Prefer to do it later? Skip this — you can add your dentists in the brief.</p>}
     </div>
   )
 }

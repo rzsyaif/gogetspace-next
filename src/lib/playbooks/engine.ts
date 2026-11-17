@@ -142,6 +142,18 @@ export interface PriceList {
   text?: string
 }
 
+/** the dentists (and their branches) the owner gave on the size question, uploaded or typed */
+export interface TeamMember {
+  name: string
+  /** registration number with the regulator, if they have it to hand */
+  reg?: string
+  branch?: string
+}
+export interface TeamList {
+  file?: { name: string; size: number }
+  people?: TeamMember[]
+}
+
 export interface PlaybookState {
   niche: NicheId
   /** goals in priority order; the first is the main goal */
@@ -175,6 +187,8 @@ export interface PlaybookState {
   activated: string[]
   /** the owner's own price list, uploaded or typed on the prices question */
   priceList?: PriceList | null
+  /** the owner's dentists, uploaded or typed on the size question */
+  team?: TeamList | null
 }
 
 export function initialPlaybookState(prompt: string, pb: Playbook = DENTIST): PlaybookState {

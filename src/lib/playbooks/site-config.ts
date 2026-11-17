@@ -17,6 +17,8 @@ export interface DentalConfig {
   modules: string[]
   consent: boolean
   demo: boolean
+  /** dentists the owner typed on the size question */
+  team?: { name: string; reg?: string }[]
 }
 
 export const DEFAULT_CONFIG: DentalConfig = {
@@ -50,6 +52,7 @@ export function configFromPb(pb: PlaybookState): DentalConfig {
       .map(([id]) => id),
     consent: st.consent.includes("gallery"),
     demo: isDemoClinic(st),
+    team: (st.team?.people ?? []).filter((p) => p.name.trim()).map((p) => ({ name: p.name.trim(), reg: p.reg?.trim() || undefined })),
   }
 }
 
@@ -66,6 +69,10 @@ export function encodeConfig(c: DentalConfig): string {
   })
   if (c.place) q.set("p", c.place)
   if (c.consent) q.set("c", "1")
+  if (c.team?.length) {
+    q.set("dn", c.team.map((p) => p.name).join("|"))
+    q.set("dr", c.team.map((p) => p.reg ?? "").join("|"))
+  }
   return q.toString()
 }
 
@@ -85,6 +92,7 @@ export function decodeConfig(q: URLSearchParams): DentalConfig {
     modules: list("m"),
     consent: q.get("c") === "1",
     demo: /rahma/i.test(name),
+    team: q.get("dn") ? q.get("dn")!.split("|").map((n, i) => ({ name: n, reg: (q.get("dr") ?? "").split("|")[i] || undefined })) : undefined,
   }
 }
 

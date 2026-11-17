@@ -146,6 +146,27 @@ const PRICE_TEXT: Record<string, string> = {
 /** wraps a value in [brackets] (shown as a guess to confirm) unless the owner or the prompt said it */
 const guess = (v: string, source?: string) => (source === "owner" || source === "prompt" ? v : `[${v}]`)
 
+/** the dentists in the brief: from the owner's file or list when given, otherwise placeholders to fill in */
+function teamItems(st: PlaybookState, demo: boolean) {
+  const reg = DENTIST.market.registration
+  const team = st.team
+  if (team?.file) return [item(`Dentists and ${reg}s: from your file “${team.file.name}”`)]
+  const people = (team?.people ?? []).filter((p) => p.name.trim())
+  if (people.length) {
+    const missing = people.filter((p) => !p.reg?.trim()).length
+    return [
+      item(`Dentists: ${people.map((p) => `${p.name.trim()}${p.branch?.trim() ? ` (${p.branch.trim()})` : ""}`).join(", ")}`),
+      missing
+        ? item(`Registration: ${people.filter((p) => p.reg?.trim()).map((p) => `${p.name.trim()} — ${p.reg!.trim()}`).join("; ")}${people.length > missing ? "; " : ""}[${reg} for ${missing === people.length ? "each dentist" : `the other ${missing}`} — you'll add these; I never make them up]`)
+        : item(`Registration: ${people.map((p) => `${p.name.trim()} — ${p.reg!.trim()}`).join("; ")}`),
+    ]
+  }
+  return [
+    item(demo ? `Dentists: [${RAHMA.dentists.join(" and ")}]` : "Dentists: [names and roles — you'll add these]"),
+    item(`Registration: each dentist's ${reg} — [you'll add these; I never make them up]`),
+  ]
+}
+
 export function dentistBrief(st: PlaybookState): BriefSection[] {
   const a = st.answers
   const demo = isDemoClinic(st)
@@ -165,8 +186,7 @@ export function dentistBrief(st: PlaybookState): BriefSection[] {
         item(`Name: ${name}`),
         item(`What it is: a ${guess(FOCUS_TEXT[a.focus?.value ?? "general"], a.focus?.source)}${place ? ` in ${guess(place, st.place ? "prompt" : undefined)}` : " in [your area]"}`),
         item(`Size: ${guess(SCALE_TEXT[a.scale?.value ?? "solo"], a.scale?.source === "search" ? undefined : a.scale?.source)}${a.scale?.source === "search" ? " — found online" : ""}`),
-        item(demo ? `Dentists: [${RAHMA.dentists.join(" and ")}]` : "Dentists: [names and roles — you'll add these]"),
-        item(`Registration: each dentist's ${DENTIST.market.registration} — [you'll add these; I never make them up]`),
+        ...teamItems(st, demo),
         item(demo ? `Opening hours: [${RAHMA.hours}]` : "Opening hours: [Call for opening hours] until you add them"),
         ...(demo ? [item(`Reviews: ${RAHMA.rating} — only real, attributable reviews are shown`)] : []),
       ],
