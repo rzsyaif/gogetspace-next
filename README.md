@@ -221,9 +221,11 @@ statuses and invoices in sessionStorage so the dashboard and the editor stay in 
   websites with Live/Draft, Billings, Settings, the account menu and the inbox; it collapses to icons on desktop and
   becomes a drawer on phones. Home greets by name with the prompt and lists the websites (plan + status on each card).
 - `/sites/[id]`: the editor on its own. The rail is Agent, **Analytics**, **Plan**, **Modules**, Domain and Settings.
-  Analytics, Plan and Modules open full-width pages (`components/account`); Modules has two tabs, the site's tools and
-  its **Enquiries** inbox (`?tab=modules&view=enquiries`). the logo goes back to the dashboard and the site picker switches websites. Drafts
-  that haven't been built show where planning stopped. The editor at the end of `/generate` is the same component.
+  Analytics, Plan and Modules open full-width pages (`components/account`). Modules lists the site's modules in two
+  columns, Enquiries first; **Manage ↗** opens each module's own app in a new tab (`/sites/[id]/apps/[module]` — the
+  inbox for Enquiries, a stand-in for the others, since modules will run in their own environment). Below are modules
+  to add and third-party tools to connect (CRM, calendar, payments…). The logo goes back to the dashboard and the site
+  picker switches websites. Drafts that haven't been built show where planning stopped. The editor at the end of `/generate` is the same component.
 - Connecting a domain bought elsewhere (editor Domain tab, or Dashboard → Domains) is a 3-step dialog
   (`account/connect-domain.tsx`): domain + provider → the A/CNAME records with copy buttons and where that provider
   keeps DNS settings → a check that can finish as "Waiting for DNS". Subdomains get a single CNAME.
