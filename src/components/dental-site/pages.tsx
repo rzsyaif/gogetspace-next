@@ -47,7 +47,9 @@ function TreatmentCard({ t }: { t: Treatment }) {
 
 function Dentists({ limit }: { limit?: number }) {
   const { c } = useDental()
-  const people = c.demo
+  const people: { name: string; role: string; focus: string; reg?: string }[] = c.team?.length
+    ? c.team.map((p) => ({ name: p.name, role: "Dentist", focus: "[What they focus on]", reg: p.reg }))
+    : c.demo
     ? [
         { name: RAHMA.dentists[0], role: "Principal dentist · BDS (Malaya)", focus: "Family dentistry and gentle care for nervous patients" },
         { name: RAHMA.dentists[1], role: "Dentist · DDS (USM)", focus: "Root canal treatment, crowns and check-ups" },
@@ -60,14 +62,16 @@ function Dentists({ limit }: { limit?: number }) {
     <div className="grid gap-5 sm:grid-cols-2">
       {people.slice(0, limit).map((p, i) => (
         <Card key={i} className="flex items-start gap-4">
-          <span className="grid size-16 shrink-0 place-items-center rounded-full bg-(--s-soft) text-[20px] font-semibold text-(--s-ink)">{c.demo ? initials(p.name) : "?"}</span>
+          <span className="grid size-16 shrink-0 place-items-center rounded-full bg-(--s-soft) text-[20px] font-semibold text-(--s-ink)">{c.demo || c.team?.length ? initials(p.name) : "?"}</span>
           <div className="flex flex-col gap-1">
             <H as="h3" className="text-[19px]">
               {p.name}
             </H>
             <p className="text-[14px] font-medium text-(--s-primary)">{p.role}</p>
             <p className="text-[15px] text-(--s-muted)">{p.focus}</p>
-            <p className="mt-1 text-[13px] text-(--s-muted)">{DENTIST.market.registration}: [added by the clinic]</p>
+            <p className="mt-1 text-[13px] text-(--s-muted)">
+              {DENTIST.market.registration}: {p.reg ?? "[added by the clinic]"}
+            </p>
           </div>
         </Card>
       ))}

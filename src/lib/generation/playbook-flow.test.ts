@@ -147,3 +147,19 @@ describe("the prices question", () => {
     expect(s.brief.flatMap((b) => b.items.map((i) => i.text)).join(" ")).toContain("prices.xlsx")
   })
 })
+
+describe("the size question", () => {
+  it("keeps the dentists the owner typed, with registration numbers, in the brief", () => {
+    let s = go(initialState("Website for my children's dental clinic"), { type: "planStepDone" })
+    s = go(s, { type: "pbAnswer", id: open(s)!.id, value: ["G1"] })
+    const q = open(s)!
+    expect(q.slot).toBe("scale")
+    s = go(s, { type: "pbAnswer", id: q.id, value: "dentists", team: { people: [{ name: "Dr. Aisyah Rahman", reg: "12345" }, { name: "Dr. Wei Tan" }] } })
+    expect(s.msgs.find((m) => m.id === q.id && m.type === "pb-question")).toMatchObject({ answer: expect.stringContaining("2 dentists added") })
+    s = go(s, { type: "pbSkipAll" })
+    s = tick(go(tick(s), { type: "pbConfirmPlan" }))
+    const brief = s.brief.flatMap((b) => b.items.map((i) => i.text)).join(" ")
+    expect(brief).toContain("Dr. Aisyah Rahman — 12345")
+    expect(brief).toContain("the other 1")
+  })
+})

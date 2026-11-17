@@ -187,7 +187,9 @@ In `/generate`, a dental prompt runs the playbook conversation (`components/gene
    with a main goal), "Something else" with a text field, "You decide", Back to change the previous answer, and
    "Skip these questions" to let the agent decide the rest. On the prices question, choosing a way to show prices
    opens a follow-up to upload a price list (PDF, sheet or photo) or type it; without one, the brief drafts typical
-   prices to check. The chat input is hidden while a card is open. Once
+   prices to check. On the size question, "Several dentists" or "Several branches" opens the same kind of follow-up
+   for the team: upload a team list, or add each dentist with their registration number (optional) and branch — or
+   skip it and fill it in the brief. Names typed here appear on the preview's Our dentists page. The chat input is hidden while a card is open. Once
    done, the answers fold into one summary.
 2. Claims and data the site can't publish ("best dentist", "painless", medical history on a form, before-and-after
    photos without consent…) get a guardrail card with the reason and a compliant alternative.
