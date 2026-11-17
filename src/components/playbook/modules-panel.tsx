@@ -12,6 +12,7 @@ import type { Decision } from "@/lib/playbooks/engine"
 import type { ModulesApi } from "@/components/generate/editor-site"
 import { MODULE_ICON } from "./recommended-tools"
 import { priceLabel } from "./module-card"
+import { AddModuleDialog, type AddBilling } from "./add-module-dialog"
 
 /** where a module's own app opens (a separate environment; the prototype has a stand-in page) */
 export const moduleAppUrl = (siteId: string, module: string) => `/sites/${siteId}/apps/${module}`
@@ -66,8 +67,27 @@ function ManageLink({ siteId, module, name }: { siteId: string; module: string; 
  * with Manage; modules to add, in two columns; and third-party tools the owner already uses. For a playbook site
  * every add-on has its own monthly price, billed with this website.
  */
-export function ModulesPanel({ siteId, siteName, api, billed, goals, unread }: { siteId: string; siteName: string; api: ModulesApi | null; billed: boolean; goals: string[]; unread: number }) {
+export function ModulesPanel({
+  siteId,
+  siteName,
+  api,
+  billed,
+  goals,
+  unread,
+  payment,
+  onImplement,
+}: {
+  siteId: string
+  siteName: string
+  api: ModulesApi | null
+  billed: boolean
+  goals: string[]
+  unread: number
+  payment: AddBilling
+  onImplement: (module: string) => void
+}) {
   const [note, setNote] = useState<string | null>(null)
+  const [adding, setAdding] = useState<string | null>(null)
   const [connected, setConnected] = useState<string[]>([])
   const list = api?.list ?? []
   const ids = new Set(list.map((m) => m.id))
@@ -181,9 +201,9 @@ export function ModulesPanel({ siteId, siteName, api, billed, goals, unread }: {
                         size="sm"
                         variant="secondary"
                         leadingIcon={<Plus />}
-                        onClick={() => (api.add(m.id), setNote(`${m.name} added${dep ? ` with ${dep.name}` : ""}${m.needsAccount ? ` — it runs in test mode until you connect ${m.needsAccount.label}` : ""}. Ask the agent to build ${m.pages ? "its page" : "it into your pages"}.`))}
+                        onClick={() => setAdding(m.id)}
                       >
-                        {m.id === "gallery" ? "I have patient consent — add" : "Add"}
+                        Add
                       </Button>
                     }
                   >
@@ -226,6 +246,20 @@ export function ModulesPanel({ siteId, siteName, api, billed, goals, unread }: {
           })}
         </ul>
       </PanelSection>
+
+      {api && (
+        <AddModuleDialog
+          module={adding}
+          api={api}
+          goals={goals}
+          billing={payment}
+          onClose={() => {
+            if (adding && api.list.some((x) => x.id === adding)) setNote(`${moduleById(adding).name} added. Ask the agent any time to put it on your site.`)
+            setAdding(null)
+          }}
+          onImplement={(id) => (setNote(null), onImplement(id))}
+        />
+      )}
     </div>
   )
 }

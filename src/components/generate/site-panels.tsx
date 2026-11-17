@@ -10,6 +10,8 @@ import { ENQUIRIES } from "@/lib/account/data"
 import { useAccountState } from "@/lib/account/store"
 import { useEditorSite } from "./editor-site"
 import { useGen } from "./gen-provider"
+import { useEditorNav } from "./editor-nav"
+import { planInfo } from "@/lib/plans"
 import { moduleById } from "@/lib/playbooks/engine"
 import { ModulesPanel } from "@/components/playbook/modules-panel"
 import type { Tab } from "./workspace"
@@ -29,11 +31,21 @@ export function SitePanel({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void })
 
 /** Modules: the website's tools (Enquiries first), each opening its own app, and third-party tools to connect */
 function ModulesPage() {
-  const { site, billing, modules } = useEditorSite()
-  const { s } = useGen()
+  const { site, plan, usage, billing, modules } = useEditorSite()
+  const { s, dispatch } = useGen()
+  const nav = useEditorNav()
   const { enquiryStatus } = useAccountState()
   const unread = ENQUIRIES.filter((e) => e.siteId === site.id && (enquiryStatus[e.id] ?? e.status) === "new").length
-  return <ModulesPanel siteId={site.id} siteName={site.name} api={s.pb ? modules : null} billed={billing.billed} goals={s.pb?.goals ?? []} unread={unread} />
+  return (
+    <ModulesPanel
+      siteId={site.id} siteName={site.name} api={s.pb ? modules : null} billed={billing.billed} goals={s.pb?.goals ?? []} unread={unread}
+      payment={{ billed: billing.billed, planName: planInfo(plan).name, planPrice: planInfo(plan).price, renews: usage.renews }}
+      onImplement={(module) => {
+        nav.goTo("agent")
+        dispatch({ type: "pbImplement", module, at: Date.now() })
+      }}
+    />
+  )
 }
 
 const continueHref = (prompt: string) => `/generate?q=${encodeURIComponent(prompt)}`

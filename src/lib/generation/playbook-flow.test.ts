@@ -163,3 +163,17 @@ describe("the size question", () => {
     expect(brief).toContain("the other 1")
   })
 })
+
+describe("adding a module from the Modules page", () => {
+  it("sends the request to the chat and builds the module's page", () => {
+    let s = go(initialState("Website for Rahma Family Dental in Penang"), { type: "jump", to: "built" })
+    expect(s.sitemap.children?.map((c) => c.id)).not.toContain("consultation")
+    s = go(s, { type: "pbImplement", module: "estimates", at: 0 })
+    expect(s.pb!.decisions.estimates).toBe("added")
+    expect(s.sitemap.children?.map((c) => c.id)).toContain("consultation")
+    expect(s.pages.consultation).toBe("built")
+    const [user, card] = s.msgs.slice(-2)
+    expect(user).toMatchObject({ type: "user", text: "Add Estimates to my website." })
+    expect(card).toMatchObject({ type: "pb-implement", module: "estimates" })
+  })
+})
