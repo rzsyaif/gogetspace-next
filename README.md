@@ -200,9 +200,9 @@ In `/generate`, a dental prompt runs the playbook conversation (`components/gene
    card that only adds their modules (and pages). After the build, tools that need the owner's accounts (WhatsApp,
    payouts) run in **test mode** until connected.
 5. After the first build, the agent chat shows **what to do next** (`components/generate/next-steps.tsx`, Figma
-   143:3369): check your details, connect accounts for test-mode tools, publish, add a proper domain, add more tools,
-   build the remaining pages, and share the link. Each step has one button that goes where it's done (review sheet,
-   publish dialog, Domain, Modules or Plan tab) and ticks itself off.
+   143:3369), at most five one-line steps: website created, connect accounts for test-mode tools (if any), publish,
+   add a proper domain, add more tools, and build the remaining pages when there's room. Each step has one button that
+   goes where it's done (publish dialog, Domain, Modules or Plan tab) and ticks itself off.
 
 Each add-on is **billed per website**: the editor's **Modules** tab (`components/playbook/modules-panel.tsx`) adds,
 removes and connects them, the Plan tab itemises plan + add-ons, and Dashboard → Billings lists the add-ons under each
