@@ -114,6 +114,8 @@ export type Msg =
   | { id: string; type: "pb-patch"; goals: string[]; resolved?: "added" | "declined" }
   /** after the build: modules waiting for the owner's accounts (test mode) */
   | { id: string; type: "pb-activate" }
+  /** the agent adding a module to the built site, from the Modules page (`at` paces the card's progress) */
+  | { id: string; type: "pb-implement"; module: string; pages: { id: string; title: string }[]; at: number }
   /** after the first build: the checklist of what's left before customers can use the site */
   | { id: string; type: "next-steps" }
 
@@ -328,6 +330,7 @@ export type Action =
   | { type: "pbConfirmPlan" }
   | { type: "pbPatch"; id: string; decisions: Record<string, Decision> | null }
   | { type: "pbActivate"; module: string }
+  | { type: "pbImplement"; module: string; at: number }
 
 export type JumpTarget = "generating" | "ready" | "review-brief" | "review-style" | "review-sitemap" | "creating" | "built" | "published"
 
@@ -657,6 +660,8 @@ export function reducer(s: GenState, a: Action): GenState {
       return pbSkipAll(s)
     case "pbPatch":
       return pbPatch(s, a.id, a.decisions)
+    case "pbImplement":
+      return pbImplement(s, a.module, a.at)
     case "pbActivate":
       if (!s.pb || s.pb.activated.includes(a.module)) return s
       return push({ ...s, pb: { ...s.pb, activated: [...s.pb.activated, a.module] } }, { type: "agent", text: `Connected — ${moduleById(a.module).name} is out of test mode and live.` })
@@ -664,6 +669,23 @@ export function reducer(s: GenState, a: Action): GenState {
 }
 
 /* ---------- playbook conversation (dentist) ---------- */
+
+/** "Add it to my site now": the module's pages join the plan and the agent builds them in the chat */
+function pbImplement(s: GenState, module: string, at: number): GenState {
+  if (!s.pb) return s
+  const m = moduleById(module)
+  const pb = s.pb.decisions[module] === "added" ? s.pb : { ...s.pb, decisions: decide(s.pb.decisions, module, "added", s.pb.goals) }
+  const fresh = dentistSitemap(pb)
+  const have = new Set(flatten(s.sitemap).map((p) => p.id))
+  const extra = (fresh.children ?? []).filter((c) => !have.has(c.id))
+  const children = [...(s.sitemap.children ?? [])]
+  const at0 = children.findIndex((c) => c.id === "privacy")
+  children.splice(at0 < 0 ? children.length : at0, 0, ...extra)
+  const pages = { ...s.pages }
+  for (const p of extra) pages[p.id] = "built"
+  const n: GenState = { ...s, pb, brief: dentistBrief(pb), sitemap: { ...s.sitemap, children }, pagePriority: dentistPriority(pb), pages }
+  return push(n, { type: "user", text: `Add ${m.name} to my website.` }, { type: "pb-implement", module, pages: extra.map((p) => ({ id: p.id, title: p.title })), at })
+}
 
 const DECIDE_REASON: Record<string, string> = {
   focus: "it covers most clinics",

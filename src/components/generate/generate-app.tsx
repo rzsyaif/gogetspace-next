@@ -234,6 +234,21 @@ function ChatColumn({ compact }: { compact: boolean }) {
     const top = card ? card.getBoundingClientRect().top - el.getBoundingClientRect().top + el.scrollTop - 16 : el.scrollHeight
     el.scrollTo({ top, behavior: "smooth" })
   }, [count, shown, doneCount, pagesBuilt, compact])
+  // cards that grow in place (an agent working through a checklist) keep the bottom in view while following
+  useEffect(() => {
+    const el = scroller.current
+    const content = el?.firstElementChild
+    if (!el || !content || typeof ResizeObserver === "undefined") return
+    let last = content.getBoundingClientRect().height
+    const ro = new ResizeObserver(() => {
+      const h = content.getBoundingClientRect().height
+      const grew = h > last + 1
+      last = h
+      if (grew && following.current && !el.querySelector("[data-question-open]")) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" })
+    })
+    ro.observe(content)
+    return () => ro.disconnect()
+  }, [])
   return (
     <>
       <div

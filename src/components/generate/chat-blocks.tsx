@@ -34,6 +34,7 @@ import { useGen } from "./gen-provider"
 import { ActivationCard, GuardCard, PatchCard, PlanCard } from "./playbook-blocks"
 import { AnswersSummary, GateCard, QuestionCard } from "./question-series"
 import { NextSteps } from "./next-steps"
+import { ImplementCard } from "@/components/playbook/implement-card"
 
 export const ARTIFACTS: { key: ArtifactKey; title: string; Icon: typeof FileText }[] = [
   { key: "brief", title: "Project Brief", Icon: FileText },
@@ -102,6 +103,8 @@ function Block({ m, compact }: { m: Msg; compact?: boolean }) {
       return <PatchCard m={m} compact={compact} />
     case "next-steps":
       return <NextSteps compact={compact} />
+    case "pb-implement":
+      return <ImplementCard m={m} />
     case "pb-activate":
       return <ActivationCard compact={compact} />
   }
