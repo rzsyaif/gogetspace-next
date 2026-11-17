@@ -3,13 +3,16 @@
 import { useRef, useState, type Ref } from "react"
 import { motion, useMotionValueEvent, useReducedMotion, useScroll, useTransform, type MotionValue } from "motion/react"
 import { cn } from "@/lib/cn"
+import { Stage, StepBrief, StepDescribe, StepLive, StepStyle } from "./how-it-works-art"
 
 const STEPS = [
-  { title: "Describe your business", caption: "Type a sentence or two about what you do. Add photos or documents if you have them.", tint: "bg-neutral-200" },
-  { title: "Check your brief", caption: "We turn it into a short plan of pages, sections and features. Change anything you like.", tint: "bg-blue-100" },
-  { title: "Pick a style", caption: "Choose colors and fonts, and see a live preview before you decide.", tint: "bg-yellow-100" },
-  { title: "Go live", caption: "Purchase domain and publish. Hosting and security are already set up.", tint: "bg-green-100" },
+  { title: "Describe your business", caption: "Type a sentence or two about what you do. Add photos or documents if you have them." },
+  { title: "Check your brief", caption: "We turn it into a short plan of pages, sections and features. Change anything you like." },
+  { title: "Pick a style", caption: "Choose colors and fonts, and see a live preview before you decide." },
+  { title: "Go live", caption: "Purchase domain and publish. Hosting and security are already set up." },
 ]
+/** the preview for each step (Figma 190:3583) */
+const ART = [StepDescribe, StepBrief, StepStyle, StepLive]
 /** scroll length in viewport heights: one per step, plus extra for the last step and the hand-off to Features */
 const SEGMENTS = 6
 
@@ -24,7 +27,14 @@ export function HowItWorks({ ref }: { ref?: Ref<HTMLElement> }) {
   const seg = useTransform(scrollYProgress, (p) => p * SEGMENTS)
   const scale = useTransform(seg, [SEGMENTS - 1, SEGMENTS], [1, reduce ? 1 : 0.95])
   const [active, setActive] = useState(0)
-  useMotionValueEvent(seg, "change", (s) => setActive(Math.max(0, Math.min(STEPS.length - 1, Math.floor(s)))))
+  const [plays, setPlays] = useState(0)
+  useMotionValueEvent(seg, "change", (s) => {
+    const next = Math.max(0, Math.min(STEPS.length - 1, Math.floor(s)))
+    if (next !== active) {
+      setActive(next)
+      setPlays((n) => n + 1)
+    }
+  })
 
   const setRefs = (el: HTMLElement | null) => {
     targetRef.current = el
@@ -82,20 +92,23 @@ export function HowItWorks({ ref }: { ref?: Ref<HTMLElement> }) {
             ))}
           </div>
 
-          <div className="relative min-h-0 flex-1 overflow-clip rounded-t-xl bg-[#E2E2E2]">
-            {STEPS.map((s, i) => (
-              <motion.div
-                key={s.title}
-                initial={false}
-                animate={{ y: i <= active ? 0 : 24, opacity: i <= active ? 1 : 0 }}
-                transition={{ type: "spring", stiffness: 300, damping: 34 }}
-                className={cn("absolute inset-0 grid place-items-center p-6 text-center", s.tint)}
-              >
-                <span className="type-label-md text-neutral-500">
-                  Step {i + 1} preview: {s.title}
-                </span>
-              </motion.div>
-            ))}
+          <div className="relative min-h-0 flex-1 overflow-clip rounded-t-xl border border-b-0 border-neutral-200 bg-white">
+            {STEPS.map((s, i) => {
+              const Art = ART[i]
+              return (
+                <motion.div
+                  key={s.title}
+                  initial={false}
+                  animate={{ y: i <= active ? 0 : 24, opacity: i <= active ? 1 : 0 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 34 }}
+                  className="absolute inset-0"
+                  aria-hidden={i !== active}
+                >
+                  {/* each preview replays its appear animation whenever its step becomes the active one */}
+                  <Stage>{Math.abs(i - active) <= 1 && <Art key={i === active ? plays : -1} play={i === active ? plays : -1} />}</Stage>
+                </motion.div>
+              )
+            })}
           </div>
         </div>
       </motion.div>
