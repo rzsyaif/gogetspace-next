@@ -40,6 +40,7 @@ import { cn } from "@/lib/cn"
 import { flatten, type PageNode } from "@/lib/bakti/sitemap"
 import { getTheme } from "@/lib/bakti/themes"
 import { previewUrl } from "@/lib/generation/preview-url"
+import { useEditorNav } from "./editor-nav"
 import { siteName } from "@/lib/generation/state"
 import type { PageStatus } from "@/lib/generation/state"
 import { useGen } from "./gen-provider"
@@ -334,6 +335,7 @@ export function PreviewPane({ chatOpen, onShowChat, onToast }: { chatOpen: boole
   const [pageId, setPageId] = useState("home")
   const [reload, setReload] = useState(0)
   const [publishing, setPublishing] = useState(false)
+  useEditorNav().onPublish(() => setPublishing(true))
   const [editMode, setEditMode] = useState(false)
   const imageTurn = useRef(0)
   const pages = flatten(s.sitemap)

@@ -190,13 +190,19 @@ In `/generate`, a dental prompt runs the playbook conversation (`components/gene
 2. Claims and data the site can't publish ("best dentist", "painless", medical history on a form, before-and-after
    photos without consent…) get a guardrail card with the reason and a compliant alternative.
 3. One **"Here's my plan"** card: assumptions tagged with where they came from (your message, found online, you chose,
-   my default) with Edit (four lines on phones, "Show all assumptions"), then the tools grouped by goal, each with its
-   own monthly price and Add / Not now, "Included free", "Add later", and a running total — nothing is charged until
-   publish. Declining the main goal's tool switches the main button to "Call or message us".
+   my default) with Edit (four lines on phones, "Show all assumptions"). Under it, **Recommended Tools**
+   (`components/playbook/recommended-tools.tsx`, Figma 185:1960): one card per tool with its own monthly price and
+   Add / Added, in a row with previous/next buttons on desktop and swipe on phones; what's included for free; tools
+   that can be connected later; and the running total with "Skip. Choose later" and "Create Website Plan". Nothing is
+   charged until publish. Declining the main goal's tool switches the main button to "Call or message us".
 4. Confirming writes the brief, style and page plan from the playbook, and the review and build continue as before
    — with the dental styles and the Rahma Family Dental site in the preview. New goals after the plan become a patch
    card that only adds their modules (and pages). After the build, tools that need the owner's accounts (WhatsApp,
    payouts) run in **test mode** until connected.
+5. After the first build, the agent chat shows **what to do next** (`components/generate/next-steps.tsx`, Figma
+   143:3369): check your details, connect accounts for test-mode tools, publish, add a proper domain, add more tools,
+   build the remaining pages, and share the link. Each step has one button that goes where it's done (review sheet,
+   publish dialog, Domain, Modules or Plan tab) and ticks itself off.
 
 Each add-on is **billed per website**: the editor's **Modules** tab (`components/playbook/modules-panel.tsx`) adds,
 removes and connects them, the Plan tab itemises plan + add-ons, and Dashboard → Billings lists the add-ons under each
