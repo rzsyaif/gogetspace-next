@@ -32,7 +32,7 @@ export const THIRD_PARTY_TOOLS = [
 /** one module in a two-column grid: icon on the left, name and status, a short line, then actions */
 function AppCard({ icon, title, status, price, children, actions, tone = "default" }: { icon: ReactNode; title: string; status?: ReactNode; price?: string; children?: ReactNode; actions?: ReactNode; tone?: "default" | "muted" }) {
   return (
-    <div className={cn("flex gap-4 rounded-lg border border-line-default p-4", tone === "muted" ? "bg-subtle" : "bg-surface shadow-[0_2px_0_0_var(--color-shadow-block)]")}>
+    <div className={cn("flex gap-4 rounded-lg border border-line-default p-4", tone === "muted" ? "bg-canvas" : "bg-surface shadow-[0_2px_0_0_var(--color-shadow-block)]")}>
       <span className="grid size-10 shrink-0 place-items-center text-fg-primary [&_svg]:size-8 [&_img]:size-7" aria-hidden>
         {icon}
       </span>
