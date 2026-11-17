@@ -69,7 +69,7 @@ export function NextSteps({ compact }: { compact?: boolean }) {
       title: "Add functional modules",
       detail: toolsHint,
       done: false,
-      action: modules ? { label: "Add", onClick: () => nav.goTo("modules") } : { label: "Add", onClick: () => dispatch({ type: "followUp", text: "Which tools should I add to my website?" }) },
+      action: { label: "Add", onClick: () => nav.goTo("modules") },
     },
     ...(accountsStep ? [] : [pagesStep]),
   ]

@@ -4,28 +4,36 @@ import Link from "next/link"
 import { ArrowRight, FileText, FolderTree, NotebookPen, SwatchBook } from "lucide-react"
 import { Badge, Button } from "@/components/ui"
 import { AnalyticsPanel } from "@/components/account/analytics"
-import { EnquiriesPanel } from "@/components/account/enquiries"
 import { PlanPanel } from "@/components/account/plan-panel"
 import { PanelPage } from "@/components/account/panel"
+import { ENQUIRIES } from "@/lib/account/data"
+import { useAccountState } from "@/lib/account/store"
 import { useEditorSite } from "./editor-site"
 import { useGen } from "./gen-provider"
 import { moduleById } from "@/lib/playbooks/engine"
 import { ModulesPanel } from "@/components/playbook/modules-panel"
 import type { Tab } from "./workspace"
 
-/** The editor's full-width tabs: Analytics, Enquiries and Plan for the open website. */
+/** The editor's full-width tabs: Analytics, Plan and Modules for the open website. */
 export function SitePanel({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) {
   const { site, plan, setPlan, usage, billing, modules } = useEditorSite()
-  const { s } = useGen()
   const addons = modules?.list.map((m) => ({ id: m.id, name: moduleById(m.id).name, price: moduleById(m.id).price, status: m.status }))
   return (
     <PanelPage>
       {tab === "analytics" && <AnalyticsPanel site={site} plan={plan} onUpgrade={() => onTab("plan")} />}
-      {tab === "enquiries" && <EnquiriesPanel siteId={site.id} live={site.status === "live"} />}
       {tab === "plan" && <PlanPanel siteName={site.name} plan={plan} usage={usage} billing={billing} onChange={setPlan} onManageDomain={() => onTab("domain")} addons={addons} onManageAddons={() => onTab("modules")} />}
-      {tab === "modules" && modules && s.pb && <ModulesPanel siteName={site.name} api={modules} billed={billing.billed} goals={s.pb.goals} />}
+      {tab === "modules" && <ModulesPage />}
     </PanelPage>
   )
+}
+
+/** Modules: the website's tools (Enquiries first), each opening its own app, and third-party tools to connect */
+function ModulesPage() {
+  const { site, billing, modules } = useEditorSite()
+  const { s } = useGen()
+  const { enquiryStatus } = useAccountState()
+  const unread = ENQUIRIES.filter((e) => e.siteId === site.id && (enquiryStatus[e.id] ?? e.status) === "new").length
+  return <ModulesPanel siteId={site.id} siteName={site.name} api={s.pb ? modules : null} billed={billing.billed} goals={s.pb?.goals ?? []} unread={unread} />
 }
 
 const continueHref = (prompt: string) => `/generate?q=${encodeURIComponent(prompt)}`

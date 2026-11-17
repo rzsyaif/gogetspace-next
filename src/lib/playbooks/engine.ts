@@ -137,6 +137,11 @@ function placeName(p: string): string | null {
 
 export type Decision = "added" | "later"
 
+export interface PriceList {
+  file?: { name: string; size: number }
+  text?: string
+}
+
 export interface PlaybookState {
   niche: NicheId
   /** goals in priority order; the first is the main goal */
@@ -168,6 +173,8 @@ export interface PlaybookState {
   planConfirmed: boolean
   /** modules whose owner accounts are connected (out of test mode) */
   activated: string[]
+  /** the owner's own price list, uploaded or typed on the prices question */
+  priceList?: PriceList | null
 }
 
 export function initialPlaybookState(prompt: string, pb: Playbook = DENTIST): PlaybookState {

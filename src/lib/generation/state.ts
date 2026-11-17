@@ -21,6 +21,7 @@ import {
   withDefaults,
   type Decision,
   type PlaybookState,
+  type PriceList,
 } from "@/lib/playbooks/engine"
 import { RAHMA, clinicName, dentistBrief, dentistPriority, dentistQuestions, dentistSitemap, domainFor, isDemoClinic } from "@/lib/playbooks/dentist-plan"
 import type { NicheId, Slot } from "@/lib/playbooks/types"
@@ -314,7 +315,7 @@ export type Action =
   | { type: "feedback"; id: string; answer: FeedbackAnswer | "skipped" }
   | { type: "jump"; to: JumpTarget; scenario?: Scenario; plan?: Plan }
   /* playbook conversation */
-  | { type: "pbAnswer"; id: string; value: string | string[]; text?: string }
+  | { type: "pbAnswer"; id: string; value: string | string[]; text?: string; prices?: PriceList }
   | { type: "pbBack"; id: string }
   | { type: "pbAnswerText"; id: string; text: string }
   | { type: "pbSkipAll" }
@@ -615,8 +616,13 @@ export function reducer(s: GenState, a: Action): GenState {
       return jump(a.scenario ? { ...s, scenario: a.scenario } : s, a.to, a.plan)
 
     /* ----- playbook conversation ----- */
-    case "pbAnswer":
-      return pbAnswer(s, a.id, a.value, a.text)
+    case "pbAnswer": {
+      if (!a.prices || !s.pb) return pbAnswer(s, a.id, a.value, a.text)
+      // the price list goes with the answer; Back undoes both
+      const n = pbAnswer({ ...s, pb: { ...s.pb, priceList: a.prices } }, a.id, a.value, a.text)
+      const how = a.prices.file ? `price list “${a.prices.file.name}”` : "your typed price list"
+      return { ...n, msgs: n.msgs.map((m) => (m.id === a.id && m.type === "pb-question" ? { ...m, prev: s.pb!, answer: `${m.answer} — with ${how}` } : m)) }
+    }
     case "pbGate":
       return pbGate(s, a.id, a.answer)
     case "pbGuard":

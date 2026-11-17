@@ -7,14 +7,12 @@ import {
   ChartColumn,
   Check,
   Gem,
-  Inbox,
   LayoutGrid,
   ChevronDown,
   CircleUser,
   LogOut,
   CodeXml,
   Cog,
-  Database,
   ExternalLink,
   Eye,
   Globe,
@@ -60,26 +58,23 @@ const DEVICES = [
 ] as const
 type Device = (typeof DEVICES)[number]["id"]
 
-export type Tab = "agent" | "analytics" | "enquiries" | "plan" | "modules" | "domain" | "database" | "settings"
+export type Tab = "agent" | "analytics" | "plan" | "modules" | "domain" | "settings"
 /** tabs that take over the chat and preview with a full-width page */
-export const FULL_TABS: Tab[] = ["analytics", "enquiries", "plan", "modules"]
+export const FULL_TABS: Tab[] = ["analytics", "plan", "modules"]
 
 const RAIL: { id: Tab; Icon: typeof Sparkles; label: string }[] = [
   { id: "agent", Icon: Sparkles, label: "Agent" },
   { id: "analytics", Icon: ChartColumn, label: "Analytics" },
-  { id: "enquiries", Icon: Inbox, label: "Enquiries" },
   { id: "plan", Icon: Gem, label: "Plan" },
   { id: "modules", Icon: Blocks, label: "Modules" },
   { id: "domain", Icon: Link2, label: "Domain" },
-  { id: "database", Icon: Database, label: "Database" },
   { id: "settings", Icon: Cog, label: "Settings" },
 ]
 
 /** Editor rail: logo (back to the dashboard) on top, workspace tabs, Account at the bottom (no top navbar). */
-/** Modules only shows for a playbook site */
+/** the rail's tabs (Modules holds the site's tools and its enquiries) */
 function useRail() {
-  const { s } = useGen()
-  return RAIL.filter((r) => r.id !== "modules" || !!s.pb)
+  return RAIL
 }
 
 export function Rail({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) {
@@ -284,9 +279,8 @@ function ProjectSelect() {
   )
 }
 
-export function SidePanel({ tab, onBack, onOpenPlan }: { tab: "domain" | "database" | "settings"; onBack: () => void; onOpenPlan: () => void }) {
-  const { s } = useGen()
-  const title = { domain: "Domain", database: "Database", settings: "Settings" }[tab]
+export function SidePanel({ tab, onBack, onOpenPlan }: { tab: "domain" | "settings"; onBack: () => void; onOpenPlan: () => void }) {
+  const title = { domain: "Domain", settings: "Settings" }[tab]
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-6">
       <div className="flex items-center justify-between">
@@ -294,20 +288,6 @@ export function SidePanel({ tab, onBack, onOpenPlan }: { tab: "domain" | "databa
         <IconButton aria-label="Back to agent" onClick={onBack}><X /></IconButton>
       </div>
       {tab === "domain" && <DomainPanel onOpenPlan={onOpenPlan} />}
-      {tab === "database" && (
-        <>
-          <p className="type-body-sm text-fg-secondary">Bookings and messages sent from your site land here.</p>
-          {[
-            { k: "Bookings", v: s.publish.status === "live" ? 3 : 0 },
-            { k: "Contact messages", v: s.publish.status === "live" ? 1 : 0 },
-            { k: "Clinic account requests", v: 0 },
-            { k: "Corporate quotes", v: 0 },
-          ].map((r) => (
-            <DetailCard key={r.k} label="Collected" value={r.k} trailing={<Badge dot={false}>{r.v}</Badge>} />
-          ))}
-          {s.publish.status !== "live" && <p className="type-body-sm text-fg-tertiary">Nothing yet — publish the site to start collecting.</p>}
-        </>
-      )}
       {tab === "settings" && <SiteSettings />}
     </div>
   )

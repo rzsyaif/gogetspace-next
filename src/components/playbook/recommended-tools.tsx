@@ -187,7 +187,7 @@ export function RecommendedTools({
         </div>
         <div className="flex flex-col-reverse gap-2 sm:flex-row">
           <Button variant="secondary" onClick={onSkip}>
-            Skip. Choose later
+            Later
           </Button>
           <Button onClick={onConfirm}>Create Website Plan</Button>
         </div>

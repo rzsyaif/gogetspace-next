@@ -11,12 +11,14 @@ import { AccountSiteProvider } from "./editor-site"
 import { Shell } from "./generate-app"
 import type { Tab } from "./workspace"
 
-const TABS: Tab[] = ["agent", "analytics", "enquiries", "plan", "modules", "domain", "database", "settings"]
+const TABS: Tab[] = ["agent", "analytics", "plan", "modules", "domain", "settings"]
 
-/** /sites/[id] — the editor for an existing website; `?tab=` opens Analytics, Enquiries, Plan… directly. */
+/** /sites/[id] — the editor for an existing website; `?tab=` opens Analytics, Plan, Modules… directly (each module's own app is at /sites/[id]/apps/[module]). */
 export function SiteEditor({ siteId }: { siteId: string }) {
   const site = useSite(siteId)
-  const tab = useSearchParams().get("tab") as Tab | null
+  const raw = useSearchParams().get("tab")
+  // Enquiries now live inside Modules (older links still open them)
+  const tab = (raw === "enquiries" ? "modules" : raw) as Tab | null
   if (!site)
     return (
       <main className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center">

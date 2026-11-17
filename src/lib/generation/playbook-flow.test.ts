@@ -128,3 +128,22 @@ describe("the question card", () => {
     expect(s.pb!.answers.focus?.value).toBe("ortho")
   })
 })
+
+describe("the prices question", () => {
+  it("keeps the owner's price list with the answer and in the brief", () => {
+    let s = go(initialState("Create a website for a dentist"), { type: "planStepDone" })
+    s = go(s, { type: "pbAnswer", id: open(s)!.id, value: ["G6"] })
+    let q = open(s)!
+    for (let i = 0; i < 4 && q && q.slot !== "prices"; i++) {
+      s = go(s, { type: "pbAnswer", id: q.id, value: "decide" })
+      q = open(s)!
+    }
+    expect(q.slot).toBe("prices")
+    s = go(s, { type: "pbAnswer", id: q.id, value: "exact", prices: { file: { name: "prices.xlsx", size: 12000 } } })
+    expect(s.pb!.priceList?.file?.name).toBe("prices.xlsx")
+    expect(s.msgs.find((m) => m.id === q.id && m.type === "pb-question")).toMatchObject({ answer: expect.stringContaining("prices.xlsx") })
+    s = go(s, { type: "pbSkipAll" })
+    s = tick(go(tick(s), { type: "pbConfirmPlan" }))
+    expect(s.brief.flatMap((b) => b.items.map((i) => i.text)).join(" ")).toContain("prices.xlsx")
+  })
+})
