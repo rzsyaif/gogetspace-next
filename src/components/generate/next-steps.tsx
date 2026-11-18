@@ -33,7 +33,6 @@ export function NextSteps({ compact }: { compact?: boolean }) {
 
   // tools that run in test mode until the owner connects their own account
   const accounts = (modules?.list ?? []).map((m) => ({ m: moduleById(m.id), live: m.status === "live" })).filter((x) => x.m.needsAccount)
-  const toolsHint = pb ? "Bookings, reviews, payments and more" : "Enquiries, bookings, payments and more"
 
   // test-mode tools come right after the build: until they're connected, bookings and payments don't reach the owner
   const accountsStep: Step | null = accounts.length
@@ -48,6 +47,14 @@ export function NextSteps({ compact }: { compact?: boolean }) {
     ? { id: "pages", title: `Build ${locked} more planned ${locked === 1 ? "page" : "pages"}`, done: false, action: { label: "Upgrade", onClick: () => nav.goTo("plan") } }
     : { id: "pages", title: "Create additional pages", done: false, action: { label: "Create", onClick: () => dispatch({ type: "openReview", step: 2 }) } }
 
+  // modules: one line; Modules lists what's recommended, and asks to publish first when the site isn't live yet
+  const toolsStep: Step = {
+    id: "tools",
+    title: "Install modules",
+    done: !!pb && (modules?.list.length ?? 0) > 0,
+    action: { label: "See Details", onClick: () => nav.goTo("modules") },
+  }
+
   // at most five steps, one line each
   const steps: Step[] = [
     { id: "created", title: "Website created", done: true },
@@ -58,18 +65,12 @@ export function NextSteps({ compact }: { compact?: boolean }) {
       done: live,
       action: live ? undefined : { label: "Publish", onClick: nav.publish },
     },
+    toolsStep,
     {
       id: "domain",
       title: "Add a proper domain",
       done: usage.customDomain,
       action: usage.customDomain ? undefined : { label: "Connect", onClick: () => nav.goTo("domain") },
-    },
-    {
-      id: "tools",
-      title: "Add functional modules",
-      detail: toolsHint,
-      done: false,
-      action: { label: "Add", onClick: () => nav.goTo("modules") },
     },
     ...(accountsStep ? [] : [pagesStep]),
   ]

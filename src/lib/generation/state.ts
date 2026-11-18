@@ -722,8 +722,8 @@ function maybePlanCard(s: GenState): GenState {
   let text: string
   if (raw.justBuild) text = "Sure. I'll assume your main goal is getting more patients to book online, and I'll use sensible defaults for a general dental clinic. Every assumption is listed so you can change it."
   else if (raw.goalsSource === "prompt" && !raw.asked.includes("Q1"))
-    text = `Got it. I read your goals as ${joinAnd(pb.goals.map((g) => lower(goalLabel(g))))}. Here's what I'll build for ${name}, and why — change anything that's off, then pick the tools you want.`
-  else text = `Here's my plan for ${name}${pb.found ? ", including what I found online" : ""}. Anything marked “My default” is a guess — change it with Edit. Then pick the tools you want; nothing paid is added unless you tap Add.`
+    text = `Got it. I read your goals as ${joinAnd(pb.goals.map((g) => lower(goalLabel(g))))}. Here's what I'll build for ${name}, and why — change anything that's off.`
+  else text = `Here's my plan for ${name}${pb.found ? ", including what I found online" : ""}. Anything marked “My default” is a guess — change it with Edit.`
   return push({ ...s, pb }, { type: "agent", text }, { type: "pb-plan" })
 }
 
@@ -738,7 +738,7 @@ function opening(s: GenState): GenState {
   if (!next) return s
   if (pb.candidates?.kind === "several") return push(s, { type: "agent", text: "You've asked for a lot — let's start with the one that matters most right now. I'll set that up first and keep the rest under Add later." })
   if (pb.candidates?.kind === "vague") return s
-  if (next.id === "Q1") return push(s, { type: "agent", text: "I'll build a website for a single dental clinic. Before I choose the tools you need, a few quick questions — I'll look you up online meanwhile." })
+  if (next.id === "Q1") return push(s, { type: "agent", text: "I'll build a website for a single dental clinic. Before I plan it, a few quick questions — I'll look you up online meanwhile." })
   if (pb.goals.length) return push(s, { type: "agent", text: `Got it — I read your goal${pb.goals.length > 1 ? "s" : ""} as ${joinAnd(pb.goals.map((g) => lower(goalLabel(g))))}. A few quick questions while I look you up.` })
   return s
 }
@@ -924,7 +924,7 @@ function pbConfirmPlan(s: GenState): GenState {
       type: "agent",
       text: kept.length
         ? `Writing the brief, style and page plan with ${joinAnd(kept)}. ${total ? `The add-ons come to $${total}/month, charged from when you publish.` : "Everything you added is free."}`
-        : "No problem — I'll plan the free parts now, and the rest will wait under Add later.",
+        : "Building the free parts first so you can see your website. I'll suggest tools for your goals after that — they'll be in your to-do list.",
     },
   )
   return updateRun(n, n.planRun, (r) => (r.status === "waiting" ? { ...r, status: "running", tasks: r.tasks.map((t) => (t.id === "brief" && t.status === "pending" ? { ...t, status: "running" } : t)) } : r))
@@ -1024,8 +1024,9 @@ function pbPatch(s: GenState, id: string, decisions: Record<string, Decision> | 
 function fastForwardPlaybook(s: GenState): GenState {
   let pb = withDefaults({ ...s.pb!, candidates: null })
   if (isDemoClinic(pb)) pb = { ...pb, found: { rating: RAHMA.rating, dentists: RAHMA.dentists.length, branches: 1, hours: RAHMA.hours }, answers: { ...pb.answers, scale: pb.answers.scale?.source === "default" ? { value: "dentists", source: "search" } : pb.answers.scale } }
+  // like the flow: the goals' tools wait until after the first build (an account site brings its own)
   if (!Object.keys(pb.decisions).length)
-    for (const g of offerFor(pb.goals)) for (const mod of g.modules) if (mod.id !== "gallery") pb = { ...pb, decisions: decide(pb.decisions, mod.id, "added", pb.goals) }
+    for (const g of offerFor(pb.goals)) for (const mod of g.modules) pb = { ...pb, decisions: decide(pb.decisions, mod.id, "later", pb.goals) }
   pb = { ...pb, planConfirmed: true }
   const n: GenState = { ...s, pb, brief: dentistBrief(pb), questions: dentistQuestions(pb), sitemap: dentistSitemap(pb), pagePriority: dentistPriority(pb), styleId: s.styleId ?? presetOf(pb) }
   return push(n, { type: "pb-plan", confirmed: true })

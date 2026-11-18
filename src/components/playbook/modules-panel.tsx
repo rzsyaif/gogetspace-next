@@ -2,12 +2,12 @@
 
 import { useState, type ReactNode } from "react"
 import Link from "next/link"
-import { ArrowUpRight, Check, FlaskConical, Inbox, Plus, Trash2 } from "lucide-react"
+import { ArrowUpRight, Check, FlaskConical, Inbox, Plus, Rocket, Sparkles, Trash2 } from "lucide-react"
 import { Alert, Badge, Button } from "@/components/ui"
 import { PanelHeader, PanelSection } from "@/components/account/panel"
 import { cn } from "@/lib/cn"
 import { DENTIST } from "@/lib/playbooks/dentist"
-import { bringsWith, coreModules, moduleById } from "@/lib/playbooks/engine"
+import { bringsWith, coreModules, moduleById, offerFor } from "@/lib/playbooks/engine"
 import type { Decision } from "@/lib/playbooks/engine"
 import type { ModulesApi } from "@/components/generate/editor-site"
 import { MODULE_ICON } from "./recommended-tools"
@@ -76,6 +76,8 @@ export function ModulesPanel({
   unread,
   payment,
   onImplement,
+  published,
+  onPublish,
 }: {
   siteId: string
   siteName: string
@@ -85,6 +87,9 @@ export function ModulesPanel({
   unread: number
   payment: AddBilling
   onImplement: (module: string) => void
+  /** modules need a published website: adding one before that asks to publish first (where the account is made) */
+  published: boolean
+  onPublish: () => void
 }) {
   const [note, setNote] = useState<string | null>(null)
   const [adding, setAdding] = useState<string | null>(null)
@@ -92,7 +97,14 @@ export function ModulesPanel({
   const list = api?.list ?? []
   const ids = new Set(list.map((m) => m.id))
   const added = list.map((m) => ({ def: moduleById(m.id), status: m.status }))
-  const addable = api ? DENTIST.modules.filter((m) => !m.core && !ids.has(m.id)) : []
+  // what the owner's goals call for, with the reason, listed first
+  const why = new Map<string, string>()
+  for (const g of offerFor(goals)) for (const m of g.modules) if (!why.has(m.id)) why.set(m.id, m.benefit[g.goal] ?? g.label)
+  const rank = (id: string) => {
+    const i = [...why.keys()].indexOf(id)
+    return i < 0 ? Infinity : i
+  }
+  const addable = api ? DENTIST.modules.filter((m) => !m.core && !ids.has(m.id)).sort((a, b) => rank(a.id) - rank(b.id)) : []
   const total = added.reduce((n, m) => n + m.def.price, 0)
   const decisions = Object.fromEntries(list.map((m) => [m.id, "added" as Decision]))
   const goalFor = (id: string) => goals.find((g) => DENTIST.goals.find((x) => x.id === g)?.modules.includes(id))
@@ -186,15 +198,28 @@ export function ModulesPanel({
       {api ? (
         addable.length > 0 && (
           <PanelSection title="Add modules">
+            {!published && (
+              <Alert tone="info" size="sm" icon={<Rocket />} className="mb-3">
+                Publish your website first, then add modules to it. Publishing is also where you create your free account.
+              </Alert>
+            )}
             <div className="grid gap-3 lg:grid-cols-2">
               {addable.map((m) => {
                 const dep = bringsWith(m.id, decisions, goals)
+                const reason = why.get(m.id)
                 return (
                   <AppCard
                     key={m.id}
                     tone="muted"
                     icon={Icon(m.id)}
                     title={m.name}
+                    status={
+                      reason && (
+                        <Badge tone="brand" dot={false} className="gap-1">
+                          <Sparkles className="size-3" aria-hidden /> Recommended
+                        </Badge>
+                      )
+                    }
                     price={priceLabel(m)}
                     actions={
                       <Button
@@ -207,6 +232,7 @@ export function ModulesPanel({
                       </Button>
                     }
                   >
+                    {reason && <span className="mb-1 block type-label-sm text-fg-link">{reason}</span>}
                     {m.included[0]}
                     {dep && <span className="mt-1 block type-caption text-fg-tertiary">Comes with {dep.name} ({priceLabel(dep)})</span>}
                   </AppCard>
@@ -253,6 +279,8 @@ export function ModulesPanel({
           api={api}
           goals={goals}
           billing={payment}
+          published={published}
+          onPublish={onPublish}
           onClose={() => {
             if (adding && api.list.some((x) => x.id === adding)) setNote(`${moduleById(adding).name} added. Ask the agent any time to put it on your site.`)
             setAdding(null)

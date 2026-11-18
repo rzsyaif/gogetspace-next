@@ -40,6 +40,8 @@ function ModulesPage() {
     <ModulesPanel
       siteId={site.id} siteName={site.name} api={s.pb ? modules : null} billed={billing.billed} goals={s.pb?.goals ?? []} unread={unread}
       payment={{ billed: billing.billed, planName: planInfo(plan).name, planPrice: planInfo(plan).price, renews: usage.renews }}
+      published={site.status === "live"}
+      onPublish={nav.publish}
       onImplement={(module) => {
         nav.goTo("agent")
         dispatch({ type: "pbImplement", module, at: Date.now() })
