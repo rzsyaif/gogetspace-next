@@ -8,7 +8,7 @@ export function emitPromptActive(active: boolean) {
 
 /** Scroll back to the hero and put the cursor in its prompt (used by "Start building" buttons). */
 export function focusHeroPrompt() {
-  const ta = document.querySelector<HTMLTextAreaElement>("#start textarea")
+  const ta = document.querySelector<HTMLElement>("#start [data-hero-focus]") ?? document.querySelector<HTMLTextAreaElement>("#start textarea")
   if (!ta) return
   ta.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" })
   ta.focus({ preventScroll: true })

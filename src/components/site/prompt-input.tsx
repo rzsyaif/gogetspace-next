@@ -34,6 +34,8 @@ export interface PromptInputProps {
   onSubmit?: (brief: { text: string; files: DemoFile[] }) => void
   /** after a short "generating" moment, open the generation flow at this route with the prompt */
   flowHref?: string
+  /** text the box starts with (e.g. carried over from the hero sentence) */
+  initialText?: string
   className?: string
 }
 
@@ -62,6 +64,7 @@ export function PromptInput({
   generateFor = 8,
   onSubmit,
   flowHref,
+  initialText = "",
   className,
 }: PromptInputProps) {
   const reduce = useReducedMotion()
@@ -73,7 +76,7 @@ export function PromptInput({
   }))
   const messages = statusMessages.length ? statusMessages : ["Generating…"]
 
-  const [text, setText] = useState("")
+  const [text, setText] = useState(initialText)
   const [focused, setFocused] = useState(false)
   const [attached, setAttached] = useState<Attached[]>([])
   const [generating, setGenerating] = useState(false)

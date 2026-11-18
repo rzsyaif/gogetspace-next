@@ -18,7 +18,11 @@ const SOLUTIONS = [
 const navItem =
   "inline-flex items-center gap-1 rounded-sm px-3 py-1.5 type-label-md text-fg-secondary transition-colors hover:bg-action-ghost-hover hover:text-fg-primary focus-visible:outline-none focus-visible:focus-ring"
 
-/** Marketing top nav: transparent at the top, frosted once the page scrolls; drawer below 810px. */
+/**
+ * Marketing top nav: full width and transparent at the top; once the page scrolls it eases into a narrower,
+ * frosted bar floating a little below the top edge. Its slot keeps the full height so the page never jumps.
+ * Drawer below 810px.
+ */
 export function SiteNav() {
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
@@ -31,6 +35,9 @@ export function SiteNav() {
     return () => window.removeEventListener("scroll", onScroll)
   }, [])
 
+  // the drawer floats with the bar on phones too, so it reads as one panel
+  const floating = scrolled || open
+
   // close the drawer when growing past the phone breakpoint
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 810px)")
@@ -42,11 +49,19 @@ export function SiteNav() {
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 w-full transition-[background-color,backdrop-filter] duration-200",
-        scrolled || open ? "bg-canvas/80 backdrop-blur-md" : "bg-transparent",
+        "pointer-events-none sticky top-0 z-50 h-[88px] w-full transition-[padding] duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] motion-reduce:transition-none",
+        floating ? "px-2 pt-2 min-[810px]:px-6 min-[810px]:pt-3" : "px-0 pt-0",
       )}
     >
-      <nav aria-label="Main" className="mx-auto flex max-w-[1264px] flex-col gap-6 px-5 py-6 min-[810px]:flex-row min-[810px]:items-center min-[810px]:gap-8 min-[810px]:px-8">
+      <nav
+        aria-label="Main"
+        className={cn(
+          "pointer-events-auto mx-auto flex flex-col gap-6 border transition-[max-width,padding,border-radius,background-color,border-color,box-shadow] duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] min-[810px]:flex-row min-[810px]:items-center min-[810px]:gap-8 motion-reduce:transition-none",
+          floating
+            ? "max-w-[1040px] rounded-xl border-neutral-300/70 bg-white/80 px-3 py-2 shadow-[0_10px_30px_-12px_rgba(23,46,140,0.22)] backdrop-blur-md min-[810px]:px-4"
+            : "max-w-[1264px] rounded-none border-transparent bg-transparent px-5 py-6 shadow-none min-[810px]:px-8",
+        )}
+      >
         <div className="flex flex-1 items-center justify-between">
           <Link href="/" className="rounded-md focus-visible:outline-none focus-visible:focus-ring" onClick={() => setOpen(false)}>
             <Logo />
