@@ -5,7 +5,7 @@ import { motion } from "motion/react"
 import { ImageIcon, Loader, Monitor, RefreshCw, Smartphone, Sparkles } from "lucide-react"
 import { AttachmentChip, Button, PromptAttachButton, PromptBox, PromptSendButton, RadioDot, SegmentedControl } from "@/components/ui"
 import { cn } from "@/lib/cn"
-import { ALT_THEMES, CUSTOM_THEME, DENTAL_THEMES, THEMES, type SiteTheme } from "@/lib/bakti/themes"
+import { ALT_THEMES, CUSTOM_THEME, DENTAL_THEMES, LAW_THEMES, THEMES, type SiteTheme } from "@/lib/bakti/themes"
 import { FONT_STACK, siteFontVars } from "@/components/bakti-site/site-fonts"
 import { useGen } from "./gen-provider"
 import { FlowHero } from "./flow-hero"
@@ -25,7 +25,7 @@ export function StyleStep() {
   const [reference, setReference] = useState(false)
   const [making, setMaking] = useState(false)
 
-  const options: SiteTheme[] = [...(s.hasCustom ? [CUSTOM_THEME] : []), ...(s.styleSet === "a" ? (s.pb ? DENTAL_THEMES : THEMES) : ALT_THEMES)]
+  const options: SiteTheme[] = [...(s.hasCustom ? [CUSTOM_THEME] : []), ...(s.styleSet === "a" ? (s.pb ? (s.pb.niche === "lawyer" ? LAW_THEMES : DENTAL_THEMES) : THEMES) : ALT_THEMES)]
 
   const shuffle = () => {
     setShuffling(true)

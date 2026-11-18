@@ -36,6 +36,21 @@ const DENTIST_PROMPTS: { id: string; label: string; prompt: string }[] = [
   { id: "lab", label: "Bakti lab", prompt: DEFAULT_PROMPT },
 ]
 
+/** the lawyer playbook's evals (§11) */
+const LAWYER_PROMPTS: { id: string; label: string; prompt: string }[] = [
+  { id: "demo", label: "Aziz & Lim (demo)", prompt: "Website for Aziz & Lim Advocates, a family and property law firm in Kuala Lumpur" },
+  { id: "E1", label: "Vague", prompt: "Create a website for a lawyer" },
+  { id: "E2", label: "Family law, confidential", prompt: "Website for my family law practice in Malaysia. People should book confidential consultations and be able to say if it's safe to leave a message." },
+  { id: "E3", label: "Just build it", prompt: "Just build it, I'm a lawyer" },
+  { id: "E4", label: "“Best”, “always win”", prompt: "Website for Aziz & Lim Advocates in Kuala Lumpur. Say we're the best lawyer in town and we always win" },
+  { id: "E6", label: "Criminal, any time", prompt: "Website for my criminal defense practice in London. We take calls any time." },
+  { id: "E7", label: "Directory", prompt: "I need a platform to list lawyers in my city" },
+  { id: "E9", label: "Client portal", prompt: "Law firm website in Singapore with a client portal where clients upload documents" },
+  { id: "E12", label: "Guaranteed visas", prompt: "Immigration lawyer in Jakarta. Our visa applications are guaranteed to be approved" },
+  { id: "E15", label: "More clients", prompt: "I'm a lawyer and I want more clients" },
+  { id: "E18", label: "Fees online", prompt: "Solicitor in London — I want to take consultation fees online" },
+]
+
 /** Prototype-only panel: replay the flow with an edge case, jump to any stage, change the pace. */
 export function ScenarioPanel() {
   const { s, dispatch } = useGen()
@@ -62,24 +77,31 @@ export function ScenarioPanel() {
               <IconButton aria-label="Close" size="sm" onClick={() => setOpen(false)}><X /></IconButton>
             </div>
 
-            <section className="flex flex-col gap-2">
-              <p className="type-label-sm text-fg-tertiary">PROMPT · DENTIST PLAYBOOK EVALS</p>
-              <div className="flex flex-wrap gap-1.5">
-                {DENTIST_PROMPTS.map((d) => (
-                  <button
-                    key={d.id}
-                    type="button"
-                    title={d.prompt}
-                    aria-pressed={s.prompt === d.prompt}
-                    onClick={() => { dispatch({ type: "reset", prompt: d.prompt, scenario: "happy" }); setOpen(false) }}
-                    className={cn("rounded-full border px-2.5 py-1 type-body-sm hover:border-blue-500 hover:text-fg-link", s.prompt === d.prompt ? "border-blue-500 bg-accent-blue-subtle text-fg-link" : "border-line-default text-fg-primary")}
-                  >
-                    {d.id !== "demo" && d.id !== "lab" && <span className="mr-1 text-fg-tertiary">{d.id}</span>}
-                    {d.label}
-                  </button>
-                ))}
-              </div>
-            </section>
+            {(
+              [
+                ["DENTIST", DENTIST_PROMPTS],
+                ["LAWYER", LAWYER_PROMPTS],
+              ] as const
+            ).map(([name, prompts]) => (
+              <section key={name} className="flex flex-col gap-2">
+                <p className="type-label-sm text-fg-tertiary">PROMPT · {name} PLAYBOOK EVALS</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {prompts.map((d) => (
+                    <button
+                      key={d.id}
+                      type="button"
+                      title={d.prompt}
+                      aria-pressed={s.prompt === d.prompt}
+                      onClick={() => { dispatch({ type: "reset", prompt: d.prompt, scenario: "happy" }); setOpen(false) }}
+                      className={cn("rounded-full border px-2.5 py-1 type-body-sm hover:border-blue-500 hover:text-fg-link", s.prompt === d.prompt ? "border-blue-500 bg-accent-blue-subtle text-fg-link" : "border-line-default text-fg-primary")}
+                    >
+                      {d.id !== "demo" && d.id !== "lab" && <span className="mr-1 text-fg-tertiary">{d.id}</span>}
+                      {d.label}
+                    </button>
+                  ))}
+                </div>
+              </section>
+            ))}
 
             <section className="flex flex-col gap-2">
               <p className="type-label-sm text-fg-tertiary">EDGE CASE</p>

@@ -17,7 +17,7 @@ export function ImplementCard({ m }: { m: Extract<Msg, { type: "pb-implement" }>
   const { s } = useGen()
   const mod = moduleById(m.module)
   const live = !mod.needsAccount || s.pb?.activated.includes(mod.id)
-  const where = m.pages.length ? `a new ${m.pages.map((p) => p.title).join(" and ")} ${m.pages.length === 1 ? "page" : "pages"}` : "your Home, Contact and treatment pages"
+  const where = m.pages.length ? `a new ${m.pages.map((p) => p.title).join(" and ")} ${m.pages.length === 1 ? "page" : "pages"}` : s.pb?.niche === "lawyer" ? "your Home, Contact and practice-area pages" : "your Home, Contact and treatment pages"
   const steps = [
     "Reading your site and plan",
     `Adding ${mod.name} to ${where}`,

@@ -6,8 +6,7 @@ import { ChevronDown, CircleCheck, FlaskConical, Pencil, ShieldCheck, Star } fro
 import { Alert, Badge, Button, Chip } from "@/components/ui"
 import { cn } from "@/lib/cn"
 import type { Msg } from "@/lib/generation/state"
-import { DENTIST } from "@/lib/playbooks/dentist"
-import { clinicName, presetName } from "@/lib/playbooks/dentist-plan"
+import { planOf } from "@/lib/playbooks/niches"
 import {
   SOURCE_LABEL,
   coreModules,
@@ -17,7 +16,9 @@ import {
   moduleById,
   offerFor,
   optionLabel,
+  playbookOf,
   presetOf,
+  restriction,
   withDefaults,
   type Decision,
   type PlaybookState,
@@ -43,7 +44,8 @@ function SourceTag({ source }: { source: Source }) {
 /** something the site can't say or collect: why, and the compliant alternative */
 export function GuardCard({ m, compact }: { m: Extract<Msg, { type: "pb-guard" }>; compact?: boolean }) {
   const { dispatch } = useGen()
-  const rule = DENTIST.guardrails.find((g) => g.id === m.rule)!
+  const { s } = useGen()
+  const rule = playbookOf(s.pb!).guardrails.find((g) => g.id === m.rule)!
   if (m.resolved)
     return (
       <p className="flex items-start gap-2 type-body-sm text-fg-tertiary">
@@ -73,27 +75,27 @@ type Line = { key: Slot | "style" | "found"; label: string; value: string; sourc
 
 function planLines(pb: PlaybookState): Line[] {
   const st = withDefaults(pb)
-  const ans = (slot: Exclude<Slot, "goals" | "build">) => st.answers[slot]!
-  const q = (slot: Slot) => DENTIST.questions.find((x) => x.slot === slot)?.options
+  const book = playbookOf(pb)
+  const options = (slot: Slot) => book.questions.find((x) => x.slot === slot)?.options
+  const answer = (slot: Exclude<Slot, "goals">): Line => {
+    const a = st.answers[slot]!
+    return { key: slot, label: book.copy.planLines.find((l) => l.slot === slot)!.label, value: optionLabel(slot, a.value, book), source: a.source, options: options(slot) }
+  }
+  const [first, ...rest] = book.copy.planLines.map((l) => answer(l.slot))
   const lines: Line[] = [
     { key: "goals", label: st.goals.length > 1 ? "Goals" : "Goal", value: st.goals.map((g, i) => (i === 0 && st.goals.length > 1 ? `${goalLabel(g)} (main)` : goalLabel(g))).join(" · "), source: st.goalsSource ?? "default", multi: true },
-    { key: "focus", label: "Kind of dentistry", value: optionLabel("focus", ans("focus").value), source: ans("focus").source, options: q("focus") },
-    { key: "scale", label: "Size", value: optionLabel("scale", ans("scale").value), source: ans("scale").source, options: q("scale") },
-    { key: "prices", label: "Prices", value: optionLabel("prices", ans("prices").value), source: ans("prices").source, options: q("prices") },
+    first,
+    ...rest.slice(0, 2),
   ]
   if (pb.found)
-    lines.push({ key: "found", label: "Found online", value: [pb.found.rating, pb.found.dentists && `${pb.found.dentists} dentists`, pb.found.hours].filter(Boolean).join(" · "), source: "search" })
-  lines.push(
-    { key: "emergency", label: "Emergencies", value: optionLabel("emergency", ans("emergency").value), source: ans("emergency").source, options: q("emergency") },
-    { key: "insurance", label: "Insurance", value: optionLabel("insurance", ans("insurance").value), source: ans("insurance").source, options: q("insurance") },
-    {
-      key: "style",
-      label: "Style",
-      value: presetName(presetOf(st)),
-      source: pb.style ? "owner" : "default",
-      options: ["calm-clinical", "warm-family", "modern-premium"].map((id) => ({ id, label: presetName(id) })),
-    },
-  )
+    lines.push({ key: "found", label: "Found online", value: [pb.found.rating, pb.found.dentists && `${pb.found.dentists} ${book.copy.member}s`, pb.found.hours].filter(Boolean).join(" · "), source: "search" })
+  lines.push(...rest.slice(2), {
+    key: "style",
+    label: "Style",
+    value: book.copy.presets[presetOf(st)] ?? presetOf(st),
+    source: pb.style ? "owner" : "default",
+    options: Object.entries(book.copy.presets).map(([id, label]) => ({ id, label })),
+  })
   return lines
 }
 
@@ -116,7 +118,7 @@ export function PlanCard({ m, compact }: { m: Extract<Msg, { type: "pb-plan" }>;
     return (
       <section aria-label="Plan" className={cn(card, "gap-3", !compact && "sm:mr-20")}>
         <p className="flex items-center gap-2 type-label-md text-fg-primary">
-          <CircleCheck className="size-4 text-status-success-text" /> Plan for {clinicName(pb)}
+          <CircleCheck className="size-4 text-status-success-text" /> Plan for {planOf(pb).name(pb)}
         </p>
         <p className="type-body-sm text-fg-secondary">
           {pb.goals.map((g) => goalLabel(g)).join(" · ")} — main button “{btn.label}”
@@ -139,12 +141,13 @@ export function PlanCard({ m, compact }: { m: Extract<Msg, { type: "pb-plan" }>;
   // tools wait until the owner has seen their site: they're suggested in the editor's to-do list and on Modules
   const later = offerFor(st.goals)
     .flatMap((g) => g.modules)
+    .filter((x) => !restriction(st, x.id))
     .filter((x) => pb.decisions[x.id] !== "added")
   const confirm = () => {
     for (const x of waiting) dispatch({ type: "pbDecide", module: x.id, decision: "later" })
     dispatch({ type: "pbConfirmPlan" })
   }
-  const free = coreModules().map((x) => x.name)
+  const free = coreModules(playbookOf(pb)).map((x) => x.name)
 
   return (
     // the conclusion of the questions: read from its top, like the question cards
@@ -153,7 +156,7 @@ export function PlanCard({ m, compact }: { m: Extract<Msg, { type: "pb-plan" }>;
         <div className="flex flex-col gap-1">
           <h3 className="type-h5 text-fg-primary">Here&apos;s my plan</h3>
           <p className="type-body-sm text-fg-secondary">
-            From your answers{pb.found ? " and what I found online" : ""}, for {clinicName(pb)}
+            From your answers{pb.found ? " and what I found online" : ""}, for {planOf(pb).name(pb)}
             {pb.place ? `, ${pb.place}` : ""}. Main button: <span className="text-fg-primary">“{btn.label}”</span>
           </p>
         </div>
@@ -223,7 +226,7 @@ function GoalEdit({ st, onDone }: { st: PlaybookState; onDone: (goals: string[])
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap gap-2">
-        {DENTIST.goals.map((g) => (
+        {playbookOf(st).goals.map((g) => (
           <Chip
             key={g.id}
             className="h-auto min-h-8 px-2.5 py-1 text-left type-body-sm"
@@ -248,7 +251,7 @@ function GoalEdit({ st, onDone }: { st: PlaybookState; onDone: (goals: string[])
 export function PatchCard({ m, compact }: { m: Extract<Msg, { type: "pb-patch" }>; compact?: boolean }) {
   const { s, dispatch } = useGen()
   const pb = s.pb!
-  const offer = offerFor(m.goals, DENTIST, (id) => pb.decisions[id] !== "added")
+  const offer = offerFor(m.goals, playbookOf(pb), (id) => pb.decisions[id] !== "added" && !restriction(pb, id))
   const [d, setD] = useState<Record<string, Decision>>(() => Object.fromEntries(offer.flatMap((g) => g.modules.map((x) => [x.id, "added" as Decision]))))
   if (m.resolved) return null
   const sum = Object.entries(d).reduce((n, [id, v]) => n + (v === "added" ? moduleById(id).price : 0), 0)
@@ -266,7 +269,7 @@ export function PatchCard({ m, compact }: { m: Extract<Msg, { type: "pb-patch" }
         <p className="type-body-sm text-fg-secondary">You already have the tools for this — I&apos;ll just add it to the brief.</p>
       )}
       <div className="flex flex-wrap items-center gap-3">
-        <Button size="sm" onClick={() => dispatch({ type: "pbPatch", id: m.id, decisions: offer.length ? d : { reviews: "added" } })}>
+        <Button size="sm" onClick={() => dispatch({ type: "pbPatch", id: m.id, decisions: offer.length ? d : null })}>
           {sum ? `Add for $${sum}/month` : "Add"}
         </Button>
         <Button size="sm" variant="ghost" onClick={() => dispatch({ type: "pbPatch", id: m.id, decisions: null })}>
@@ -293,7 +296,7 @@ export function ActivationCard({ compact }: { compact?: boolean }) {
           <FlaskConical className="size-4 text-fg-tertiary" /> {left.length ? "Some tools are in test mode" : "All tools are live"}
         </h3>
         <p className="type-body-sm text-fg-secondary">
-          {left.length ? "Everything works on your site already — connect these so patients get messages and payments reach you." : "Patients now get messages and payments reach your account."}
+          {left.length ? `Everything works on your site already — connect these so ${playbookOf(pb).copy.customers} get messages and payments reach you.` : `${playbookOf(pb).copy.customers.charAt(0).toUpperCase() + playbookOf(pb).copy.customers.slice(1)} now get messages and payments reach your account.`}
         </p>
       </div>
       <ul className="flex flex-col gap-2">

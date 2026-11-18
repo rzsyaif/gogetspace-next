@@ -6,7 +6,7 @@ import { Badge, Button, Logo } from "@/components/ui"
 import { EnquiriesPanel } from "@/components/account/enquiries"
 import { PanelPage } from "@/components/account/panel"
 import { useSite } from "@/lib/account/store"
-import { DENTIST } from "@/lib/playbooks/dentist"
+import { PLAYBOOKS } from "@/lib/playbooks/engine"
 import { MODULE_ICON } from "./recommended-tools"
 
 /**
@@ -15,7 +15,7 @@ import { MODULE_ICON } from "./recommended-tools"
  */
 export function ModuleApp({ siteId, module }: { siteId: string; module: string }) {
   const site = useSite(siteId)
-  const def = DENTIST.modules.find((m) => m.id === module)
+  const def = Object.values(PLAYBOOKS).flatMap((b) => b.modules).find((m) => m.id === module)
   const name = module === "enquiries" ? "Enquiries" : (def?.name ?? "Module")
   const Icon = module === "enquiries" ? Inbox : (MODULE_ICON[module] ?? Check)
   const siteName = site?.name ?? "Your new website"

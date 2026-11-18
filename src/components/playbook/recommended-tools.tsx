@@ -1,28 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import {
-  Banknote,
-  Building2,
-  CalendarCheck,
-  Check,
-  ChevronLeft,
-  ChevronRight,
-  CircleHelp,
-  ClipboardList,
-  Images,
-  Inbox,
-  Info,
-  MapPinned,
-  Plus,
-  ShieldCheck,
-  Siren,
-  ThumbsUp,
-  TriangleAlert,
-  UsersRound,
-  WalletMinimal,
-  type LucideIcon,
-} from "lucide-react"
+import { Banknote, BellRing, Building2, CalendarCheck, Check, ChevronLeft, ChevronRight, CircleHelp, ClipboardList, FileText, Images, Inbox, Info, MapPinned, MessageSquareText, Newspaper, PhoneCall, Plus, Scale, ShieldCheck, Siren, ThumbsUp, TriangleAlert, UsersRound, WalletMinimal, type LucideIcon } from "lucide-react"
 import { Alert, Button, Tooltip } from "@/components/ui"
 import { cn } from "@/lib/cn"
 import type { Decision } from "@/lib/playbooks/engine"
@@ -41,6 +20,18 @@ export const MODULE_ICON: Record<string, LucideIcon> = {
   services: Banknote,
   contact: MapPinned,
   inbox: Inbox,
+  // lawyer modules
+  "practice-areas": Scale,
+  consultations: CalendarCheck,
+  "case-enquiries": MessageSquareText,
+  "law-clients": UsersRound,
+  "fee-proposals": FileText,
+  "legal-payments": WalletMinimal,
+  "urgent-line": PhoneCall,
+  "client-updates": BellRing,
+  articles: Newspaper,
+  "legal-reviews": ThumbsUp,
+  lawyers: Building2,
 }
 
 /** tools the owner may already use and can connect later (Figma 185:1960) */

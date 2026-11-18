@@ -1,9 +1,11 @@
 import { mainButton, presetOf, withDefaults } from "@/lib/playbooks/engine"
 import { configFromPb, dentalPreviewUrl } from "@/lib/playbooks/site-config"
+import { lawConfigFromPb, lawPreviewUrl } from "@/lib/playbooks/law-site-config"
 import type { GenState } from "./state"
 
 /** the preview URL of a page of the site being built: the dental site for a dentist plan, Bakti Analisa otherwise */
 export function previewUrl(s: Pick<GenState, "pb" | "styleId">, slug = ""): string {
+  if (s.pb?.niche === "lawyer") return lawPreviewUrl(s.styleId ?? presetOf(s.pb), slug, lawConfigFromPb(s.pb))
   if (s.pb) return dentalPreviewUrl(s.styleId ?? presetOf(s.pb), slug, configFromPb(s.pb))
   return `/preview/${s.styleId ?? "clinical-clarity"}${slug ? `/${slug}` : ""}`
 }

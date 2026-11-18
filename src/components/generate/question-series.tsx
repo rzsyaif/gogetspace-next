@@ -6,8 +6,8 @@ import { ArrowLeft, Check, ChevronDown, CircleHelp, FileSpreadsheet, Pencil, Plu
 import { Badge, Button, Input, RadioDot, Tooltip } from "@/components/ui"
 import { cn } from "@/lib/cn"
 import type { Msg } from "@/lib/generation/state"
-import { DENTIST } from "@/lib/playbooks/dentist"
-import { goalChips, questionProgress, type PriceList, type TeamList, type TeamMember } from "@/lib/playbooks/engine"
+import { goalChips, playbookOf, questionProgress, type PriceList, type TeamList, type TeamMember } from "@/lib/playbooks/engine"
+import { jurisdictionOf } from "@/lib/playbooks/lawyer"
 import { useGen } from "./gen-provider"
 
 type QuestionMsg = Extract<Msg, { type: "pb-question" }>
@@ -130,8 +130,11 @@ function Row({
 export function QuestionCard({ m, compact }: { m: QuestionMsg; compact?: boolean }) {
   const { s, dispatch } = useGen()
   const pb = s.pb!
-  const q = DENTIST.questions.find((x) => x.id === m.qid && (!m.variant || x.variant === m.variant))!
+  const book = playbookOf(pb)
+  const q = book.questions.find((x) => x.id === m.qid && (!m.variant || x.variant === m.variant))!
   const goals = m.slot === "goals"
+  // practice areas: several answers, up to q.multi
+  const multi = !goals && !!q.multi
   const several = goals && pb.candidates?.kind === "several"
   const [picked, setPicked] = useState<string[]>(() =>
     m.value !== undefined ? (Array.isArray(m.value) ? m.value : [m.value]) : goals && pb.candidates?.kind === "vague" ? pb.candidates.goals : [],
@@ -155,18 +158,21 @@ export function QuestionCard({ m, compact }: { m: QuestionMsg; compact?: boolean
     const list = m.slot === "prices" && choice !== "ask" && (prices.file || prices.text?.trim()) ? prices : undefined
     const people = (team.people ?? []).filter((p) => p.name.trim())
     const teamList = m.slot === "scale" && choice !== "solo" && (team.file || people.length) ? { ...team, people } : undefined
-    dispatch({ type: "pbAnswer", id: m.id, value: goals ? picked : choice, prices: list, team: teamList })
+    dispatch({ type: "pbAnswer", id: m.id, value: goals || multi ? picked : choice, prices: list, team: teamList })
   }
   const pickOne = (id: string) => setPicked([id])
-  const toggleGoal = (g: string) =>
+  const toggle = (g: string, max = 3) =>
     setPicked((p) => {
-      const goalsOnly = p.filter((x) => x !== OTHER && x !== DECIDE)
-      return goalsOnly.includes(g) ? goalsOnly.filter((x) => x !== g) : goalsOnly.length < 3 ? [...goalsOnly, g] : goalsOnly
+      const only = p.filter((x) => x !== OTHER && x !== DECIDE)
+      return only.includes(g) ? only.filter((x) => x !== g) : only.length < max ? [...only, g] : only
     })
+  const toggleGoal = (g: string) => toggle(g)
 
   const chips = goalChips(pb)
   const goalOptions = several ? pb.candidates!.goals : more ? [...chips.first, ...chips.more] : chips.first
-  const goal = (id: string) => DENTIST.goals.find((g) => g.id === id)!
+  const goal = (id: string) => book.goals.find((g) => g.id === id)!
+  // "I'm not sure" on the jurisdiction gate is the You decide option, so its own "strictest defaults" row is hidden
+  const shown = q.decideLabel ? q.options.filter((o) => o.id !== book.defaults[q.slot as "jurisdiction"]) : q.options
 
   return (
     <Shell
@@ -178,9 +184,13 @@ export function QuestionCard({ m, compact }: { m: QuestionMsg; compact?: boolean
           ? several
             ? "You asked for a lot — let's start with the one that matters most. The rest go under Add later."
             : "Pick up to three. The first one you pick is the main goal — it decides your site's main button."
-          : "Pick one, or write your own. Not sure? Let me decide — you can change anything on the plan."
+          : multi
+            ? `Pick up to ${q.multi === 3 ? "three" : q.multi}, or write your own. Not sure? Let me decide — you can change anything on the plan.`
+            : q.helper && q.id === "QJ"
+              ? q.helper
+              : "Pick one, or write your own. Not sure? Let me decide — you can change anything on the plan."
       }
-      counter={`${index} / ${total}`}
+      counter={q.id === "QJ" ? undefined : `${index} / ${total}`}
       question={q.text}
       footer={
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -201,7 +211,7 @@ export function QuestionCard({ m, compact }: { m: QuestionMsg; compact?: boolean
         </div>
       }
     >
-      <Options multi={goals && !several}>
+      <Options multi={(goals && !several) || multi}>
         {goals
           ? goalOptions.map((g) => {
               const on = picked.includes(g)
@@ -229,12 +239,12 @@ export function QuestionCard({ m, compact }: { m: QuestionMsg; compact?: boolean
                 />
               )
             })
-          : q.options.map((o) => (
-              <Row key={o.id} checked={choice === o.id} label={o.label} onSelect={() => pickOne(o.id)}>
+          : shown.map((o) => (
+              <Row key={o.id} multi={multi} checked={multi ? picked.includes(o.id) : choice === o.id} label={o.label} onSelect={() => (multi ? toggle(o.id, q.multi) : pickOne(o.id))}>
                 {m.slot === "prices" && o.id !== "ask" ? (
-                  <PriceListInput value={prices} onChange={setPrices} />
+                  <PriceListInput value={prices} onChange={setPrices} niche={pb.niche} />
                 ) : m.slot === "scale" && o.id !== "solo" ? (
-                  <TeamListInput value={team} onChange={setTeam} branches={o.id === "branches"} />
+                  <TeamListInput value={team} onChange={setTeam} branches={o.id === "branches"} member={book.copy.member} reg={jurisdictionOf(pb.answers.jurisdiction?.value).registration} niche={pb.niche} />
                 ) : undefined}
               </Row>
             ))}
@@ -251,7 +261,7 @@ export function QuestionCard({ m, compact }: { m: QuestionMsg; compact?: boolean
               value={other}
               onChange={(e) => setOther(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && submit()}
-              placeholder={goals ? "e.g. more patients for braces" : "Type your answer here…"}
+              placeholder={goals ? (pb.niche === "lawyer" ? "e.g. more clients for family matters" : "e.g. more patients for braces") : "Type your answer here…"}
             />
             {m.unclear && other === m.unclear && <p className="type-body-sm text-status-warning-text">I couldn&apos;t match that to an answer — try other words, or pick one of the options.</p>}
           </div>
@@ -260,10 +270,10 @@ export function QuestionCard({ m, compact }: { m: QuestionMsg; compact?: boolean
           checked={choice === DECIDE}
           label={
             <span className="flex items-center gap-2">
-              <Sparkles className="size-4 text-fg-brand" /> You decide
+              <Sparkles className="size-4 text-fg-brand" /> {q.decideLabel ?? "You decide"}
             </span>
           }
-          description="I'll pick what most clinics choose and tell you why"
+          description={q.decideLabel ? "I'll use the strictest defaults — you can relax them once you know" : `I'll pick what most ${book.copy.unitShort === "law practice" ? "practices" : "clinics"} choose and tell you why`}
           onSelect={() => pickOne(DECIDE)}
         />
       </Options>
@@ -277,7 +287,8 @@ const PRICE_FILES = ".pdf,.xls,.xlsx,.csv,.doc,.docx,.jpg,.jpeg,.png"
 const fileSize = (b: number) => (b > 1e6 ? `${(b / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1e3))} KB`)
 
 /** under a chosen price option: upload a price list, or type it — or leave it and the agent drafts one */
-function PriceListInput({ value, onChange }: { value: PriceList; onChange: (v: PriceList) => void }) {
+function PriceListInput({ value, onChange, niche }: { value: PriceList; onChange: (v: PriceList) => void; niche: string }) {
+  const law = niche === "lawyer"
   const file = useRef<HTMLInputElement>(null)
   const [typing, setTyping] = useState(!!value.text)
   return (
@@ -309,7 +320,7 @@ function PriceListInput({ value, onChange }: { value: PriceList; onChange: (v: P
       ) : (
         <div className="flex flex-wrap gap-2">
           <Button size="sm" variant="secondary" leadingIcon={<Upload />} onClick={() => file.current?.click()}>
-            Upload pricing document
+            {law ? "Upload fee schedule" : "Upload pricing document"}
           </Button>
           {!typing && (
             <Button size="sm" variant="secondary" leadingIcon={<Pencil />} onClick={() => setTyping(true)}>
@@ -320,18 +331,18 @@ function PriceListInput({ value, onChange }: { value: PriceList; onChange: (v: P
       )}
       {typing && !value.file && (
         <label className="flex flex-col gap-2">
-          <span className="type-label-md text-fg-primary">Your prices</span>
+          <span className="type-label-md text-fg-primary">{law ? "Your fees" : "Your prices"}</span>
           <textarea
             autoFocus
             rows={4}
             value={value.text ?? ""}
             onChange={(e) => onChange({ ...value, text: e.target.value })}
-            placeholder={"One per line, e.g.\nScaling and polishing — RM 120\nTooth-coloured filling — from RM 150"}
+            placeholder={law ? "One per line, e.g.\nSimple will — RM 800\nUncontested divorce — from RM 2,500" : "One per line, e.g.\nScaling and polishing — RM 120\nTooth-coloured filling — from RM 150"}
             className="w-full resize-y rounded-md border border-line-strong bg-surface px-4 py-3 type-body-md text-fg-primary placeholder:text-fg-tertiary focus-visible:border-line-focus focus-visible:outline-none focus-visible:focus-ring"
           />
         </label>
       )}
-      {!value.file && !value.text?.trim() && <p className="type-caption text-fg-tertiary">No list yet? Leave this — I&apos;ll draft typical prices in the brief for you to check.</p>}
+      {!value.file && !value.text?.trim() && <p className="type-caption text-fg-tertiary">No list yet? Leave this — I&apos;ll draft typical {law ? "starting fees" : "prices"} in the brief for you to check.</p>}
     </div>
   )
 }
@@ -339,10 +350,11 @@ function PriceListInput({ value, onChange }: { value: PriceList; onChange: (v: P
 /* ---------------- team follow-up (several dentists or branches) ---------------- */
 
 const TEAM_FILES = ".xls,.xlsx,.csv,.pdf,.doc,.docx"
-const REG = DENTIST.market.registration
-
-/** under "Several dentists" / "Several branches": upload the team list, or add the dentists here — or skip */
-function TeamListInput({ value, onChange, branches }: { value: TeamList; onChange: (v: TeamList) => void; branches: boolean }) {
+/** under "Several dentists" / "Several branches" (or lawyers and offices): upload the team list, or add them here — or skip */
+function TeamListInput({ value, onChange, branches, member, reg, niche }: { value: TeamList; onChange: (v: TeamList) => void; branches: boolean; member: string; reg: string; niche: string }) {
+  const REG = reg
+  const Member = member.charAt(0).toUpperCase() + member.slice(1)
+  const law = niche === "lawyer"
   const file = useRef<HTMLInputElement>(null)
   const people = value.people ?? []
   const typing = people.length > 0
@@ -389,26 +401,26 @@ function TeamListInput({ value, onChange, branches }: { value: TeamList; onChang
       {typing && !value.file && (
         <div className="flex flex-col gap-2">
           <div className={cn("hidden gap-2 type-label-sm text-fg-secondary sm:grid", branches ? "grid-cols-[1.3fr_1fr_1fr_36px]" : "grid-cols-[1.3fr_1fr_36px]")}>
-            <span>Dentist&apos;s name</span>
+            <span>{Member}&apos;s name</span>
             <span>Registration no. (optional)</span>
-            {branches && <span>Branch</span>}
+            {branches && <span>{law ? "Office" : "Branch"}</span>}
           </div>
           {people.map((p, i) => (
             <div key={i} className={cn("grid gap-2 rounded-md border border-line-default bg-surface p-2 sm:border-0 sm:bg-transparent sm:p-0", branches ? "sm:grid-cols-[1.3fr_1fr_1fr_36px]" : "sm:grid-cols-[1.3fr_1fr_36px]")}>
-              <input autoFocus={i === people.length - 1 && !p.name} aria-label={`Dentist ${i + 1} name`} placeholder="Dr. Aisyah Rahman" value={p.name} onChange={(e) => set(i, { name: e.target.value })} className={field} />
-              <input aria-label={`Dentist ${i + 1} ${REG}`} placeholder={`${REG.split(" ")[0]} no. (optional)`} value={p.reg ?? ""} onChange={(e) => set(i, { reg: e.target.value })} className={field} />
-              {branches && <input aria-label={`Dentist ${i + 1} branch`} placeholder="e.g. Air Itam" value={p.branch ?? ""} onChange={(e) => set(i, { branch: e.target.value })} className={field} />}
-              <Button size="icon-sm" variant="ghost" aria-label={`Remove dentist ${i + 1}`} className="justify-self-end" onClick={() => onChange({ ...value, people: people.filter((_, k) => k !== i) })}>
+              <input autoFocus={i === people.length - 1 && !p.name} aria-label={`${Member} ${i + 1} name`} placeholder={law ? "Nadia Aziz" : "Dr. Aisyah Rahman"} value={p.name} onChange={(e) => set(i, { name: e.target.value })} className={field} />
+              <input aria-label={`${Member} ${i + 1} ${REG}`} placeholder={law ? "Registration no. (optional)" : `${REG.split(" ")[0]} no. (optional)`} value={p.reg ?? ""} onChange={(e) => set(i, { reg: e.target.value })} className={field} />
+              {branches && <input aria-label={`${Member} ${i + 1} ${law ? "office" : "branch"}`} placeholder={law ? "e.g. Bangsar" : "e.g. Air Itam"} value={p.branch ?? ""} onChange={(e) => set(i, { branch: e.target.value })} className={field} />}
+              <Button size="icon-sm" variant="ghost" aria-label={`Remove ${member} ${i + 1}`} className="justify-self-end" onClick={() => onChange({ ...value, people: people.filter((_, k) => k !== i) })}>
                 <X />
               </Button>
             </div>
           ))}
           <Button size="sm" variant="ghost" leadingIcon={<Plus />} className="self-start" onClick={() => onChange({ ...value, people: [...people, { name: "" }] })}>
-            Add another dentist
+            Add another {member}
           </Button>
         </div>
       )}
-      {!value.file && !people.some((p) => p.name.trim()) && <p className="type-caption text-fg-tertiary">Prefer to do it later? Skip this — you can add your dentists in the brief.</p>}
+      {!value.file && !people.some((p) => p.name.trim()) && <p className="type-caption text-fg-tertiary">Prefer to do it later? Skip this — you can add your {member}s in the brief.</p>}
     </div>
   )
 }
@@ -416,14 +428,17 @@ function TeamListInput({ value, onChange, branches }: { value: TeamList; onChang
 /* ---------------- gates (one practice or a directory, two businesses) ---------------- */
 
 export function GateCard({ m, compact }: { m: GateMsg; compact?: boolean }) {
-  const { dispatch } = useGen()
+  const { s, dispatch } = useGen()
+  const book = playbookOf(s.pb!)
+  const unit = book.copy.unitShort
+  const many = `${book.copy.member}s`
   const [pick, setPick] = useState<string | null>(null)
   if (m.answer) return null
   const g =
     m.kind === "two-sites"
-      ? { question: "That sounds like two different businesses. How should I start?", description: "Each business gets its own website, plan and add-ons.", choices: [["two", "Two websites — start with the dental clinic"], ["only", "Just the dental clinic"]] }
+      ? { question: "That sounds like two different businesses. How should I start?", description: "Each business gets its own website, plan and add-ons.", choices: [["two", `Two websites — start with the ${unit}`], ["only", `Just the ${unit}`]] }
       : m.kind === "directory"
-        ? { question: DENTIST.questions[0].text, description: "A practice website and a directory of many dentists are built very differently.", choices: [["one", "One practice"], ["directory", "A directory of many dentists"]] }
+        ? { question: book.questions[0].text, description: `A practice website and a directory of many ${many} are built very differently.`, choices: [["one", "One practice"], ["directory", `A directory of many ${many}`]] }
         : { question: "Do you run one of the practices yourself?", description: "If you do, I can build its website instead.", choices: [["one", "Yes — build my practice's website"]] }
   return (
     <Shell
@@ -455,7 +470,8 @@ export function AnswersSummary({ compact }: { compact?: boolean }) {
   const { s } = useGen()
   const [open, setOpen] = useState(false)
   const answered = s.msgs.filter((m): m is QuestionMsg => m.type === "pb-question" && !!m.answer)
-  const text = (m: QuestionMsg) => DENTIST.questions.find((x) => x.id === m.qid && (!m.variant || x.variant === m.variant))!.text
+  const book = playbookOf(s.pb!)
+  const text = (m: QuestionMsg) => book.questions.find((x) => x.id === m.qid && (!m.variant || x.variant === m.variant))!.text
   return (
     <div className={cn("flex flex-col gap-3 rounded-lg border border-line-default bg-subtle p-4", !compact && "sm:mr-20")}>
       <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="flex items-center justify-between gap-3 text-left">

@@ -1,11 +1,11 @@
 import type { Metadata } from "next"
 import { SITES } from "@/lib/account/data"
-import { DENTIST } from "@/lib/playbooks/dentist"
+import { PLAYBOOKS } from "@/lib/playbooks/engine"
 import { ModuleApp } from "@/components/playbook/module-app"
 
 export const metadata: Metadata = { title: "Module", robots: { index: false } }
 
-const MODULES = ["enquiries", ...DENTIST.modules.filter((m) => !m.core).map((m) => m.id)]
+const MODULES = ["enquiries", ...new Set(Object.values(PLAYBOOKS).flatMap((b) => b.modules.filter((m) => !m.core).map((m) => m.id)))]
 
 export function generateStaticParams() {
   // "new-site" is the website still in /generate

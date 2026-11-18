@@ -190,6 +190,62 @@ export const DENTAL_THEMES: SiteTheme[] = [
   },
 ]
 
+/** Style options for a law practice (lawyer playbook). The first three are the playbook's presets (§7). */
+export const LAW_THEMES: SiteTheme[] = [
+  {
+    id: "professional-calm",
+    name: "Professional Calm",
+    vibe: "Navy and off-white, credible and composed",
+    heading: "dmSerif",
+    body: "inter",
+    headingWeight: 400,
+    palette: ["#1E3A5F", "#D8E1EC", "#B08D57", "#132235", "#F7F6F2"],
+    onPrimary: "#FFFFFF",
+    radius: 8,
+    buttonRadius: 6,
+    hero: "split",
+  },
+  {
+    id: "warm-discreet",
+    name: "Warm and Discreet",
+    vibe: "Soft neutrals and muted green, gentle and private",
+    heading: "dmSans",
+    body: "dmSans",
+    headingWeight: 600,
+    palette: ["#4F6F5A", "#E3E9DF", "#C27C5A", "#24302A", "#FAF8F4"],
+    onPrimary: "#FFFFFF",
+    radius: 20,
+    buttonRadius: 999,
+    hero: "centered",
+  },
+  {
+    id: "direct-clear",
+    name: "Direct and Clear",
+    vibe: "High contrast with a strong call button",
+    heading: "spaceGrotesk",
+    body: "inter",
+    headingWeight: 700,
+    palette: ["#C8102E", "#F4D6DA", "#111827", "#0B0F17", "#FFFFFF"],
+    onPrimary: "#FFFFFF",
+    radius: 6,
+    buttonRadius: 6,
+    hero: "split",
+  },
+  {
+    id: "classic-chambers",
+    name: "Classic Chambers",
+    vibe: "Deep green and parchment, traditional and trusted",
+    heading: "fraunces",
+    body: "sourceSans",
+    headingWeight: 600,
+    palette: ["#1F4D3A", "#E2D9C3", "#9C7A3C", "#15241D", "#F8F5EE"],
+    onPrimary: "#FFFFFF",
+    radius: 4,
+    buttonRadius: 2,
+    hero: "split",
+  },
+]
+
 export const CUSTOM_THEME: SiteTheme = {
   id: "custom",
   name: "Your style",
@@ -204,7 +260,7 @@ export const CUSTOM_THEME: SiteTheme = {
   hero: "split",
 }
 
-export const ALL_THEMES = [...THEMES, ...ALT_THEMES, ...DENTAL_THEMES, CUSTOM_THEME]
+export const ALL_THEMES = [...THEMES, ...ALT_THEMES, ...DENTAL_THEMES, ...LAW_THEMES, CUSTOM_THEME]
 /** the Bakti Analisa demo site is only prerendered in its own options */
 export const LAB_THEMES = [...THEMES, ...ALT_THEMES, CUSTOM_THEME]
 

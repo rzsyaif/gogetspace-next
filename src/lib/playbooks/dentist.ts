@@ -1,4 +1,5 @@
 import type { Playbook } from "./types"
+import { CONTACT_MODULE, INBOX_MODULE } from "./shared"
 
 /**
  * Niche playbook: Dentist (v0.3 — goal question first, module offer before the build).
@@ -57,8 +58,8 @@ export const DENTIST: Playbook = {
   // §8 modules. Prices are placeholders per website per month — set the real ones here.
   modules: [
     { id: "services", name: "Services and Prices", core: true, price: 0, benefit: {}, included: ["Treatment pages with prices or an estimate note", "Treatment catalog you can edit"] },
-    { id: "contact", name: "Contact and Locations", core: true, price: 0, benefit: {}, included: ["Address, map, hours, phone and WhatsApp on every page"] },
-    { id: "inbox", name: "Enquiry inbox", core: true, price: 0, benefit: {}, included: ["Messages from your contact form in one place"] },
+    CONTACT_MODULE,
+    INBOX_MODULE,
     {
       id: "appointments",
       name: "Appointments",
@@ -111,6 +112,7 @@ export const DENTIST: Playbook = {
       included: ["Photo pairs with a “results vary” note", "Only photos you confirm you have consent for"],
       pages: ["before-after"],
       sensitive: "Needs written patient consent for every photo",
+      confirm: "I have written consent from every patient whose photos I'll show",
     },
     {
       id: "emergency",
@@ -205,4 +207,125 @@ export const DENTIST: Playbook = {
 
   // §5 defaults (used on "You decide")
   defaults: { focus: "general", scale: "solo", prices: "from", emergency: "call", insurance: "none", style: "calm-clinical" },
+
+  copy: {
+    unitShort: "dental clinic",
+    customers: "patients",
+    member: "dentist",
+    defaultName: "Your Dental Clinic",
+    searchHint: "dental clinic",
+    opening: "I'll build a website for a single dental clinic. Before I plan it, a few quick questions — I'll look you up online meanwhile.",
+    justBuild: "Sure. I'll assume your main goal is getting more patients to book online, and I'll use sensible defaults for a general dental clinic. Every assumption is listed so you can change it.",
+    decideGoal: "I chose getting more patients booking online, with being found and trusted as a second goal — that's where most clinics start.",
+    decideReason: {
+      focus: "it covers most clinics",
+      scale: "it's the simplest setup — adding dentists later is easy",
+      prices: "most clinics show from-prices for routine care and invite a consultation for bigger treatments",
+      emergency: "patients calling you first is the safest default",
+      insurance: "you can list insurers later if you take them",
+    },
+    planLines: [
+      { slot: "focus", label: "Kind of dentistry" },
+      { slot: "scale", label: "Size" },
+      { slot: "prices", label: "Prices" },
+      { slot: "emergency", label: "Emergencies" },
+      { slot: "insurance", label: "Insurance" },
+    ],
+    presets: { "calm-clinical": "Calm clinical", "warm-family": "Warm family", "modern-premium": "Modern premium" },
+  },
+
+  logic: {
+    read(p, set) {
+      const focus = FOCUS.find(([, re]) => re.test(p))
+      if (focus) set("focus", focus[0])
+      if (/\b(\d+|two|three|four|five|several|multiple)[- ](branch(es)?|locations|clinics)\b|\bbranches\b/i.test(p)) set("scale", "branches")
+      else if (/\b(several|multiple|team of|\d+) dentists\b|\bour dentists\b/i.test(p)) set("scale", "dentists")
+      else if (/\b(solo|one dentist|just me|single dentist)\b/i.test(p)) set("scale", "solo")
+      if (/\b(no prices|don'?t (show|list|want) prices|hide (the )?prices|without prices)\b/i.test(p)) set("prices", "ask")
+      else if (/\bprice ranges?\b|\branges\b/i.test(p)) set("prices", "range")
+      else if (/\bexact prices|full price list\b/i.test(p)) set("prices", "exact")
+      else if (/\bfrom[- ]prices|starting (at|from)\b/i.test(p)) set("prices", "from")
+      if (/\b24 ?(hours|h|\/7)|every day|daily\b/i.test(p) && /\b(emergenc\w*|toothache|walk[- ]in|same[- ]day)\b/i.test(p)) set("emergency", "daily")
+      if (/\b(we )?(don'?t|do not) (take|accept) insurance\b/i.test(p)) set("insurance", "none")
+      else if (/\binsur\w*|panel\b/i.test(p)) set("insurance", "list")
+    },
+    goalSignals: [
+      ["G1", /\b(book(ing)?s? (an )?(appointments? )?online|online (booking|appointments?)|book appointments|(patients?|people) (should|can|to|could) book|appointments? online|get reminders|bookings)\b/i],
+      ["G2", /\b(consultations?|estimates?|quotes? for (braces|implants|veneers))\b/i],
+      ["G3", /\b(emergenc\w*|same[- ]day|walk[- ]ins?|toothache|24 ?(hours|h|\/7))\b/i],
+      ["G4", /\b(come back|coming back|recall|check-?up reminders?|return(ing)? patients|keep patients)\b/i],
+      ["G5", /\b(deposits?|payments?|pay online|take payment)\b/i],
+      ["G6", /\b(be found|found online|get found|trusted online|online presence|just (want )?(a )?(simple )?(website|site|page))\b/i],
+      ["G7", /\b(\d+|two|three|four|five|several|multiple)[- ](branch(es)?|locations|clinics)|branches|several dentists|our dentists\b/i],
+      ["G8", /\b(insur\w*|corporate|compan(y|ies)|panel)\b/i],
+    ],
+    refineGoals(goals, p, answers) {
+      // "patients should book consultations" is the consultation goal, not general booking
+      if (goals.includes("G2") && /\bbook(ing)?s? (a |their )?consultations?\b/i.test(p)) goals = goals.filter((g) => g !== "G1")
+      // a stated insurance/branch detail isn't by itself a goal unless it's the point of the site
+      if (goals.includes("G8") && !/\b(serve|insured patients|corporate (clients|patients)|companies)\b/i.test(p)) goals = goals.filter((g) => g !== "G8")
+      if (goals.includes("G7") && answers.scale?.value !== "branches" && !/\bseveral dentists\b/i.test(p)) goals = goals.filter((g) => g !== "G7")
+      // the main goal is the highest-intent one: emergency, then consultation, then booking (§3)
+      const order = ["G3", "G2", "G1"]
+      const rank = (g: string) => (order.indexOf(g) === -1 ? 9 : order.indexOf(g))
+      return [...goals].sort((a, b) => rank(a) - rank(b))
+    },
+    unsupported: (p) => (/\b(online shop|e-?commerce|sell (products|toothbrushes|toothpaste)|shop online)\b/i.test(p) ? ["Selling products online"] : []),
+    vague: /\bmore (patients|customers|clients|bookings)\b/i,
+    next(st, pb, ask) {
+      if (!st.answers.focus && !st.goals.every((g) => g === "G6")) {
+        const q = ask(pb.questions.find((x) => x.id === "Q2"))
+        if (q) return q
+      }
+      // the clinic's size changes what gets built for booking, recall and branch goals
+      if (!st.answers.scale && st.goals.some((g) => g === "G7" || g === "G1" || g === "G4")) {
+        const q = ask(pb.questions.find((x) => x.id === "Q3"))
+        if (q) return q
+      }
+      const v = pb.goals.find((g) => g.id === st.goals[0])?.followUp
+      const q4 = v && v !== "scale" ? pb.questions.find((q) => q.id === "Q4" && q.variant === v) : undefined
+      if (q4 && !st.answers[q4.slot as "prices"]) return ask(q4)
+      return null
+    },
+    scenarios(st) {
+      const out: string[] = []
+      const f = st.answers.focus?.value
+      if (f === "pediatric") out.push("S3")
+      if (f === "ortho") out.push("S4")
+      if (f === "cosmetic") out.push("S5")
+      if (st.goals.includes("G3") || st.answers.emergency?.value === "daily") out.push("S6")
+      if (st.goals.includes("G7") || st.answers.scale?.value === "branches" || st.answers.scale?.value === "dentists") out.push("S7")
+      if (st.goals.includes("G8")) out.push("S8")
+      if (f === "general" && !out.length) out.push(/family/i.test(st.business ?? "") ? "S2" : "S1")
+      if (!out.length) out.push("S1")
+      return out
+    },
+    preset(st) {
+      const sc = DENTIST.logic.scenarios(st)
+      if (sc.includes("S3")) return "warm-family"
+      if (sc.includes("S5")) return "modern-premium"
+      return "calm-clinical"
+    },
+    keyModule: { G1: "appointments", G2: "estimates", G3: "appointments", G4: "appointments", G5: "payments", G7: "branches", G8: "estimates" },
+    fallbackFor: (goal) => (goal === "G3" ? "Call now" : undefined),
+    automations(has, st) {
+      const out: string[] = []
+      if (has("appointments")) out.push("Confirmation", "Reminders")
+      if (has("reviews")) out.push("Review request")
+      if (has("crm") && st.goals.includes("G4")) out.push("Recall", "Reactivation")
+      if (has("estimates")) out.push("Estimate follow-up")
+      if (has("payments")) out.push("Payment receipts")
+      if (has("branches") && has("appointments")) out.push("Per-branch reminders")
+      return out
+    },
+    goalOrder: ["G1", "G2", "G4", "G6", "G3", "G5", "G7", "G8"],
+    titledName: /\b((?:[A-Z][a-z’']+\s+){1,3}(?:Dental|Dentistry|Smile|Orthodontics|Clinic)(?:\s+(?:Clinic|Centre|Center|Care|Studio))?)\b/,
+  },
 }
+
+const FOCUS: [string, RegExp][] = [
+  ["pediatric", /\b(kids?|child(ren)?'?s?|paediatric|pediatric)\b/i],
+  ["ortho", /\b(orthodont\w*|braces|aligners?|invisalign)\b/i],
+  ["cosmetic", /\b(cosmetic|whitening|veneers?|implants?)\b/i],
+  ["general", /\b(general|family)\b/i],
+]
