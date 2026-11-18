@@ -7,7 +7,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import { ArrowUp, Plus, Sparkle, X } from "lucide-react"
 import { cn } from "@/lib/cn"
 import { CLINIC_FRONT, CLINIC_PHOTO } from "./assets"
-import { emitPromptActive } from "./prompt-events"
+import { emitPromptActive, emitPromptLaunch, emitPromptText } from "./prompt-events"
 
 /**
  * AI prompt input from the homepage: type a brief, attach demo files (no file picker — it adds
@@ -34,6 +34,8 @@ export interface PromptInputProps {
   onSubmit?: (brief: { text: string; files: DemoFile[] }) => void
   /** after a short "generating" moment, open the generation flow at this route with the prompt */
   flowHref?: string
+  /** tell the hero background what's being typed and when it's sent */
+  signals?: boolean
   className?: string
 }
 
@@ -62,6 +64,7 @@ export function PromptInput({
   generateFor = 8,
   onSubmit,
   flowHref,
+  signals = false,
   className,
 }: PromptInputProps) {
   const reduce = useReducedMotion()
@@ -130,6 +133,7 @@ export function PromptInput({
     if (!hasText) return focusInput()
     taRef.current?.blur()
     onSubmit?.({ text, files: attached.map((a) => a.file) })
+    if (signals) emitPromptLaunch()
     if (flowHref) {
       // hand off to the generation flow with the launch animation
       const note = attached.length ? ` (attached: ${attached.map((a) => a.file.name).join(", ")})` : ""
@@ -312,7 +316,10 @@ export function PromptInput({
               value={text}
               readOnly={generating}
               aria-label={placeholder}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => {
+                setText(e.target.value)
+                if (signals) emitPromptText(e.target.value.trim().length)
+              }}
               onFocus={() => {
                 setFocused(true)
                 emitPromptActive(true)
