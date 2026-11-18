@@ -7,7 +7,7 @@ import { Alert, Badge, Button } from "@/components/ui"
 import { PanelHeader, PanelSection } from "@/components/account/panel"
 import { cn } from "@/lib/cn"
 import { DENTIST } from "@/lib/playbooks/dentist"
-import { bringsWith, coreModules, moduleById, offerFor } from "@/lib/playbooks/engine"
+import { bringsWith, coreModules, moduleById, offerFor, playbookOf, restriction, type PlaybookState } from "@/lib/playbooks/engine"
 import type { Decision } from "@/lib/playbooks/engine"
 import type { ModulesApi } from "@/components/generate/editor-site"
 import { MODULE_ICON } from "./recommended-tools"
@@ -73,6 +73,7 @@ export function ModulesPanel({
   api,
   billed,
   goals,
+  st = null,
   unread,
   payment,
   onImplement,
@@ -84,6 +85,8 @@ export function ModulesPanel({
   api: ModulesApi | null
   billed: boolean
   goals: string[]
+  /** the plan the site was built from (which niche, and the rules it follows) */
+  st?: PlaybookState | null
   unread: number
   payment: AddBilling
   onImplement: (module: string) => void
@@ -99,15 +102,18 @@ export function ModulesPanel({
   const added = list.map((m) => ({ def: moduleById(m.id), status: m.status }))
   // what the owner's goals call for, with the reason, listed first
   const why = new Map<string, string>()
-  for (const g of offerFor(goals)) for (const m of g.modules) if (!why.has(m.id)) why.set(m.id, m.benefit[g.goal] ?? g.label)
+  const book = st ? playbookOf(st) : DENTIST
+  for (const g of offerFor(goals, book)) for (const m of g.modules) if (!why.has(m.id)) why.set(m.id, m.benefit[g.goal] ?? g.label)
   const rank = (id: string) => {
     const i = [...why.keys()].indexOf(id)
     return i < 0 ? Infinity : i
   }
-  const addable = api ? DENTIST.modules.filter((m) => !m.core && !ids.has(m.id)).sort((a, b) => rank(a.id) - rank(b.id)) : []
+  // restricted modules (a lawyer's reviews where the rules don't allow them) go last, and can't be added
+  const blocked = (id: string) => restriction(st, id)
+  const addable = api ? book.modules.filter((m) => !m.core && !ids.has(m.id)).sort((a, b) => Number(!!blocked(a.id)) - Number(!!blocked(b.id)) || rank(a.id) - rank(b.id)) : []
   const total = added.reduce((n, m) => n + m.def.price, 0)
   const decisions = Object.fromEntries(list.map((m) => [m.id, "added" as Decision]))
-  const goalFor = (id: string) => goals.find((g) => DENTIST.goals.find((x) => x.id === g)?.modules.includes(id))
+  const goalFor = (id: string) => goals.find((g) => book.goals.find((x) => x.id === g)?.modules.includes(id))
   const Icon = (id: string) => {
     const I = MODULE_ICON[id] ?? Check
     return <I strokeWidth={1.25} />
@@ -190,7 +196,7 @@ export function ModulesPanel({
         </div>
         {api && (
           <p className="type-body-sm text-fg-tertiary">
-            Always included free: {coreModules().filter((m) => m.id !== "inbox").map((m) => m.name).join(" · ")}
+            Always included free: {coreModules(book).filter((m) => m.id !== "inbox").map((m) => m.name).join(" · ")}
           </p>
         )}
       </PanelSection>
@@ -205,8 +211,9 @@ export function ModulesPanel({
             )}
             <div className="grid gap-3 lg:grid-cols-2">
               {addable.map((m) => {
-                const dep = bringsWith(m.id, decisions, goals)
-                const reason = why.get(m.id)
+                const dep = bringsWith(m.id, decisions, goals, book)
+                const off = blocked(m.id)
+                const reason = off ? null : why.get(m.id)
                 return (
                   <AppCard
                     key={m.id}
@@ -222,18 +229,14 @@ export function ModulesPanel({
                     }
                     price={priceLabel(m)}
                     actions={
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        leadingIcon={<Plus />}
-                        onClick={() => setAdding(m.id)}
-                      >
+                      <Button size="sm" variant="secondary" leadingIcon={<Plus />} disabled={!!off} onClick={() => setAdding(m.id)}>
                         Add
                       </Button>
                     }
                   >
                     {reason && <span className="mb-1 block type-label-sm text-fg-link">{reason}</span>}
                     {m.included[0]}
+                    {off && <span className="mt-1 block type-caption text-status-warning-text">{off}</span>}
                     {dep && <span className="mt-1 block type-caption text-fg-tertiary">Comes with {dep.name} ({priceLabel(dep)})</span>}
                   </AppCard>
                 )
@@ -278,6 +281,7 @@ export function ModulesPanel({
           module={adding}
           api={api}
           goals={goals}
+          book={book}
           billing={payment}
           published={published}
           onPublish={onPublish}

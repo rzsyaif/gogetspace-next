@@ -276,3 +276,14 @@ export function dentistQuestions(st: PlaybookState): OpenQuestion[] {
 /** one-line labels for the plan card */
 export const presetName = (id: string) => ({ "calm-clinical": "Calm clinical", "warm-family": "Warm family", "modern-premium": "Modern premium" })[id] ?? id
 export const answerText = (slot: "focus" | "scale" | "prices" | "emergency" | "insurance", st: PlaybookState) => optionLabel(slot, st.answers[slot]?.value ?? "")
+
+/** everything the flow needs from the dentist plan, behind the same shape as other niches */
+export const DENTIST_PLAN = {
+  brief: dentistBrief,
+  sitemap: dentistSitemap,
+  priority: dentistPriority,
+  questions: dentistQuestions,
+  name: clinicName,
+  isDemo: isDemoClinic,
+  domain: domainFor,
+}

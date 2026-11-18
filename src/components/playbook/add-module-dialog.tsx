@@ -5,6 +5,7 @@ import { Check, Loader, Plug, Rocket, Sparkles } from "lucide-react"
 import { Alert, Button, Checkbox, Dialog, DialogContent, Stepper } from "@/components/ui"
 import { cn } from "@/lib/cn"
 import { bringsWith, moduleById, type Decision } from "@/lib/playbooks/engine"
+import type { Playbook } from "@/lib/playbooks/types"
 import type { ModulesApi } from "@/components/generate/editor-site"
 import { MODULE_ICON } from "./recommended-tools"
 
@@ -30,6 +31,7 @@ export function AddModuleDialog({
   onClose,
   api,
   goals,
+  book,
   billing,
   onImplement,
   published,
@@ -39,6 +41,7 @@ export function AddModuleDialog({
   onClose: () => void
   api: ModulesApi
   goals: string[]
+  book: Playbook
   billing: AddBilling
   onImplement: (module: string) => void
   published: boolean
@@ -48,7 +51,7 @@ export function AddModuleDialog({
     <Dialog open={!!module} onOpenChange={(o) => !o && onClose()}>
       {module &&
         (published ? (
-          <Flow key={module} module={module} onClose={onClose} api={api} goals={goals} billing={billing} onImplement={onImplement} />
+          <Flow key={module} module={module} onClose={onClose} api={api} goals={goals} book={book} billing={billing} onImplement={onImplement} />
         ) : (
           <PublishFirst module={module} onClose={onClose} onPublish={onPublish} />
         ))}
@@ -56,10 +59,10 @@ export function AddModuleDialog({
   )
 }
 
-function Flow({ module, onClose, api, goals, billing, onImplement }: { module: string; onClose: () => void; api: ModulesApi; goals: string[]; billing: AddBilling; onImplement: (module: string) => void }) {
+function Flow({ module, onClose, api, goals, book, billing, onImplement }: { module: string; onClose: () => void; api: ModulesApi; goals: string[]; book: Playbook; billing: AddBilling; onImplement: (module: string) => void }) {
   const m = moduleById(module)
   const decisions = Object.fromEntries(api.list.map((x) => [x.id, "added" as Decision]))
-  const dep = bringsWith(module, decisions, goals)
+  const dep = bringsWith(module, decisions, goals, book)
   const adding = [m, ...(dep ? [dep] : [])]
   const extra = adding.reduce((n, x) => n + x.price, 0)
   const current = api.list.reduce((n, x) => n + moduleById(x.id).price, 0)
@@ -92,7 +95,7 @@ function Flow({ module, onClose, api, goals, billing, onImplement }: { module: s
         <Button variant="secondary" onClick={onClose}>
           Cancel
         </Button>
-        <Button disabled={m.id === "gallery" && !consent} onClick={confirm}>
+        <Button disabled={!!m.confirm && !consent} onClick={confirm}>
           {extra ? `Add for ${money(extra)}/month` : "Add for free"}
         </Button>
       </>
@@ -181,9 +184,12 @@ function Flow({ module, onClose, api, goals, billing, onImplement }: { module: s
             )}
           </div>
 
-          {m.id === "gallery" && (
-            <Checkbox checked={consent} onCheckedChange={(v) => setConsent(v === true)} label="I have written consent from every patient whose photos I'll show" />
+          {m.notice && (
+            <Alert tone="warning" size="sm">
+              {m.notice}
+            </Alert>
           )}
+          {m.confirm && <Checkbox checked={consent} onCheckedChange={(v) => setConsent(v === true)} label={m.confirm} />}
           {needsSetup.length > 0 && (
             <Alert tone="neutral" size="sm" icon={<Plug />}>
               Next, connect {needsSetup.map((x) => x.needsAccount!.label).join(" and ")}. You can also skip and use test mode for now.

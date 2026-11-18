@@ -38,7 +38,7 @@ function ModulesPage() {
   const unread = ENQUIRIES.filter((e) => e.siteId === site.id && (enquiryStatus[e.id] ?? e.status) === "new").length
   return (
     <ModulesPanel
-      siteId={site.id} siteName={site.name} api={s.pb ? modules : null} billed={billing.billed} goals={s.pb?.goals ?? []} unread={unread}
+      siteId={site.id} siteName={site.name} api={s.pb ? modules : null} billed={billing.billed} goals={s.pb?.goals ?? []} st={s.pb} unread={unread}
       payment={{ billed: billing.billed, planName: planInfo(plan).name, planPrice: planInfo(plan).price, renews: usage.renews }}
       published={site.status === "live"}
       onPublish={nav.publish}
