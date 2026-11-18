@@ -508,7 +508,7 @@ function PageSelect({ pages, current, statuses, onPick, onReload }: { pages: (Pa
 }
 
 function PageOverlay({ page, status, onRetry }: { page: PageNode; status: PageStatus; onRetry: () => void }) {
-  const { dispatch } = useGen()
+  const { s, dispatch } = useGen()
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-surface/90 p-6 text-center backdrop-blur-sm">
       {(status === "building" || status === "queued") && (
@@ -521,7 +521,7 @@ function PageOverlay({ page, status, onRetry }: { page: PageNode; status: PageSt
             </div>
           </div>
           <p className="flex items-center gap-2 type-label-md text-fg-secondary">
-            <Loader className="size-4 animate-spin" /> {status === "building" ? `Building ${page.title}…` : `${page.title} is next in line`}
+            <Loader className="size-4 animate-spin" /> {status === "building" ? `Building ${page.title}…` : s.phase === "plan" ? "Planning your website…" : `${page.title} is next in line`}
           </p>
         </>
       )}

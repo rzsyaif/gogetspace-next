@@ -1,5 +1,6 @@
 /**
- * State of the scripted generation flow (plan → review → create → publish).
+ * State of the scripted generation flow (plan → create → sharpen → publish). The build starts as soon as the
+ * prompt is read; the brief is confirmed later from the to-do list and the questions come after the first build.
  * Pure reducer; timing lives in the provider's runner. Edge cases are driven by `scenario`.
  */
 import { DEFAULT_BRIEF, DEFAULT_QUESTIONS, countAssumptions, type BriefSection, type OpenQuestion } from "./brief"
@@ -18,6 +19,7 @@ import {
   optionLabel,
   playbookOf,
   presetOf,
+  sharpenView,
   withDefaults,
   type Decision,
   type PlaybookState,
@@ -42,14 +44,14 @@ export type Scenario =
 
 export const SCENARIOS: { id: Scenario; label: string; note: string }[] = [
   { id: "happy", label: "Happy path", note: "Everything works" },
-  { id: "vague", label: "Vague prompt", note: "Asks a question before planning" },
+  { id: "vague", label: "Vague prompt", note: "Builds anyway, then asks what the business is" },
   { id: "no-results", label: "Nothing found online", note: "New business, brief from description only" },
   { id: "ambiguous", label: "Several matches", note: "“Is this you?” before continuing" },
   { id: "search-fail", label: "Search unavailable", note: "Continues without the web" },
   { id: "step-fail", label: "Step fails", note: "Writing the brief fails once, with Retry" },
   { id: "slow", label: "Slow step", note: "“Taking longer than usual” note" },
   { id: "restricted", label: "Can't help with this", note: "Request is declined politely" },
-  { id: "credits-low", label: "Credits low", note: "Warned before Start Creation" },
+  { id: "credits-low", label: "Credits low", note: "Starts with few credits left" },
   { id: "credits-out", label: "Credits run out", note: "Build pauses midway" },
   { id: "page-fail", label: "A page fails", note: "One page fails to build, with Retry" },
 ]
@@ -164,6 +166,8 @@ export interface GenState {
   publish: { status: "idle" | "live"; domain: string }
   /** plan run whose brief review has already been opened automatically */
   autoReviewed?: number
+  /** the brief was edited after the build, so confirming it updates the site */
+  briefDirty?: boolean
   seq: number
 }
 
@@ -219,7 +223,7 @@ export const PAGE_MS = 1100
 
 export function detectScenario(prompt: string): Scenario {
   if (/casino|gambl|betting|vape|replica/i.test(prompt)) return "restricted"
-  if (prompt.trim().split(/\s+/).filter(Boolean).length < 4) return "vague"
+  if (prompt.trim().split(/\s+/).filter(Boolean).length <= 5) return "vague"
   return "happy"
 }
 
@@ -326,8 +330,9 @@ export type Action =
   | { type: "pbPatch"; id: string; decisions: Record<string, Decision> | null }
   | { type: "pbActivate"; module: string }
   | { type: "pbImplement"; module: string; at: number }
+  | { type: "confirmBrief" }
 
-export type JumpTarget = "generating" | "ready" | "review-brief" | "review-style" | "review-sitemap" | "creating" | "built" | "published"
+export type JumpTarget = "generating" | "ready" | "creating" | "built" | "published"
 
 const nextId = (s: GenState) => `m${s.seq + 1}`
 type NewMsg = Msg extends infer M ? (M extends Msg ? Omit<M, "id"> : never) : never
@@ -346,8 +351,13 @@ function advance(r: Run, i: number, patch: Partial<Task>): Run {
   return { ...r, tasks, status: i + 1 >= tasks.length ? "done" : r.status }
 }
 
+/**
+ * The plan goes straight into the build: the style is the niche's preset (or the general default) and the page
+ * plan is used as is. The brief waits for the owner in the to-do list; nothing here blocks them.
+ */
 function finishPlan(s: GenState): GenState {
-  return push(s, { type: "artifacts" })
+  const styleId = s.styleId ?? (s.pb ? presetOf(s.pb) : "clinical-clarity")
+  return startBuild({ ...s, styleId, artifacts: { ...s.artifacts, style: "confirmed", sitemap: "confirmed" } })
 }
 
 function startBuild(s: GenState, homepageOnly = false): GenState {
@@ -363,12 +373,13 @@ function startBuild(s: GenState, homepageOnly = false): GenState {
     pages,
     runs: { ...s.runs, [id]: { id, kind: "build", status: "running", tasks: buildTasks() } },
   }
-  next = push(next, { type: "user", text: "All three are confirmed — go ahead and build it." }, { type: "agent", text: "Solid plan. Creating your website now." }, { type: "build", runId: id })
+  const pages0 = flatten(s.sitemap).length
+  next = push(next, { type: "agent", text: `Building your website now — ${pages0} pages from my best guesses. ${s.pb || s.scenario === "vague" ? "I'll ask a few quick questions once you can see it." : "You can check the brief from your to-do list once it's ready."}` }, { type: "build", runId: id })
   return next
 }
 
 function allConfirmed(s: GenState) {
-  return s.artifacts.brief === "confirmed" && s.artifacts.style === "confirmed" && s.artifacts.sitemap === "confirmed"
+  return s.artifacts.style === "confirmed" && s.artifacts.sitemap === "confirmed"
 }
 
 export function reducer(s: GenState, a: Action): GenState {
@@ -398,10 +409,8 @@ export function reducer(s: GenState, a: Action): GenState {
           const n = updateRun(s, r.id, (r) => ({ ...r, status: "blocked", tasks: r.tasks.map((x, j) => (j === i ? { ...x, status: "done", duration: "6s" } : x)) }))
           return push(n, { type: "refused" })
         }
-        if (s.scenario === "vague" && !s.msgs.some((m) => m.type === "clarify")) {
-          const n = updateRun(s, r.id, (r) => ({ ...r, status: "waiting", tasks: r.tasks.map((x, j) => (j === i ? { ...x, status: "done", duration: "9s" } : j === i + 1 ? { ...x, status: "pending" } : x)) }))
-          return push(n, { type: "clarify" })
-        }
+        // a short prompt doesn't hold the build up: I build from guesses and ask what the business is afterwards
+        if (s.scenario === "vague") return updateRun(s, r.id, (r) => advance(r, i, { detail: "Short prompt — I'll build from my best guesses and ask you after" }))
       }
       if (t.id === "search") {
         if (s.scenario === "ambiguous" && !s.msgs.some((m) => m.type === "pick")) {
@@ -433,6 +442,10 @@ export function reducer(s: GenState, a: Action): GenState {
     case "resume":
       return updateRun(s, s.planRun, (r) => (r.status === "stopped" ? { ...r, status: "running" } : r))
     case "answerClarify": {
+      if (s.phase === "create") {
+        const n = push({ ...s, msgs: s.msgs.map((m) => (m.type === "clarify" ? { ...m, answer: a.answer } : m)) }, { type: "user", text: a.answer })
+        return push(n, { type: "agent", text: "Thanks — I've updated the copy, pages and photos to match. Have a look in the preview." })
+      }
       const n = push(
         { ...s, msgs: s.msgs.map((m) => (m.type === "clarify" ? { ...m, answer: a.answer } : m)) },
         { type: "user", text: a.answer },
@@ -499,7 +512,7 @@ export function reducer(s: GenState, a: Action): GenState {
       if (artifacts.brief === "confirmed") artifacts.brief = "awaiting"
       if (artifacts.style === "confirmed") artifacts.style = "stale"
       if (artifacts.sitemap === "confirmed") artifacts.sitemap = "stale"
-      return { ...s, brief: a.brief, artifacts }
+      return { ...s, brief: a.brief, artifacts, briefDirty: s.phase === "create" || s.briefDirty }
     }
     case "answerQuestion":
       return { ...s, questions: s.questions.map((q) => (q.id === a.id ? { ...q, answer: a.answer } : q)) }
@@ -657,6 +670,10 @@ export function reducer(s: GenState, a: Action): GenState {
       return pbPatch(s, a.id, a.decisions)
     case "pbImplement":
       return pbImplement(s, a.module, a.at)
+    case "confirmBrief": {
+      const n: GenState = { ...s, artifacts: { ...s.artifacts, brief: "confirmed" }, briefDirty: false }
+      return s.briefDirty ? push(n, { type: "agent", text: "Brief confirmed — I've updated the site to match your changes." }) : n
+    }
     case "pbActivate":
       if (!s.pb || s.pb.activated.includes(a.module)) return s
       return push({ ...s, pb: { ...s.pb, activated: [...s.pb.activated, a.module] } }, { type: "agent", text: `Connected — ${moduleById(a.module).name} is out of test mode and live.` })
@@ -694,7 +711,7 @@ const lower = (t: string) => t.charAt(0).toLowerCase() + t.slice(1)
 /** asks the next playbook question, or shows the plan card when there's nothing left to ask */
 function askNext(s: GenState): GenState {
   const pb = s.pb!
-  if (pb.planConfirmed) return s
+  if (pb.planConfirmed) return s.phase === "create" ? askAfter(s) : s
   const q = nextQuestion(pb)
   if (q) return push({ ...s, pb: { ...pb, asked: [...pb.asked, q.id] } }, { type: "pb-question", qid: q.id, slot: q.slot, variant: q.variant })
   return maybePlanCard(s)
@@ -718,19 +735,65 @@ function resumeSearch(s: GenState): GenState {
   return updateRun(s, s.planRun, (r) => ({ ...r, status: "running", tasks: r.tasks.map((t) => (t.id === "search" && t.status === "pending" ? { ...t, status: "running" } : t)) }))
 }
 
-/** the agent opens the conversation once it has read the prompt */
-function opening(s: GenState): GenState {
+/** the goals' tools wait in Modules (as "later") until the owner installs them */
+function laterTools(pb: PlaybookState): PlaybookState {
+  for (const g of offerFor(pb.goals, playbookOf(pb))) for (const mod of g.modules) if (!pb.decisions[mod.id]) pb = { ...pb, decisions: decide(pb.decisions, mod.id, "later", pb.goals) }
+  return pb
+}
+
+/** a plan from the prompt and the builder's guesses, so the build can start straight away */
+function guessPlan(raw: PlaybookState): PlaybookState {
+  // several goals in one prompt: the first is the main one, up to three
+  const pb = raw.candidates?.kind === "several" ? { ...raw, goals: raw.candidates.goals.slice(0, 3), goalsSource: "prompt" as const, candidates: null } : raw
+  return laterTools(withDefaults({ ...pb, planConfirmed: true }))
+}
+
+/**
+ * Puts a (changed) plan into the state. Before the build it replaces the plan; on a built site it keeps the pages
+ * that are there, adds any new ones (built next) and asks for the brief to be checked again.
+ */
+function withPlan(s: GenState, pb: PlaybookState): GenState {
+  const plan = planOf(pb)
+  const n: GenState = { ...s, pb, brief: plan.brief(pb), questions: plan.questions(pb), pagePriority: plan.priority(pb) }
+  if (s.phase !== "create") return { ...n, sitemap: plan.sitemap(pb) }
+  const fresh = plan.sitemap(pb)
+  const have = new Set(flatten(s.sitemap).map((p) => p.id))
+  const extra = (fresh.children ?? []).filter((c) => !have.has(c.id))
+  if (!extra.length) return { ...n, artifacts: { ...n.artifacts, brief: n.artifacts.brief === "confirmed" ? "awaiting" : n.artifacts.brief } }
+  const children = [...(s.sitemap.children ?? [])]
+  const at = children.findIndex((c) => c.id === "privacy")
+  children.splice(at < 0 ? children.length : at, 0, ...extra)
+  const pages = { ...s.pages }
+  for (const p of extra) pages[p.id] = "queued"
+  let m: GenState = { ...n, sitemap: { ...s.sitemap, sections: fresh.sections, children }, pages, artifacts: { ...n.artifacts, brief: n.artifacts.brief === "confirmed" ? "awaiting" : n.artifacts.brief } }
+  if (s.buildRun && s.runs[s.buildRun].status === "done" && !Object.values(pages).includes("building")) m = startNextPage(m)
+  return m
+}
+
+/** right after reading the prompt: plan from guesses and get building — questions come once the site is up */
+function autoPlan(s: GenState): GenState {
+  const pb = guessPlan(s.pb!)
+  const n = withPlan({ ...s, styleId: s.styleId ?? presetOf(pb) }, pb)
+  const name = planOf(pb).name(pb)
+  const several = s.pb!.candidates?.kind === "several"
+  return push(n, {
+    type: "agent",
+    text: several
+      ? `You've asked for a lot — I'll start with ${lower(goalLabel(pb.goals[0]))} and build the rest around it. Building a first version of ${name} now; you can change anything once you see it.`
+      : `I'll build a first version of ${name} from your message and what I find online — no need to wait on questions. Once you can see it, I'll ask a few to sharpen it.`,
+  })
+}
+
+/** what the agent says before the questions that come after the first build */
+export const SHARPEN_INTRO = "Here's your first version. A few quick questions to make it more yours — I'll update the site as you answer, and you can skip any of them."
+
+/** the next sharpening question after the build: whatever the builder only guessed */
+function askAfter(s: GenState): GenState {
   const pb = s.pb!
-  const next = nextQuestion(pb)
-  if (!next) return s
-  if (pb.candidates?.kind === "several") return push(s, { type: "agent", text: "You've asked for a lot — let's start with the one that matters most right now. I'll set that up first and keep the rest under Add later." })
-  if (pb.candidates?.kind === "vague") return s
-  const copy = playbookOf(pb).copy
-  if (next.id === "QJ")
-    return push(s, { type: "agent", text: `I'll build a website for a single ${copy.unitShort}. Legal advertising and confidentiality rules differ by place, so first: where do you practice?` })
-  if (next.id === "Q1") return push(s, { type: "agent", text: copy.opening })
-  if (pb.goals.length) return push(s, { type: "agent", text: `Got it — I read your goal${pb.goals.length > 1 ? "s" : ""} as ${joinAnd(pb.goals.map((g) => lower(goalLabel(g))))}. A few quick questions while I look you up.` })
-  return s
+  const book = playbookOf(pb)
+  const q = nextQuestion(sharpenView(pb, book), book)
+  if (!q) return s
+  return push({ ...s, pb: { ...pb, asked: [...pb.asked, q.id] } }, { type: "pb-question", qid: q.id, slot: q.slot, variant: q.variant })
 }
 
 function pbRead(s: GenState, i: number): GenState {
@@ -745,7 +808,7 @@ function pbRead(s: GenState, i: number): GenState {
     n = updateRun(n, s.planRun, (r) => ({ ...r, status: "waiting", tasks: r.tasks.map((t) => (t.id === "search" ? { ...t, status: "pending" } : t)) }))
     return push(n, { type: "pb-gate", kind: d.otherNiche ? "two-sites" : "directory" })
   }
-  return askNext(opening(n))
+  return autoPlan(n)
 }
 
 function pbSearched(s: GenState, i: number): GenState {
@@ -761,6 +824,8 @@ function pbSearched(s: GenState, i: number): GenState {
     if (!pb.place) pb = { ...pb, place: demo.place }
   }
   let n: GenState = updateRun({ ...s, pb }, s.planRun, (r) => advance(r, i, failed ? { status: "warning", detail, duration: undefined } : { detail }))
+  // what the search found goes into the plan the build uses
+  if (pb.planConfirmed) n = withPlan(n, pb)
   if (!pb.planConfirmed) n = updateRun(n, s.planRun, (r) => ({ ...r, status: "waiting", tasks: r.tasks.map((t) => (t.id === "brief" ? { ...t, status: "pending" } : t)) }))
   return maybePlanCard(n)
 }
@@ -806,6 +871,12 @@ function pbAnswer(s: GenState, id: string, value: string | string[], typed?: str
   let n: GenState = { ...s, pb, msgs: s.msgs.map((x) => (x.id === id && x.type === "pb-question" ? { ...x, answer: label, note: reply ?? undefined, prev: s.pb!, value } : x)) }
   // answered in the chat box: show it as a message; answered on the card: the card moves on to the next question
   if (typed) n = push(n, { type: "user", text: typed })
+  if (s.phase === "create" && pb.planConfirmed) {
+    // after the build each answer goes straight into the site; the last one says so
+    n = askAfter(withPlan(n, laterTools(withDefaults(n.pb!))))
+    if (!n.msgs.some(isPending)) n = push(n, { type: "agent", text: "Thanks — I've updated your site with your answers. Have a look in the preview." })
+    return n
+  }
   return askNext(n)
 }
 
@@ -860,7 +931,7 @@ function pbGate(s: GenState, id: string, answer: string): GenState {
   if (answer === "two") n = push(n, { type: "agent", text: `I'll build the ${playbookOf(s.pb).copy.unitShort} first and keep the two separate — start the other website from your dashboard afterwards.` })
   n = { ...n, pb: { ...n.pb!, answers: { ...n.pb!.answers, build: { value: "one", source: "owner" } } } }
   n = resumeSearch(n)
-  return askNext(opening(n))
+  return autoPlan(n)
 }
 
 function pbGuard(s: GenState, id: string, resolution: "accepted" | "declined"): GenState {
@@ -951,6 +1022,8 @@ function pbFollowUp(s: GenState, text: string): GenState | null {
   if (open?.type === "pb-question") {
     const v = parseAnswer(open, text, book)
     if (v !== null) return pbAnswer(s, open.id, v, text)
+    // after the build the questions don't hold the chat: anything else is an ordinary change request
+    if (s.phase === "create") return null
     const q = book.questions.find((x) => x.slot === open.slot && (!open.variant || x.variant === open.variant))
     const opts = open.slot === "goals" ? [goalLabel(book.defaultGoal), goalLabel(book.defaultSecondary)] : (q?.options ?? []).slice(0, 2).map((o) => o.label)
     return push(s, { type: "user", text }, { type: "agent", text: `I'm not sure I understood. Do you mean “${opts[0]}” or “${opts[1]}”? You can also tap one of the options.` })
@@ -1018,18 +1091,15 @@ function pbPatch(s: GenState, id: string, decisions: Record<string, Decision> | 
 
 /** a playbook site planned with defaults, for the prototype's jumps and the editor's existing sites */
 function fastForwardPlaybook(s: GenState): GenState {
-  let pb = withDefaults({ ...s.pb!, candidates: null })
+  let pb = withDefaults({ ...s.pb! })
   const plan = planOf(pb)
   if (plan.isDemo(pb)) {
     const demo = demoOf(pb.niche)
     pb = { ...pb, found: { rating: demo.rating, dentists: demo.people.length, branches: 1, hours: demo.hours }, answers: { ...pb.answers, scale: pb.answers.scale?.source === "default" ? { value: demo.scale, source: "search" } : pb.answers.scale } }
   }
   // like the flow: the goals' tools wait until after the first build (an account site brings its own)
-  if (!Object.keys(pb.decisions).length)
-    for (const g of offerFor(pb.goals)) for (const mod of g.modules) pb = { ...pb, decisions: decide(pb.decisions, mod.id, "later", pb.goals) }
-  pb = { ...pb, planConfirmed: true }
-  const n: GenState = { ...s, pb, brief: plan.brief(pb), questions: plan.questions(pb), sitemap: plan.sitemap(pb), pagePriority: plan.priority(pb), styleId: s.styleId ?? presetOf(pb) }
-  return push(n, { type: "pb-plan", confirmed: true })
+  pb = Object.keys(pb.decisions).length ? { ...pb, planConfirmed: true } : guessPlan(pb)
+  return { ...s, pb, brief: plan.brief(pb), questions: plan.questions(pb), sitemap: plan.sitemap(pb), pagePriority: plan.priority(pb), styleId: s.styleId ?? presetOf(pb) }
 }
 
 /** the page the "A page fails" edge case breaks: Corporate for the lab, the fourth page otherwise */
@@ -1051,7 +1121,14 @@ function finishBuild(s: GenState): GenState {
   // what's left before customers can use the site (publish, domain, accounts for test-mode tools…), once
   if (!n.msgs.some((m) => m.type === "next-steps")) n = push(n, { type: "next-steps" })
   // ask how it went once, after the first build only
-  if (!n.msgs.some((m) => m.type === "feedback")) n = push(n, { type: "feedback" })
+  const first = !n.msgs.some((m) => m.type === "feedback")
+  if (first) n = push(n, { type: "feedback" })
+  // the questions the build didn't wait for: what the business is (short prompt), or the playbook's sharpeners
+  if (first && !s.pb && s.scenario === "vague" && !n.msgs.some((m) => m.type === "clarify")) n = push(n, { type: "clarify" })
+  if (first && s.pb?.planConfirmed && !n.msgs.some((m) => m.type === "pb-question")) {
+    const asked = askAfter(n)
+    if (asked !== n) n = push({ ...n, pb: asked.pb }, { type: "agent", text: SHARPEN_INTRO }, asked.msgs[asked.msgs.length - 1] as NewMsg)
+  }
   return { ...n, queued: [] }
 }
 
@@ -1063,14 +1140,8 @@ function jump(s: GenState, to: JumpTarget, plan: Plan = "business"): GenState {
   // finish the plan run
   n = updateRun(n, 1, (r) => ({ ...r, status: "done", tasks: r.tasks.map((t) => ({ ...t, status: "done", duration: DURATIONS[t.id], detail: t.id === "brief" ? `Drafted a profile from assumptions, flagging ${countAssumptions(n.brief)} details to confirm` : t.id === "style" ? "Sketched 4 style options, including colors, fonts, and vibe" : t.id === "sitemap" ? `Planned ${flatten(n.sitemap).length} pages, including the structure` : undefined })) }))
   n = { ...n, searchShown: SEARCH_RESULTS.length, autoReviewed: n.planRun }
-  n = finishPlan(n)
   if (to === "ready") return n
-  if (to === "review-brief") return { ...n, review: { open: true, step: 0 } }
-  n = { ...n, artifacts: { ...n.artifacts, brief: "confirmed" } }
-  if (to === "review-style") return { ...n, review: { open: true, step: 1 } }
-  n = { ...n, styleId: n.styleId ?? (n.pb ? presetOf(n.pb) : "clinical-clarity"), artifacts: { ...n.artifacts, style: "confirmed" } }
-  if (to === "review-sitemap") return { ...n, review: { open: true, step: 2 } }
-  n = startBuild({ ...n, artifacts: { ...n.artifacts, sitemap: "confirmed" }, plan })
+  n = finishPlan({ ...n, plan })
   if (to === "creating") return n
   // finish the build
   const pages = Object.fromEntries(Object.entries(n.pages).map(([k, v]) => [k, v === "queued" ? "built" : v])) as Record<string, PageStatus>
@@ -1107,6 +1178,9 @@ export function siteState(opts: {
   }
   const n = opts.built ? reducer(base, { type: "jump", to: opts.live ? "published" : "built", plan: opts.plan }) : reducer(base, { type: "jump", to: "ready" })
   // existing websites were rated (or skipped) back when they were first built
-  const msgs = n.msgs.map((m) => (m.type === "feedback" ? { ...m, answer: "skipped" as const } : m))
-  return { ...n, msgs, plan: opts.plan, credits: opts.credits, account: opts.account, publish: { status: opts.live ? "live" : "idle", domain: opts.domain } }
+  // …and their brief was settled then too: no questions or brief to confirm on an existing site
+  const msgs = n.msgs
+    .filter((m) => !(m.type === "pb-question" && !m.answer) && !(m.type === "agent" && m.text === SHARPEN_INTRO) && !(m.type === "clarify" && !m.answer))
+    .map((m) => (m.type === "feedback" ? { ...m, answer: "skipped" as const } : m))
+  return { ...n, msgs, artifacts: { ...n.artifacts, brief: opts.built ? "confirmed" : n.artifacts.brief }, plan: opts.plan, credits: opts.credits, account: opts.account, publish: { status: opts.live ? "live" : "idle", domain: opts.domain } }
 }

@@ -41,7 +41,6 @@ export function GenProvider({
 
   usePlanRunner(s, dispatch)
   useBuildRunner(s, dispatch)
-  useAutoReview(s, dispatch)
 
   return <Ctx.Provider value={{ s, dispatch }}>{children}</Ctx.Provider>
 }
@@ -55,17 +54,6 @@ function restore(prompt: string | null, key: string, initial?: () => GenState): 
   } catch {}
   if (saved?.v === 3 && (!prompt || prompt === saved.prompt)) return saved
   return initial ? initial() : initialState(prompt ?? undefined)
-}
-
-/** once the plan is ready, open the brief review by itself (closing it leaves the filled chat) */
-function useAutoReview(s: GenState, dispatch: Dispatch<Action>) {
-  const due = s.phase === "plan" && s.runs[s.planRun]?.status === "done" && s.autoReviewed !== s.planRun && !s.review.open
-  const speed = s.speed
-  useEffect(() => {
-    if (!due) return
-    const t = window.setTimeout(() => dispatch({ type: "autoReview" }), 900 / speed)
-    return () => window.clearTimeout(t)
-  }, [due, speed, dispatch])
 }
 
 function usePlanRunner(s: GenState, dispatch: Dispatch<Action>) {

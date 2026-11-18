@@ -163,7 +163,7 @@ function PlanBlock({ run, compact }: { run: Run; compact?: boolean }) {
         </div>
       ) : (
         <p className="type-body-md text-fg-primary">
-          {s.pb ? "Before I build anything, I'll plan it with you — a couple of quick questions while I look you up." : "Before I build anything, I'll plan it out with you first."}
+          {s.pb ? "I'll look you up and plan your website, then build it straight away." : "I'll plan your website, then build it straight away."}
         </p>
       )}
       <div className="flex flex-col gap-4">
@@ -304,10 +304,12 @@ const CLARIFY_CHIPS = [
 ]
 
 function Clarify({ answered }: { answered?: string }) {
-  const { dispatch } = useGen()
+  const { s, dispatch } = useGen()
   return (
     <div className="flex flex-col gap-4 pr-4 sm:pr-20">
-      <p className="type-body-md text-fg-primary">Happy to help! Before I plan, tell me a little more — what&apos;s the business, and where is it?</p>
+      <p className="type-body-md text-fg-primary">
+        {s.phase === "create" ? "That's a first version from a short message. Tell me a bit more — what's the business, and where is it? I'll update the site to match." : "Happy to help! Before I plan, tell me a little more — what's the business, and where is it?"}
+      </p>
       {!answered && (
         <div className="flex flex-wrap gap-2">
           {CLARIFY_CHIPS.map((c) => (

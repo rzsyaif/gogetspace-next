@@ -1,6 +1,6 @@
 /** walks the reducer through a dentist conversation the way the timers and the owner would */
 import { describe, expect, it } from "vitest"
-import { initialState, reducer, type Action, type GenState, type Msg } from "./state"
+import { SHARPEN_INTRO, initialState, reducer, type Action, type GenState, type Msg } from "./state"
 
 function tick(s: GenState, max = 20): GenState {
   for (let i = 0; i < max; i++) {
@@ -10,45 +10,60 @@ function tick(s: GenState, max = 20): GenState {
   }
   return s
 }
+/** runs the plan and the build to the end, like the timers would */
+function build(s: GenState): GenState {
+  s = tick(s)
+  for (let i = 0; i < 200 && s.buildRun; i++) {
+    const r = s.runs[s.buildRun]
+    if (r.status !== "running") break
+    s = reducer(s, Object.values(s.pages).includes("building") ? { type: "pageDone" } : { type: "buildStepDone" })
+  }
+  return s
+}
 const open = (s: GenState) => s.msgs.find((m) => (m.type === "pb-question" || m.type === "pb-gate") && !m.answer) as Extract<Msg, { type: "pb-question" }> | undefined
 const go = (s: GenState, a: Action) => reducer(s, a)
+const built = (s: GenState) => s.phase === "create" && s.runs[s.buildRun!].status === "done"
 
 describe("dentist conversation", () => {
-  it("asks the goal, then focus, shows one plan card and plans after confirming", () => {
+  it("builds from guesses straight away, then asks what it guessed", () => {
     let s = initialState("Create a website for a dentist")
     expect(s.niche).toBe("dentist")
-    s = go(s, { type: "planStepDone" }) // read
+    s = tick(s)
+    // nothing waits on the owner: the plan runs through and the build starts
+    expect(open(s)).toBeUndefined()
+    expect(s.phase).toBe("create")
+    expect(s.msgs.some((m) => m.type === "artifacts" || m.type === "pb-plan")).toBe(false)
+    s = build(s)
+    expect(built(s)).toBe(true)
+    expect(s.msgs.some((m) => m.type === "agent" && m.text === SHARPEN_INTRO)).toBe(true)
     const q1 = open(s)!
     expect(q1.qid).toBe("Q1")
     s = go(s, { type: "pbAnswer", id: q1.id, value: ["G1"] })
-    const q2 = open(s)!
-    expect(q2.qid).toBe("Q2")
+    expect(open(s)!.qid).toBe("Q2")
     s = go(s, { type: "followUp", text: "Mostly braces and aligners" })
     expect(s.pb!.answers.focus?.value).toBe("ortho")
-    // answer whatever is left
     for (let i = 0; i < 4 && open(s); i++) s = go(s, { type: "pbAnswer", id: open(s)!.id, value: "decide" })
-    expect(s.msgs.some((m) => m.type === "pb-plan")).toBe(false) // waits for the search
-    s = tick(s)
-    expect(s.runs[s.planRun].status).toBe("waiting")
-    expect(s.msgs.filter((m) => m.type === "pb-plan")).toHaveLength(1)
-    s = go(s, { type: "pbDecide", module: "appointments", decision: "added" })
-    s = go(s, { type: "pbConfirmPlan" })
-    expect(s.runs[s.planRun].status).toBe("running")
-    s = tick(s)
-    expect(s.runs[s.planRun].status).toBe("done")
-    expect(s.sitemap.children?.map((c) => c.id)).toContain("book")
-  })
-
-  it("'just build it' asks nothing and goes straight to the plan card", () => {
-    const s = tick(initialState("Just build it, I'm a dentist"))
     expect(open(s)).toBeUndefined()
-    expect(s.msgs.some((m) => m.type === "pb-plan")).toBe(true)
+    expect(s.msgs.at(-1)).toMatchObject({ type: "agent", text: expect.stringContaining("updated your site") })
   })
 
-  it("guardrails show up as cards and new goals after the plan become a patch", () => {
-    let s = tick(initialState("Just build it, I'm a dentist. Say we're the best dentist in Penang"))
+  it("a change request while a question is open goes to the site, not the question", () => {
+    let s = build(initialState("Create a website for a dentist"))
+    const q = open(s)!
+    s = go(s, { type: "followUp", text: "Make the header darker" })
+    expect(open(s)?.id).toBe(q.id)
+    expect(s.msgs.at(-1)).toMatchObject({ type: "agent", text: expect.stringContaining("Done") })
+  })
+
+  it("'just build it' asks nothing, before or after", () => {
+    const s = build(initialState("Just build it, I'm a dentist"))
+    expect(built(s)).toBe(true)
+    expect(open(s)).toBeUndefined()
+  })
+
+  it("guardrails show up as cards and new goals after the build become a patch", () => {
+    let s = build(initialState("Just build it, I'm a dentist. Say we're the best dentist in Penang"))
     expect(s.msgs.some((m) => m.type === "pb-guard" && m.rule === "best")).toBe(true)
-    s = tick(go(s, { type: "pbConfirmPlan" }))
     s = go(s, { type: "followUp", text: "I also want emergency patients" })
     const patch = s.msgs.find((m) => m.type === "pb-patch")!
     s = go(s, { type: "pbPatch", id: patch.id, decisions: { emergency: "added" } })
@@ -58,15 +73,26 @@ describe("dentist conversation", () => {
   it("a directory is gated before anything is planned", () => {
     const s = go(initialState("I need a platform to list dentists in my city"), { type: "planStepDone" })
     expect(open(s)?.type).toBe("pb-gate")
+    expect(s.phase).toBe("plan")
   })
 
   it("jumping to the editor fast-forwards a dentist plan", () => {
     const s = go(initialState("Website for Rahma Family Dental in Penang"), { type: "jump", to: "built" })
     expect(s.pb?.planConfirmed).toBe(true)
+    expect(s.artifacts.brief).toBe("awaiting")
+  })
+
+  it("the brief is confirmed from the to-do list, and edits after the build update the site", () => {
+    let s = build(initialState("Website for Rahma Family Dental in Penang"))
+    expect(s.artifacts.brief).toBe("awaiting")
+    s = go(s, { type: "editBrief", brief: s.brief.slice(1) })
+    s = go(s, { type: "confirmBrief" })
+    expect(s.artifacts.brief).toBe("confirmed")
+    expect(s.msgs.at(-1)).toMatchObject({ type: "agent", text: expect.stringContaining("Brief confirmed") })
   })
 })
 
-describe("every eval prompt reaches a plan and a build", () => {
+describe("every eval prompt reaches a build, then its questions", () => {
   const prompts = [
     "Create a website for a dentist",
     "Website for my 2-branch orthodontic clinic. Patients should book consultations online and I want to show price ranges.",
@@ -84,25 +110,25 @@ describe("every eval prompt reaches a plan and a build", () => {
     it(prompt, () => {
       let s = initialState(prompt)
       expect(s.niche).toBe("dentist")
-      for (let i = 0; i < 12; i++) {
+      for (let i = 0; i < 4; i++) {
         s = tick(s, 1)
-        const o = s.msgs.find((m) => (m.type === "pb-question" || m.type === "pb-gate") && !m.answer)
+        const o = open(s) as Msg | undefined
         if (o?.type === "pb-gate") s = go(s, { type: "pbGate", id: o.id, answer: o.kind === "two-sites" ? "only" : "one" })
-        else if (o?.type === "pb-question") s = go(s, { type: "pbAnswer", id: o.id, value: o.slot === "goals" ? (s.pb!.candidates?.goals.slice(0, 1) ?? ["G1"]) : "decide" })
       }
-      s = tick(s)
-      expect(s.msgs.filter((m) => m.type === "pb-plan")).toHaveLength(1)
-      expect(s.pb!.asked.filter((q) => q !== "Q0").length).toBeLessThanOrEqual(4)
-      s = tick(go(s, { type: "pbConfirmPlan" }))
-      expect(s.runs[s.planRun].status).toBe("done")
-      s = go(s, { type: "jump", to: "built" })
-      expect(s.phase).toBe("create")
+      s = build(s)
+      expect(built(s)).toBe(true)
+      for (let i = 0; i < 8 && open(s); i++) {
+        const o = open(s)!
+        s = go(s, { type: "pbAnswer", id: o.id, value: o.slot === "goals" ? (s.pb!.candidates?.goals.slice(0, 1) ?? ["G1"]) : "decide" })
+      }
+      expect(open(s)).toBeUndefined()
+      expect(s.pb!.asked.filter((q) => q !== "Q0" && q !== "QJ").length).toBeLessThanOrEqual(4)
     })
 })
 
 describe("the question card", () => {
   it("answers quietly, goes back to undo, and skips the rest", () => {
-    let s = go(initialState("Create a website for a dentist"), { type: "planStepDone" })
+    let s = build(initialState("Create a website for a dentist"))
     const q1 = open(s)!
     s = go(s, { type: "pbAnswer", id: q1.id, value: ["G4"] })
     expect(s.msgs.some((m) => m.type === "user" && m.text.includes("coming back"))).toBe(false)
@@ -111,15 +137,13 @@ describe("the question card", () => {
     s = go(s, { type: "pbBack", id: q2.id })
     expect(open(s)?.id).toBe(q1.id)
     expect(open(s)?.value).toEqual(["G4"])
-    expect(s.pb!.goals).toEqual([])
     s = go(s, { type: "pbAnswer", id: q1.id, value: ["G1"] })
     s = go(s, { type: "pbSkipAll" })
     expect(open(s)).toBeUndefined()
-    s = tick(s)
-    expect(s.msgs.filter((m) => m.type === "pb-plan")).toHaveLength(1)
+    expect(s.msgs.filter((m) => m.type === "agent" && m.text.includes("updated your site"))).toHaveLength(1)
   })
   it("a written answer is matched, or asked again", () => {
-    let s = go(initialState("Create a website for a dentist"), { type: "planStepDone" })
+    let s = build(initialState("Create a website for a dentist"))
     s = go(s, { type: "pbAnswer", id: open(s)!.id, value: ["G1"] })
     const q2 = open(s)!
     s = go(s, { type: "pbAnswerText", id: q2.id, text: "qwerty" })
@@ -131,7 +155,7 @@ describe("the question card", () => {
 
 describe("the prices question", () => {
   it("keeps the owner's price list with the answer and in the brief", () => {
-    let s = go(initialState("Create a website for a dentist"), { type: "planStepDone" })
+    let s = build(initialState("Create a website for a dentist"))
     s = go(s, { type: "pbAnswer", id: open(s)!.id, value: ["G6"] })
     let q = open(s)!
     for (let i = 0; i < 4 && q && q.slot !== "prices"; i++) {
@@ -143,21 +167,19 @@ describe("the prices question", () => {
     expect(s.pb!.priceList?.file?.name).toBe("prices.xlsx")
     expect(s.msgs.find((m) => m.id === q.id && m.type === "pb-question")).toMatchObject({ answer: expect.stringContaining("prices.xlsx") })
     s = go(s, { type: "pbSkipAll" })
-    s = tick(go(tick(s), { type: "pbConfirmPlan" }))
     expect(s.brief.flatMap((b) => b.items.map((i) => i.text)).join(" ")).toContain("prices.xlsx")
   })
 })
 
 describe("the size question", () => {
   it("keeps the dentists the owner typed, with registration numbers, in the brief", () => {
-    let s = go(initialState("Website for my children's dental clinic"), { type: "planStepDone" })
+    let s = build(initialState("Website for my children's dental clinic"))
     s = go(s, { type: "pbAnswer", id: open(s)!.id, value: ["G1"] })
     const q = open(s)!
     expect(q.slot).toBe("scale")
     s = go(s, { type: "pbAnswer", id: q.id, value: "dentists", team: { people: [{ name: "Dr. Aisyah Rahman", reg: "12345" }, { name: "Dr. Wei Tan" }] } })
     expect(s.msgs.find((m) => m.id === q.id && m.type === "pb-question")).toMatchObject({ answer: expect.stringContaining("2 dentists added") })
     s = go(s, { type: "pbSkipAll" })
-    s = tick(go(tick(s), { type: "pbConfirmPlan" }))
     const brief = s.brief.flatMap((b) => b.items.map((i) => i.text)).join(" ")
     expect(brief).toContain("Dr. Aisyah Rahman — 12345")
     expect(brief).toContain("the other 1")

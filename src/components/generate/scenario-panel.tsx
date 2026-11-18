@@ -11,9 +11,6 @@ import { useGen } from "./gen-provider"
 const JUMPS: { to: JumpTarget; label: string }[] = [
   { to: "generating", label: "Generating" },
   { to: "ready", label: "Ready to review" },
-  { to: "review-brief", label: "Review: brief" },
-  { to: "review-style", label: "Review: style" },
-  { to: "review-sitemap", label: "Review: sitemap" },
   { to: "creating", label: "Creating" },
   { to: "built", label: "Built" },
   { to: "published", label: "Published" },

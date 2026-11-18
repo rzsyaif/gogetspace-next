@@ -213,6 +213,17 @@ export function nextQuestion(st: PlaybookState, pb: Playbook = playbookOf(st)): 
 }
 
 /**
+ * The plan as the questions see it once the site is built from guesses: answers and goals the builder assumed
+ * (and hasn't asked about yet) count as unknown, so the sharpening questions after the first build ask about them.
+ */
+export function sharpenView(st: PlaybookState, pb: Playbook = playbookOf(st)): PlaybookState {
+  const askedSlots = new Set(pb.questions.filter((q) => st.asked.includes(q.id)).map((q) => q.slot))
+  const answers = Object.fromEntries(Object.entries(st.answers).filter(([slot, a]) => slot === "build" || a?.source !== "default" || askedSlots.has(slot as Slot))) as PlaybookState["answers"]
+  const goals = st.goalsSource === "default" && !askedSlots.has("goals") && !st.justBuild ? [] : st.goals
+  return { ...st, answers, goals }
+}
+
+/**
  * Where the owner is in the series of questions: the open question's number and how many there will probably be.
  * Later questions depend on the answers, so the total assumes the usual answers and can change by one as they come in.
  */
