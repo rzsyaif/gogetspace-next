@@ -41,6 +41,9 @@ export function useEditorSite() {
   return c
 }
 
+/** the editor's site when there is one (chat cards also render outside an editor) */
+export const useEditorSiteMaybe = () => useContext(Ctx)
+
 /** the site being created in /generate */
 export function FlowSiteProvider({ children }: { children: ReactNode }) {
   const { s, dispatch } = useGen()

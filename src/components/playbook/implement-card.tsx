@@ -1,11 +1,16 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Check, Loader } from "lucide-react"
+import Link from "next/link"
+import { ArrowUpRight, Check, Loader, Plug } from "lucide-react"
+import { Button } from "@/components/ui"
 import { cn } from "@/lib/cn"
 import type { Msg } from "@/lib/generation/state"
 import { moduleById } from "@/lib/playbooks/engine"
 import { useGen } from "@/components/generate/gen-provider"
+import { useEditorSiteMaybe } from "@/components/generate/editor-site"
+import { showcaseOf } from "@/lib/playbooks/module-showcase"
+import { moduleAppUrl } from "./modules-panel"
 
 const STEP_MS = 1400
 
@@ -14,14 +19,17 @@ const STEP_MS = 1400
  * then what changed. Progress is paced from when it was sent, so a reload shows it finished.
  */
 export function ImplementCard({ m }: { m: Extract<Msg, { type: "pb-implement" }> }) {
-  const { s } = useGen()
+  const { s, dispatch } = useGen()
+  const editor = useEditorSiteMaybe()
   const mod = moduleById(m.module)
-  const live = !mod.needsAccount || s.pb?.activated.includes(mod.id)
+  const sc = showcaseOf(mod.id, mod.name, mod.included)
+  const live = !mod.needsAccount || s.pb?.activated.includes(mod.id) || editor?.modules?.list.some((x) => x.id === mod.id && x.status === "live")
+  const connect = () => (editor?.modules ? editor.modules.activate(mod.id) : dispatch({ type: "pbActivate", module: mod.id }))
   const where = m.pages.length ? `a new ${m.pages.map((p) => p.title).join(" and ")} ${m.pages.length === 1 ? "page" : "pages"}` : s.pb?.niche === "lawyer" ? "your Home, Contact and practice-area pages" : "your Home, Contact and treatment pages"
   const steps = [
     "Reading your site and plan",
     `Adding ${mod.name} to ${where}`,
-    mod.needsAccount ? `Connecting it to ${mod.needsAccount.label}` : "Wiring it into your enquiry inbox and notifications",
+    mod.needsAccount ? (live ? `Connecting it to ${mod.needsAccount.label}` : "Turning on test mode") : "Wiring it into your enquiry inbox and notifications",
     "Checking links and the mobile layout",
   ]
   const [now, setNow] = useState(() => m.at)
@@ -51,10 +59,28 @@ export function ImplementCard({ m }: { m: Extract<Msg, { type: "pb-implement" }>
         })}
       </ol>
       {finished && (
-        <p className="type-body-md text-fg-primary">
-          Done — {mod.name} is on your site{m.pages.length ? ` with ${where}` : ""}. Have a look in the preview.
-          {!live && ` It runs in test mode until you connect ${mod.needsAccount!.label} in Modules.`}
-        </p>
+        <div className="flex flex-col gap-3">
+          <p className="type-body-md text-fg-primary">
+            Done — {mod.name} is on your site{m.pages.length ? ` with ${where}` : ""}. Have a look in the preview.
+          </p>
+          <p className="type-body-md text-fg-secondary">
+            You&apos;ll manage it from <span className="text-fg-primary">Modules › {mod.name} › Manage</span>, in {sc.manage.split(" — ")[0]}.
+            {!live && ` ${mod.needsAccount!.testMode}.`}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {!live && (
+              <Button size="sm" leadingIcon={<Plug />} onClick={connect}>
+                {mod.needsAccount!.connect}
+              </Button>
+            )}
+            <Button size="sm" variant="secondary" trailingIcon={<ArrowUpRight />} asChild>
+              <Link href={moduleAppUrl(editor?.site.id ?? "new-site", mod.id)} target="_blank" rel="noreferrer">
+                Manage {mod.name}
+              </Link>
+            </Button>
+          </div>
+          {live && mod.needsAccount && <p className="type-caption text-fg-tertiary">{mod.needsAccount.label} connected — {mod.name} is live.</p>}
+        </div>
       )}
     </div>
   )
