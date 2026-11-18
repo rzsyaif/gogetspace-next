@@ -3,9 +3,7 @@
 import { Check } from "lucide-react"
 import { Button } from "@/components/ui"
 import { cn } from "@/lib/cn"
-import { moduleById, offerFor } from "@/lib/playbooks/engine"
-
-const joinAnd = (xs: string[]) => (xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`)
+import { moduleById } from "@/lib/playbooks/engine"
 import { useEditorNav } from "./editor-nav"
 import { useEditorSite } from "./editor-site"
 import { useGen } from "./gen-provider"
@@ -35,7 +33,6 @@ export function NextSteps({ compact }: { compact?: boolean }) {
 
   // tools that run in test mode until the owner connects their own account
   const accounts = (modules?.list ?? []).map((m) => ({ m: moduleById(m.id), live: m.status === "live" })).filter((x) => x.m.needsAccount)
-  const toolsHint = pb ? "Bookings, reviews, payments and more" : "Enquiries, bookings, payments and more"
 
   // test-mode tools come right after the build: until they're connected, bookings and payments don't reach the owner
   const accountsStep: Step | null = accounts.length
@@ -50,18 +47,13 @@ export function NextSteps({ compact }: { compact?: boolean }) {
     ? { id: "pages", title: `Build ${locked} more planned ${locked === 1 ? "page" : "pages"}`, done: false, action: { label: "Upgrade", onClick: () => nav.goTo("plan") } }
     : { id: "pages", title: "Create additional pages", done: false, action: { label: "Create", onClick: () => dispatch({ type: "openReview", step: 2 }) } }
 
-  // the tools the owner's goals call for, suggested once they've seen the site; they need it published first
-  const have = new Set((modules?.list ?? []).map((m) => m.id))
-  const recommended = pb ? offerFor(pb.goals).flatMap((g) => g.modules).filter((m) => !have.has(m.id)) : []
-  const toolsStep: Step = recommended.length
-    ? {
-        id: "tools",
-        title: "Add recommended modules",
-        detail: `${joinAnd(recommended.slice(0, 3).map((m) => m.name))}${live ? "" : " · after you publish"}`,
-        done: false,
-        action: live ? { label: "See", onClick: () => nav.goTo("modules") } : { label: "Publish first", onClick: nav.publish },
-      }
-    : { id: "tools", title: "Add functional modules", detail: toolsHint, done: pb ? have.size > 0 : false, action: { label: "Add", onClick: () => nav.goTo("modules") } }
+  // modules: one line; Modules lists what's recommended, and asks to publish first when the site isn't live yet
+  const toolsStep: Step = {
+    id: "tools",
+    title: "Install modules",
+    done: !!pb && (modules?.list.length ?? 0) > 0,
+    action: { label: "See Details", onClick: () => nav.goTo("modules") },
+  }
 
   // at most five steps, one line each
   const steps: Step[] = [
