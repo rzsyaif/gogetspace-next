@@ -168,6 +168,8 @@ export interface GenState {
   autoReviewed?: number
   /** the brief was edited after the build, so confirming it updates the site */
   briefDirty?: boolean
+  /** the questions after the build stay out of the chat until the owner opens them from the to-do list */
+  sharpenOpen?: boolean
   seq: number
 }
 
@@ -331,6 +333,7 @@ export type Action =
   | { type: "pbActivate"; module: string }
   | { type: "pbImplement"; module: string; at: number }
   | { type: "confirmBrief" }
+  | { type: "showQuestions" }
 
 export type JumpTarget = "generating" | "ready" | "creating" | "built" | "published"
 
@@ -374,7 +377,7 @@ function startBuild(s: GenState, homepageOnly = false): GenState {
     runs: { ...s.runs, [id]: { id, kind: "build", status: "running", tasks: buildTasks() } },
   }
   const pages0 = flatten(s.sitemap).length
-  next = push(next, { type: "agent", text: `Building your website now — ${pages0} pages from my best guesses. ${s.pb || s.scenario === "vague" ? "I'll ask a few quick questions once you can see it." : "You can check the brief from your to-do list once it's ready."}` }, { type: "build", runId: id })
+  next = push(next, { type: "agent", text: `Building your website now — ${pages0} pages from my best guesses. ${s.pb || s.scenario === "vague" ? "Once you can see it, a few quick questions in your to-do list will sharpen it." : "You can check the brief from your to-do list once it's ready."}` }, { type: "build", runId: id })
   return next
 }
 
@@ -670,6 +673,8 @@ export function reducer(s: GenState, a: Action): GenState {
       return pbPatch(s, a.id, a.decisions)
     case "pbImplement":
       return pbImplement(s, a.module, a.at)
+    case "showQuestions":
+      return { ...s, sharpenOpen: true }
     case "confirmBrief": {
       const n: GenState = { ...s, artifacts: { ...s.artifacts, brief: "confirmed" }, briefDirty: false }
       return s.briefDirty ? push(n, { type: "agent", text: "Brief confirmed — I've updated the site to match your changes." }) : n
@@ -780,7 +785,7 @@ function autoPlan(s: GenState): GenState {
     type: "agent",
     text: several
       ? `You've asked for a lot — I'll start with ${lower(goalLabel(pb.goals[0]))} and build the rest around it. Building a first version of ${name} now; you can change anything once you see it.`
-      : `I'll build a first version of ${name} from your message and what I find online — no need to wait on questions. Once you can see it, I'll ask a few to sharpen it.`,
+      : `I'll build a first version of ${name} from your message and what I find online — no need to wait on questions. Once you can see it, you can answer a few to sharpen it.`,
   })
 }
 
@@ -1018,7 +1023,8 @@ function pbFollowUp(s: GenState, text: string): GenState | null {
     for (const g of hits) n = push(n, { type: "pb-guard", rule: g.id, quote: quoteOf(g.match, text) })
     return n
   }
-  const open = s.msgs.find(isPending)
+  // a question that's still tucked away in the to-do list isn't being answered
+  const open = s.msgs.find((m) => isPending(m) && !(m.type === "pb-question" && s.phase === "create" && !s.sharpenOpen))
   if (open?.type === "pb-question") {
     const v = parseAnswer(open, text, book)
     if (v !== null) return pbAnswer(s, open.id, v, text)

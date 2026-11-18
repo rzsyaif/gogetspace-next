@@ -18,7 +18,8 @@ function build(s: GenState): GenState {
     if (r.status !== "running") break
     s = reducer(s, Object.values(s.pages).includes("building") ? { type: "pageDone" } : { type: "buildStepDone" })
   }
-  return s
+  // the owner opens the questions from the to-do list
+  return reducer(s, { type: "showQuestions" })
 }
 const open = (s: GenState) => s.msgs.find((m) => (m.type === "pb-question" || m.type === "pb-gate") && !m.answer) as Extract<Msg, { type: "pb-question" }> | undefined
 const go = (s: GenState, a: Action) => reducer(s, a)
@@ -197,5 +198,16 @@ describe("adding a module from the Modules page", () => {
     const [user, card] = s.msgs.slice(-2)
     expect(user).toMatchObject({ type: "user", text: "Add Estimates to my website." })
     expect(card).toMatchObject({ type: "pb-implement", module: "estimates" })
+  })
+})
+
+describe("the questions after the build", () => {
+  it("wait in the to-do list: typing doesn't answer them until they're opened", () => {
+    let s = initialState("Create a website for a dentist")
+    for (let i = 0; i < 200 && !(s.buildRun && s.runs[s.buildRun].status === "done"); i++)
+      s = reducer(s, s.phase === "plan" ? { type: "planStepDone" } : Object.values(s.pages).includes("building") ? { type: "pageDone" } : { type: "buildStepDone" })
+    expect(s.sharpenOpen).toBeFalsy()
+    s = reducer(s, { type: "followUp", text: "Mostly braces and aligners" })
+    expect(s.pb!.answers.focus?.source).not.toBe("owner")
   })
 })

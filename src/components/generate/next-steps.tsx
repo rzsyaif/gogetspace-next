@@ -39,8 +39,9 @@ export function NextSteps({ compact }: { compact?: boolean }) {
   const asked = s.msgs.some((m) => m.type === "pb-question")
   const left = openQ?.type === "pb-question" && pb ? (({ index, total }) => Math.max(1, total - index + 1))(questionProgress(sharpenView(pb, playbookOf(pb)), openQ.slot)) : 0
   const showQuestion = () => {
+    dispatch({ type: "showQuestions" })
     nav.goTo("agent")
-    window.setTimeout(() => document.querySelector("[data-question-open]")?.scrollIntoView({ behavior: "smooth", block: "center" }), 60)
+    window.setTimeout(() => document.querySelector("[data-question-open]")?.scrollIntoView({ behavior: "smooth", block: "start" }), 120)
   }
   const questionsStep: Step | null = asked
     ? { id: "questions", title: openQ ? `Answer ${left} quick ${left === 1 ? "question" : "questions"}` : "Answer quick questions", done: !openQ, action: { label: "Answer", onClick: showQuestion } }
