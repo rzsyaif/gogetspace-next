@@ -10,7 +10,6 @@ import { DENTIST } from "@/lib/playbooks/dentist"
 import { clinicName, presetName } from "@/lib/playbooks/dentist-plan"
 import {
   SOURCE_LABEL,
-  bringsWith,
   coreModules,
   goalLabel,
   mainButton,
@@ -25,7 +24,6 @@ import {
 } from "@/lib/playbooks/engine"
 import type { Slot, Source } from "@/lib/playbooks/types"
 import { ModuleCard, priceLabel } from "@/components/playbook/module-card"
-import { RecommendedTools, type OfferedTool } from "@/components/playbook/recommended-tools"
 import { useGen } from "./gen-provider"
 import { useEditorSite } from "./editor-site"
 
@@ -107,7 +105,11 @@ export function PlanCard({ m, compact }: { m: Extract<Msg, { type: "pb-plan" }>;
   const pb = s.pb!
   const st = withDefaults(pb)
   const total = monthlyTotal(st)
-  const btn = mainButton(st)
+  // tools the goals call for wait until after the first build, so the main button is planned without them
+  const waiting = offerFor(st.goals)
+    .flatMap((g) => g.modules)
+    .filter((x) => !pb.decisions[x.id])
+  const btn = mainButton({ ...st, decisions: { ...Object.fromEntries(waiting.map((x) => [x.id, "later" as Decision])), ...st.decisions } })
 
   if (m.confirmed) {
     const tools = Object.entries(pb.decisions).filter(([, d]) => d === "added").map(([id]) => moduleById(id))
@@ -134,24 +136,15 @@ export function PlanCard({ m, compact }: { m: Extract<Msg, { type: "pb-plan" }>;
 
   const lines = planLines(pb)
   const shown = all ? lines : lines.slice(0, 4)
-  const offer = offerFor(st.goals)
-  const offered = new Set(offer.flatMap((g) => g.modules.map((x) => x.id)))
-  const decideOne = (id: string, d: Decision) => {
-    if (d === "added" && moduleById(id).id === "gallery" && !pb.consent.includes("gallery")) return dispatch({ type: "pbConsent", module: id })
-    dispatch({ type: "pbDecide", module: id, decision: d })
+  // tools wait until the owner has seen their site: they're suggested in the editor's to-do list and on Modules
+  const later = offerFor(st.goals)
+    .flatMap((g) => g.modules)
+    .filter((x) => pb.decisions[x.id] !== "added")
+  const confirm = () => {
+    for (const x of waiting) dispatch({ type: "pbDecide", module: x.id, decision: "later" })
+    dispatch({ type: "pbConfirmPlan" })
   }
-
-  // the tools for the goals, in goal order, each once
-  const seen = new Set<string>()
-  const tools: OfferedTool[] = offer.flatMap((g) =>
-    g.modules
-      .filter((mod) => !seen.has(mod.id) && seen.add(mod.id))
-      .map((mod) => {
-        const dep = bringsWith(mod.id, pb.decisions, st.goals)
-        const consent = mod.id === "gallery" && !pb.consent.includes("gallery") ? "Adding this asks you to confirm you have written patient consent." : undefined
-        return { m: mod, goal: g.goal, decision: pb.decisions[mod.id], note: dep && pb.decisions[mod.id] !== "added" ? `Comes with ${dep.name} — it needs one to work.` : consent }
-      }),
-  )
+  const free = coreModules().map((x) => x.name)
 
   return (
     // the conclusion of the questions: read from its top, like the question cards
@@ -203,20 +196,24 @@ export function PlanCard({ m, compact }: { m: Extract<Msg, { type: "pb-plan" }>;
           )}
         </dl>
 
+        <div className="flex flex-col gap-4 rounded-md bg-subtle p-4 sm:flex-row sm:items-center sm:gap-6">
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <p className="type-label-md text-fg-primary">I&apos;ll build the free parts first</p>
+            <p className="type-body-sm text-fg-secondary">
+              Included free: {free.join(", ")}.{" "}
+              {later.length
+                ? `Once you've seen your website, I'll suggest tools for your goals, like ${later
+                    .slice(0, 2)
+                    .map((x) => x.name.toLowerCase())
+                    .join(" or ")} — they'll be in your to-do list.`
+                : "Nothing to pay on top of your plan."}
+            </p>
+          </div>
+          <Button className="shrink-0 max-sm:w-full" onClick={confirm}>
+            Create Website Plan
+          </Button>
+        </div>
       </section>
-      <RecommendedTools
-        tools={tools}
-        core={coreModules().filter((x) => x.id !== "inbox")}
-        total={total}
-        onDecide={decideOne}
-        fallback={btn.fallback ? `Without ${btn.module?.name}, the main button becomes “${btn.label}” — patients reach you directly instead.` : undefined}
-        onSkip={() => {
-          // nothing paid: everything still open waits under Add later
-          for (const id of offered) if (pb.decisions[id] !== "added") dispatch({ type: "pbDecide", module: id, decision: "later" })
-          dispatch({ type: "pbConfirmPlan" })
-        }}
-        onConfirm={() => dispatch({ type: "pbConfirmPlan" })}
-      />
     </div>
   )
 }

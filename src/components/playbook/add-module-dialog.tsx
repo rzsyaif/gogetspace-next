@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Check, Loader, Plug, Sparkles } from "lucide-react"
+import { Check, Loader, Plug, Rocket, Sparkles } from "lucide-react"
 import { Alert, Button, Checkbox, Dialog, DialogContent, Stepper } from "@/components/ui"
 import { cn } from "@/lib/cn"
 import { bringsWith, moduleById, type Decision } from "@/lib/playbooks/engine"
@@ -32,6 +32,8 @@ export function AddModuleDialog({
   goals,
   billing,
   onImplement,
+  published,
+  onPublish,
 }: {
   module: string | null
   onClose: () => void
@@ -39,10 +41,17 @@ export function AddModuleDialog({
   goals: string[]
   billing: AddBilling
   onImplement: (module: string) => void
+  published: boolean
+  onPublish: () => void
 }) {
   return (
     <Dialog open={!!module} onOpenChange={(o) => !o && onClose()}>
-      {module && <Flow key={module} module={module} onClose={onClose} api={api} goals={goals} billing={billing} onImplement={onImplement} />}
+      {module &&
+        (published ? (
+          <Flow key={module} module={module} onClose={onClose} api={api} goals={goals} billing={billing} onImplement={onImplement} />
+        ) : (
+          <PublishFirst module={module} onClose={onClose} onPublish={onPublish} />
+        ))}
     </Dialog>
   )
 }
@@ -235,5 +244,39 @@ function Line({ label, value, strong }: { label: string; value: string; strong?:
       <span className={cn("min-w-0 type-body-sm", strong ? "text-fg-primary" : "text-fg-secondary")}>{label}</span>
       <span className={cn("shrink-0 type-body-sm tabular-nums", strong ? "font-semibold text-fg-primary" : "text-fg-secondary")}>{value}</span>
     </div>
+  )
+}
+
+/** modules go on a published website — and publishing is where the owner makes their account */
+function PublishFirst({ module, onClose, onPublish }: { module: string; onClose: () => void; onPublish: () => void }) {
+  const m = moduleById(module)
+  return (
+    <DialogContent
+      title="Publish your website first"
+      className="max-w-[480px]"
+      footer={
+        <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row [&>*]:max-sm:w-full">
+          <Button variant="secondary" onClick={onClose}>
+            Not now
+          </Button>
+          <Button
+            leadingIcon={<Rocket />}
+            onClick={() => {
+              onClose()
+              onPublish()
+            }}
+          >
+            Publish website
+          </Button>
+        </div>
+      }
+    >
+      <div className="flex flex-col gap-3">
+        <p className="type-body-md text-fg-secondary">
+          {m.name} works on a live website, so publish yours first. It takes a minute, and it&apos;s where you create your free account — then come back here to add {m.name}.
+        </p>
+        <p className="type-caption text-fg-tertiary">Nothing is charged for {m.name} until you add it.</p>
+      </div>
+    </DialogContent>
   )
 }

@@ -3,7 +3,9 @@
 import { Check } from "lucide-react"
 import { Button } from "@/components/ui"
 import { cn } from "@/lib/cn"
-import { moduleById } from "@/lib/playbooks/engine"
+import { moduleById, offerFor } from "@/lib/playbooks/engine"
+
+const joinAnd = (xs: string[]) => (xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`)
 import { useEditorNav } from "./editor-nav"
 import { useEditorSite } from "./editor-site"
 import { useGen } from "./gen-provider"
@@ -48,6 +50,19 @@ export function NextSteps({ compact }: { compact?: boolean }) {
     ? { id: "pages", title: `Build ${locked} more planned ${locked === 1 ? "page" : "pages"}`, done: false, action: { label: "Upgrade", onClick: () => nav.goTo("plan") } }
     : { id: "pages", title: "Create additional pages", done: false, action: { label: "Create", onClick: () => dispatch({ type: "openReview", step: 2 }) } }
 
+  // the tools the owner's goals call for, suggested once they've seen the site; they need it published first
+  const have = new Set((modules?.list ?? []).map((m) => m.id))
+  const recommended = pb ? offerFor(pb.goals).flatMap((g) => g.modules).filter((m) => !have.has(m.id)) : []
+  const toolsStep: Step = recommended.length
+    ? {
+        id: "tools",
+        title: "Add recommended modules",
+        detail: `${joinAnd(recommended.slice(0, 3).map((m) => m.name))}${live ? "" : " · after you publish"}`,
+        done: false,
+        action: live ? { label: "See", onClick: () => nav.goTo("modules") } : { label: "Publish first", onClick: nav.publish },
+      }
+    : { id: "tools", title: "Add functional modules", detail: toolsHint, done: pb ? have.size > 0 : false, action: { label: "Add", onClick: () => nav.goTo("modules") } }
+
   // at most five steps, one line each
   const steps: Step[] = [
     { id: "created", title: "Website created", done: true },
@@ -58,18 +73,12 @@ export function NextSteps({ compact }: { compact?: boolean }) {
       done: live,
       action: live ? undefined : { label: "Publish", onClick: nav.publish },
     },
+    toolsStep,
     {
       id: "domain",
       title: "Add a proper domain",
       done: usage.customDomain,
       action: usage.customDomain ? undefined : { label: "Connect", onClick: () => nav.goTo("domain") },
-    },
-    {
-      id: "tools",
-      title: "Add functional modules",
-      detail: toolsHint,
-      done: false,
-      action: { label: "Add", onClick: () => nav.goTo("modules") },
     },
     ...(accountsStep ? [] : [pagesStep]),
   ]
