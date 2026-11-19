@@ -3,6 +3,7 @@
  * prompt is read; the brief is confirmed later from the to-do list and the questions come after the first build.
  * Pure reducer; timing lives in the provider's runner. Edge cases are driven by `scenario`.
  */
+import { read as readPrompt } from "@/lib/prompt-builder"
 import { DEFAULT_BRIEF, DEFAULT_QUESTIONS, countAssumptions, type BriefSection, type OpenQuestion } from "./brief"
 import { SITEMAP, flatten, unlockedIds, type PageNode, type Plan } from "@/lib/bakti/sitemap"
 import {
@@ -233,7 +234,10 @@ export const DEFAULT_PROMPT = "Website for clinical laboratory in penang named B
 
 export function initialState(prompt = DEFAULT_PROMPT, scenario?: Scenario, speed = 1): GenState {
   const niche = detect(prompt).niche
-  const pb = niche ? initialPlaybookState(prompt) : null
+  // a style picked in the homepage prompt builder ("…, in the Warm Family style") is the one the build uses
+  const picked = readPrompt(prompt).style?.id ?? null
+  const pb0 = niche ? initialPlaybookState(prompt) : null
+  const pb = pb0 && picked ? { ...pb0, style: picked } : pb0
   // a short dentist or lawyer prompt isn't vague — the playbook asks its own goal question
   const sc = scenario ?? (niche && detectScenario(prompt) === "vague" ? "happy" : detectScenario(prompt))
   const plan = pb ? planOf(pb) : null
@@ -260,7 +264,7 @@ export function initialState(prompt = DEFAULT_PROMPT, scenario?: Scenario, speed
     brief,
     questions: pb ? plan!.questions(pb) : structuredClone(DEFAULT_QUESTIONS),
     styleSet: "a",
-    styleId: null,
+    styleId: picked,
     hasCustom: false,
     sitemap: pb ? plan!.sitemap(withDefaults(pb)) : structuredClone(SITEMAP),
     plan: "free",

@@ -21,7 +21,7 @@ export function Hero() {
           <p className="type-body-lg text-neutral-600">Build a dream space for your business. Start for free.</p>
         </div>
         <div data-hero-prompt className="w-full">
-          <PromptInput flowHref="/generate" signals />
+          <PromptInput flowHref="/generate" signals builder />
         </div>
       </div>
     </section>
