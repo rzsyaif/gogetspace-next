@@ -12,7 +12,6 @@ export function Pricing() {
       className="flex w-full scroll-mt-24 flex-col items-center gap-12 px-4 py-20 min-[810px]:py-30"
     >
       <div className="flex w-full max-w-[720px] flex-col items-center gap-3 text-center">
-        <p className="type-label-sm text-blue-500">PRICING</p>
         <h2 id="pricing-title" className="type-h2 text-neutral-900">Simple plans, everything included</h2>
         <p className="max-w-[640px] type-body-lg text-neutral-600">
           Domain connection, hosting, and support come with every plan. Start for free and pay when you are ready to publish.
