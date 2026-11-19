@@ -199,7 +199,7 @@ export function PromptInput({
   const frameShadow = active
     ? `0px 0px 0px 4px ${BLUE_100}, 0px 4px 0px 0px ${BLUE_800}`
     : `0px 0px 0px 0px ${BLUE_100}, 0px 4px 0px 0px ${N300}`
-  const nextLabel: Record<SlotId, string> = { type: "the business type", name: "the business name", place: "the city", goal: "the main goal", detail: "the speciality", style: "a style", logo: "your logo" }
+  const nextLabel: Record<SlotId, string> = { type: "the business type", name: "the business name", place: "the business location", goal: "the main goal", detail: "the speciality", style: "a style", logo: "your logo" }
   const hintText =
     attached.length > 0 && !hasText ? attachedHint : builder && next && hasText && focused && !openSlot && !touch ? `Tab to add ${nextLabel[next]} · Enter to start` : focused || hasText ? typingHint : hint
   const ghost = builder && focused && !openSlot ? ghostFor(next, text) : ""
@@ -382,6 +382,8 @@ export function PromptInput({
               onChange={(e) => {
                 setText(e.target.value)
                 if (signals) emitPromptText(e.target.value.trim().length)
+                // a cleared prompt starts over: details skipped earlier are offered again
+                if (!e.target.value.trim()) setSkipped([])
               }}
               onFocus={() => {
                 setFocused(true)

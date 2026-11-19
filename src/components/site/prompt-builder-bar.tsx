@@ -36,13 +36,15 @@ export function PromptBuilderBar({
   const slots: { id: SlotId; label: string; value: string | null }[] = [
     { id: "type", label: "Business type", value: r.type?.label ?? null },
     { id: "name", label: "Name", value: r.name },
-    { id: "place", label: "City", value: r.place },
+    { id: "place", label: "Business location", value: r.place },
     { id: "goal", label: "Main goal", value: r.goal?.label ?? null },
     ...(detail ? [{ id: "detail" as const, label: detail.label, value: r.detail?.label ?? null }] : []),
     { id: "style", label: "Style", value: r.style?.name ?? null },
     { id: "logo", label: "Logo", value: logo ? "Logo.png" : null },
   ]
-  const shown = slots.filter((s) => s.value || !skipped.includes(s.id))
+  // a detail the prompt already has leaves the list (deleting it from the prompt brings it back); the logo is a file,
+  // not words in the prompt, so it stays as a chip you can remove
+  const shown = slots.filter((s) => (s.id === "logo" ? true : !s.value) && (s.value || !skipped.includes(s.id)))
   const filled = slots.filter((s) => s.value).length
 
   const pick = (slot: Exclude<SlotId, "logo">, value: string) => {
@@ -67,34 +69,45 @@ export function PromptBuilderBar({
         </span>
       </div>
       <div className="flex flex-wrap gap-2">
-        {shown.map((s) =>
-          s.value ? (
-            <span key={s.id} className="flex h-8 max-w-full items-center gap-1.5 rounded-full bg-blue-50 px-3 type-label-sm text-blue-700">
-              <Check aria-hidden className="size-3.5 shrink-0" strokeWidth={2.5} />
-              <span className="truncate">
-                <span className="sr-only">{s.label}: </span>
-                {s.value}
-              </span>
-              {s.id === "logo" && (
-                <button type="button" aria-label="Remove logo" onMouseDown={(e) => e.preventDefault()} onClick={() => setLogo(false)} className="-mr-1 grid size-5 place-items-center rounded-full hover:bg-blue-100 focus-visible:outline-none focus-visible:focus-ring">
-                  <X aria-hidden className="size-3" />
-                </button>
-              )}
-            </span>
-          ) : (
-            <Chip
+        <AnimatePresence initial={false} mode="popLayout">
+          {shown.map((s) => (
+            <motion.span
               key={s.id}
-              variant="add"
-              selected={open === s.id}
-              aria-expanded={open === s.id}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => setOpen(open === s.id ? null : s.id)}
-              icon={<Plus aria-hidden strokeWidth={2.5} />}
+              layout
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ type: "spring", duration: 0.3, bounce: 0 }}
+              className="flex max-w-full"
             >
-              {s.label}
-            </Chip>
-          ),
-        )}
+              {s.value ? (
+                <span className="flex h-8 max-w-full items-center gap-1.5 rounded-full bg-blue-50 px-3 type-label-sm text-blue-700">
+                  <Check aria-hidden className="size-3.5 shrink-0" strokeWidth={2.5} />
+                  <span className="truncate">
+                    <span className="sr-only">{s.label}: </span>
+                    {s.value}
+                  </span>
+                  {s.id === "logo" && (
+                    <button type="button" aria-label="Remove logo" onMouseDown={(e) => e.preventDefault()} onClick={() => setLogo(false)} className="-mr-1 grid size-5 place-items-center rounded-full hover:bg-blue-100 focus-visible:outline-none focus-visible:focus-ring">
+                      <X aria-hidden className="size-3" />
+                    </button>
+                  )}
+                </span>
+              ) : (
+                <Chip
+                  variant="add"
+                  selected={open === s.id}
+                  aria-expanded={open === s.id}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => setOpen(open === s.id ? null : s.id)}
+                  icon={<Plus aria-hidden strokeWidth={2.5} />}
+                >
+                  {s.label}
+                </Chip>
+              )}
+            </motion.span>
+          ))}
+        </AnimatePresence>
       </div>
 
       <AnimatePresence initial={false} mode="wait">
@@ -118,7 +131,7 @@ export function PromptBuilderBar({
                 </Question>
               )}
               {open === "name" && <TextQuestion title="What's the business called?" placeholder="e.g. Rahma Family Dental" onDone={(v) => pick("name", v)} onSkip={() => (skip("name"), setOpen(null))} />}
-              {open === "place" && <TextQuestion title="Which city is it in?" placeholder="e.g. Penang" onDone={(v) => pick("place", v.replace(/^\w/, (c) => c.toUpperCase()))} onSkip={() => (skip("place"), setOpen(null))} />}
+              {open === "place" && <TextQuestion title="Where is the business located?" placeholder="e.g. George Town, Penang" onDone={(v) => pick("place", v.replace(/^\w/, (c) => c.toUpperCase()))} onSkip={() => (skip("place"), setOpen(null))} />}
               {open === "goal" && (
                 <Question title="What should the website do most?" onSkip={() => (skip("goal"), setOpen(null))}>
                   {goalChoices(r.type).map((g) => (
