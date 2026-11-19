@@ -2,12 +2,13 @@ import localFont from "next/font/local"
 import type { FontKey } from "@/lib/bakti/themes"
 import { dmSans, dmSerif, inter } from "@/components/site/demo-fonts"
 
-// Fonts the style options use (all SIL Open Font License, self-hosted).
-const jakarta = localFont({ variable: "--font-jakarta", display: "swap", weight: "200 800", src: "../../fonts/plus-jakarta-sans-latin-wght-normal.woff2" })
-const fraunces = localFont({ variable: "--font-fraunces", display: "swap", weight: "100 900", src: "../../fonts/fraunces-latin-wght-normal.woff2" })
-const spaceGrotesk = localFont({ variable: "--font-space-grotesk", display: "swap", weight: "300 700", src: "../../fonts/space-grotesk-latin-wght-normal.woff2" })
-const plexSans = localFont({ variable: "--font-plex-sans", display: "swap", weight: "100 700", src: "../../fonts/ibm-plex-sans-latin-wght-normal.woff2" })
-const sourceSans = localFont({ variable: "--font-source-sans", display: "swap", weight: "200 900", src: "../../fonts/source-sans-3-latin-wght-normal.woff2" })
+// Fonts the style options use (all SIL Open Font License, self-hosted). Not preloaded, so a page only downloads
+// the faces its text actually uses (the homepage art imports all of them).
+const jakarta = localFont({ variable: "--font-jakarta", display: "swap", preload: false, weight: "200 800", src: "../../fonts/plus-jakarta-sans-latin-wght-normal.woff2" })
+const fraunces = localFont({ variable: "--font-fraunces", display: "swap", preload: false, weight: "100 900", src: "../../fonts/fraunces-latin-wght-normal.woff2" })
+const spaceGrotesk = localFont({ variable: "--font-space-grotesk", display: "swap", preload: false, weight: "300 700", src: "../../fonts/space-grotesk-latin-wght-normal.woff2" })
+const plexSans = localFont({ variable: "--font-plex-sans", display: "swap", preload: false, weight: "100 700", src: "../../fonts/ibm-plex-sans-latin-wght-normal.woff2" })
+const sourceSans = localFont({ variable: "--font-source-sans", display: "swap", preload: false, weight: "200 900", src: "../../fonts/source-sans-3-latin-wght-normal.woff2" })
 
 export const siteFontVars = [jakarta, fraunces, spaceGrotesk, plexSans, sourceSans, dmSans, dmSerif, inter].map((f) => f.variable).join(" ")
 

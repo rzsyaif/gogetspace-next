@@ -1,10 +1,16 @@
 /**
- * Images used on the homepage. They are served from the Framer project's CDN for now —
- * move the files into /public and point these paths at them when the Framer site is retired.
+ * Images used on the homepage and in the demo editor. The gallery is self-hosted; the photos below are
+ * still served from the Framer project's CDN — move them into /public before the Framer site is retired.
  */
 const framer = (id: string, ext = "png") => `https://framerusercontent.com/images/${id}.${ext}`
 
-export const GALLERY_IMAGES = [
+/** Homepage gallery: real previews this prototype generates (dentist, law firm, clinical lab), captured at 900px */
+export const GALLERY_IMAGES = ["dental-calm", "law-classic", "lab-coral", "dental-warm", "law-direct", "lab-night", "law-discreet", "lab-mint"].map(
+  (n) => `/images/gallery/${n}.jpg`,
+)
+
+/** Stock photos the demo editor swaps in when an image is "regenerated" */
+export const STOCK_PHOTOS = [
   "FB2NWFWn8pLT14WMnhXg7EYJNNA",
   "hvo8LIviJtNuqp7uCBGYBv7RzN8",
   "7auDDu9MV9mKLv9w0U6Cj7u2NDA",
@@ -13,13 +19,6 @@ export const GALLERY_IMAGES = [
   "KxQcSCMbkbBvDAgjiX2roGaFA",
   "kAqvjhIu0NmVD6GJ2EammYZmHxQ",
   "PaRvHJ5ntnPa4Sug0UEQ6n7k",
-].map((id) => framer(id))
-
-export const AVATARS = [
-  "P00VHzNRbq1FeML8ezd9drvcJMY",
-  "cX6qUw9Lk4sDWg1SMo7UVQEt1mg",
-  "G4aEEUi2TAg3gh2sHfwBlotc",
-  "ulHeE9hkm3GyXVEeC0OYEHLroU",
 ].map((id) => framer(id))
 
 /** Smiling woman holding lab results — used in the "Edit your site" card and the prompt demo files */

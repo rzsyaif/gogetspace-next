@@ -43,7 +43,7 @@ import {
   Step,
   StepList,
   Stepper,
-  StudsMedia,
+  CardMedia,
   Switch,
   Table,
   TableBody,
@@ -457,12 +457,12 @@ export function StyleGuide({ palettes, sources }: { palettes: [string, Record<st
           </div>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {[
-              { title: "Clinic starter", desc: "Home, services, doctors and a booking page.", badge: "New" },
-              { title: "Law firm", desc: "Practice areas, team profiles and a consultation form.", badge: null },
-              { title: "Clinical lab", desc: "Test menu, packages, doctor referrals and results.", badge: "Popular" },
+              { title: "Dental clinic", desc: "Treatments, prices, dentists and online booking.", badge: "New", image: "/images/gallery/dental-calm.jpg" },
+              { title: "Law firm", desc: "Practice areas, team profiles and a consultation form.", badge: null, image: "/images/gallery/law-classic.jpg" },
+              { title: "Clinical lab", desc: "Test menu, packages, doctor referrals and results.", badge: "Popular", image: "/images/gallery/lab-coral.jpg" },
             ].map((c, i) => (
               <Card key={c.title} interactive selected={i === 2} className="flex flex-col">
-                <StudsMedia />
+                <CardMedia src={c.image} />
                 <div className="flex flex-1 flex-col gap-2 p-5">
                   <div className="flex items-center gap-2">
                     <h3 className="flex-1 type-h6">{c.title}</h3>

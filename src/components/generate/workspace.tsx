@@ -43,7 +43,7 @@ import { siteName } from "@/lib/generation/state"
 import type { PageStatus } from "@/lib/generation/state"
 import { useGen } from "./gen-provider"
 import { PreviewFrame, type EditEvent } from "./preview-frame"
-import { CLINIC_FRONT, CLINIC_PHOTO, GALLERY_IMAGES } from "@/components/site/assets"
+import { CLINIC_FRONT, CLINIC_PHOTO, STOCK_PHOTOS } from "@/components/site/assets"
 import { AccountDialog, PublishFlow } from "./publish"
 import { useEditorSite } from "./editor-site"
 import { DomainPanel } from "@/components/account/domain-panel"
@@ -354,7 +354,7 @@ export function PreviewPane({ chatOpen, onShowChat, onToast }: { chatOpen: boole
       if (words.length > 4) return { replaceText: words.slice(0, Math.max(3, Math.ceil(words.length * 0.6))).join(" ").replace(/[,;:—-]$/, "") + (/[.!?]$/.test(e.target.text.trim()) ? "." : "") }
     }
     if (e.target.kind === "image") {
-      const pool = [CLINIC_FRONT, ...GALLERY_IMAGES, CLINIC_PHOTO]
+      const pool = [CLINIC_FRONT, ...STOCK_PHOTOS, CLINIC_PHOTO]
       return { imageSrc: pool[imageTurn.current++ % pool.length] }
     }
   }

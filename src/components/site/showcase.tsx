@@ -1,13 +1,14 @@
 "use client"
 
 import { useRef } from "react"
-import Image from "next/image"
 import { motion, useReducedMotion, useScroll, useTransform } from "motion/react"
-import { Globe } from "lucide-react"
-import { AVATARS, GALLERY_IMAGES } from "./assets"
+import { FlaskConical, Globe, Scale, Stethoscope, Calculator } from "lucide-react"
+import { GALLERY_IMAGES } from "./assets"
 import { CurvedGallery } from "./curved-gallery"
 import { HowItWorks } from "./how-it-works"
 import { Features } from "./features"
+
+const PROFESSIONS = [Stethoscope, Scale, FlaskConical, Calculator]
 
 /**
  * The stacked middle of the homepage: "Everyone can build" sticks while How it works slides over it
@@ -28,17 +29,18 @@ export function Showcase() {
       >
         <CurvedGallery images={GALLERY_IMAGES} className="-mx-5 w-[calc(100%+40px)] min-[810px]:mx-0 min-[810px]:w-full" />
         <div className="flex w-full max-w-[588px] flex-col items-center gap-4 text-center">
+          {/* the professions it builds for, ending in the website they get */}
           <div className="relative h-12 w-48" aria-hidden>
-            {AVATARS.map((src, i) => (
+            {PROFESSIONS.map((Icon, i) => (
               <span
-                key={src}
-                className="absolute top-0 size-12 overflow-hidden rounded-full border-4 border-neutral-950 bg-neutral-700"
+                key={i}
+                className="absolute top-0 grid size-12 place-items-center rounded-full border-4 border-neutral-900 bg-neutral-700 text-neutral-100"
                 style={{ left: i * 36, zIndex: i }}
               >
-                <Image src={src} alt="" fill sizes="48px" className="object-cover" />
+                <Icon className="size-5" strokeWidth={2} />
               </span>
             ))}
-            <span className="absolute top-0 left-36 z-10 grid size-12 place-items-center rounded-full border-4 border-neutral-950 bg-blue-500 text-white">
+            <span className="absolute top-0 left-36 z-10 grid size-12 place-items-center rounded-full border-4 border-neutral-900 bg-blue-500 text-white">
               <Globe className="size-6" strokeWidth={2} />
             </span>
           </div>
