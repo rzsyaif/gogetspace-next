@@ -6,7 +6,7 @@ import { ArrowLeft, Check, ChevronDown, CircleHelp, FileSpreadsheet, Pencil, Plu
 import { Badge, Button, Input, RadioDot, Tooltip } from "@/components/ui"
 import { cn } from "@/lib/cn"
 import type { Msg } from "@/lib/generation/state"
-import { goalChips, playbookOf, questionProgress, type PriceList, type TeamList, type TeamMember } from "@/lib/playbooks/engine"
+import { goalChips, playbookOf, questionProgress, sharpenView, type PriceList, type TeamList, type TeamMember } from "@/lib/playbooks/engine"
 import { jurisdictionOf } from "@/lib/playbooks/lawyer"
 import { useGen } from "./gen-provider"
 
@@ -136,8 +136,10 @@ export function QuestionCard({ m, compact }: { m: QuestionMsg; compact?: boolean
   // practice areas: several answers, up to q.multi
   const multi = !goals && !!q.multi
   const several = goals && pb.candidates?.kind === "several"
+  // after the build, what the site was built with is already picked: keep it with Next, or change it
+  const guessed = s.phase === "create" ? (goals ? pb.goals : (pb.answers[m.slot as keyof typeof pb.answers]?.value.split(",") ?? [])) : []
   const [picked, setPicked] = useState<string[]>(() =>
-    m.value !== undefined ? (Array.isArray(m.value) ? m.value : [m.value]) : goals && pb.candidates?.kind === "vague" ? pb.candidates.goals : [],
+    m.value !== undefined ? (Array.isArray(m.value) ? m.value : [m.value]) : guessed.length ? guessed : goals && pb.candidates?.kind === "vague" ? pb.candidates.goals : [],
   )
   const [other, setOther] = useState(m.unclear ?? "")
   const [more, setMore] = useState(false)
@@ -145,7 +147,9 @@ export function QuestionCard({ m, compact }: { m: QuestionMsg; compact?: boolean
   const [prices, setPrices] = useState<PriceList>(() => pb.priceList ?? {})
   // the size question: with several dentists or branches, the owner can hand over their team list
   const [team, setTeam] = useState<TeamList>(() => pb.team ?? {})
-  const { index, total } = questionProgress(pb, m.slot)
+  // after the first build the questions replace the builder's guesses, so they count from what's still a guess
+  const after = s.phase === "create"
+  const { index, total } = questionProgress(after ? sharpenView(pb, book) : pb, m.slot)
   const canGoBack = s.msgs.slice(0, s.msgs.indexOf(m)).some((x) => x.type === "pb-question" && x.answer && x.prev)
   const last = index >= total
 
@@ -178,25 +182,29 @@ export function QuestionCard({ m, compact }: { m: QuestionMsg; compact?: boolean
     <Shell
       compact={compact}
       title="Quick questions"
-      help="I only ask what I couldn't find in your message or online. Each answer decides which tools and pages your site gets."
+      help={after ? "Your site is built from my best guesses. Each answer replaces one, and I update the site as you go." : "I only ask what I couldn't find in your message or online. Each answer decides which tools and pages your site gets."}
       description={
-        goals
+        after && guessed.length
+          ? goals
+            ? "Your site is built with the goals picked below. Keep them or change them — the first one is the main goal."
+            : "Your site is built with the answer picked below. Keep it, pick another, or write your own."
+          : goals
           ? several
             ? "You asked for a lot — let's start with the one that matters most. The rest go under Add later."
             : "Pick up to three. The first one you pick is the main goal — it decides your site's main button."
           : multi
-            ? `Pick up to ${q.multi === 3 ? "three" : q.multi}, or write your own. Not sure? Let me decide — you can change anything on the plan.`
+            ? `Pick up to ${q.multi === 3 ? "three" : q.multi}, or write your own. Not sure? Let me decide — you can change anything ${after ? "later" : "on the plan"}.`
             : q.helper && q.id === "QJ"
               ? q.helper
-              : "Pick one, or write your own. Not sure? Let me decide — you can change anything on the plan."
+              : `Pick one, or write your own. Not sure? Let me decide — you can change anything ${after ? "later" : "on the plan"}.`
       }
       counter={q.id === "QJ" ? undefined : `${index} / ${total}`}
       question={q.text}
       footer={
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Button variant="secondary" onClick={() => dispatch({ type: "pbSkipAll" })}>
-            <span className="sm:hidden">Skip all</span>
-            <span className="max-sm:hidden">Skip these questions</span>
+            <span className="sm:hidden">{after ? "Keep guesses" : "Skip all"}</span>
+            <span className="max-sm:hidden">{after ? "Keep my guesses" : "Skip these questions"}</span>
           </Button>
           <div className="flex items-center gap-2">
             {canGoBack && (
@@ -205,7 +213,7 @@ export function QuestionCard({ m, compact }: { m: QuestionMsg; compact?: boolean
               </Button>
             )}
             <Button disabled={!valid} onClick={submit}>
-              {last ? "See my plan" : "Next question"}
+              {last ? (after ? "Update my site" : "See my plan") : "Next question"}
             </Button>
           </div>
         </div>

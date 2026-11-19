@@ -26,7 +26,7 @@ import {
 import { Alert, Badge, Button, Checkbox, Chip, Field, Input, Step, StepList, Textarea } from "@/components/ui"
 import { cn } from "@/lib/cn"
 import { flatten } from "@/lib/bakti/sitemap"
-import { BUSINESS_MATCHES, searchOf, siteName, type ArtifactKey, type FeedbackAnswer, type Msg, type Run, type Task } from "@/lib/generation/state"
+import { BUSINESS_MATCHES, SHARPEN_INTRO, searchOf, siteName, type ArtifactKey, type FeedbackAnswer, type Msg, type Run, type Task } from "@/lib/generation/state"
 import { RATING, type Rating } from "@/lib/admin/data"
 import { submitFeedback } from "@/lib/admin/store"
 import { useEditorSite } from "./editor-site"
@@ -46,7 +46,7 @@ export function Messages({ compact }: { compact?: boolean }) {
   const { s } = useGen()
   return (
     <div className={cn("flex flex-col", compact ? "gap-6" : "gap-9")}>
-      {s.msgs.filter((m) => !foldedAway(m, s.msgs)).map((m, i) => (
+      {s.msgs.filter((m) => !foldedAway(m, s.msgs) && !tuckedAway(m, s)).map((m, i) => (
         // the first bubble arrives with the homepage launch animation, so it doesn't fade in again
         <motion.div key={m.id} initial={i === 0 ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
           <Block m={m} compact={compact} />
@@ -54,6 +54,12 @@ export function Messages({ compact }: { compact?: boolean }) {
       ))}
     </div>
   )
+}
+
+/** the questions after the build wait in the to-do list until the owner taps Answer */
+function tuckedAway(m: Msg, s: { phase: string; sharpenOpen?: boolean }) {
+  if (s.phase !== "create" || s.sharpenOpen) return false
+  return (m.type === "pb-question" && !m.answer) || (m.type === "agent" && m.text === SHARPEN_INTRO)
 }
 
 /** answered questions fold into one summary (shown where the last one was) once the series is over */
@@ -163,7 +169,7 @@ function PlanBlock({ run, compact }: { run: Run; compact?: boolean }) {
         </div>
       ) : (
         <p className="type-body-md text-fg-primary">
-          {s.pb ? "Before I build anything, I'll plan it with you — a couple of quick questions while I look you up." : "Before I build anything, I'll plan it out with you first."}
+          {s.pb ? "I'll look you up and plan your website, then build it straight away." : "I'll plan your website, then build it straight away."}
         </p>
       )}
       <div className="flex flex-col gap-4">
@@ -304,10 +310,12 @@ const CLARIFY_CHIPS = [
 ]
 
 function Clarify({ answered }: { answered?: string }) {
-  const { dispatch } = useGen()
+  const { s, dispatch } = useGen()
   return (
     <div className="flex flex-col gap-4 pr-4 sm:pr-20">
-      <p className="type-body-md text-fg-primary">Happy to help! Before I plan, tell me a little more — what&apos;s the business, and where is it?</p>
+      <p className="type-body-md text-fg-primary">
+        {s.phase === "create" ? "That's a first version from a short message. Tell me a bit more — what's the business, and where is it? I'll update the site to match." : "Happy to help! Before I plan, tell me a little more — what's the business, and where is it?"}
+      </p>
       {!answered && (
         <div className="flex flex-wrap gap-2">
           {CLARIFY_CHIPS.map((c) => (

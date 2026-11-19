@@ -11,7 +11,6 @@ import { GenProvider, useGen } from "./gen-provider"
 import { Messages } from "./chat-blocks"
 import { ChatInput } from "./chat-input"
 import { EditorNavProvider } from "./editor-nav"
-import { ReviewSheet } from "./review-sheet"
 import { AccountButton, FULL_TABS, MobileNav, PreviewPane, ProjectHeader, Rail, SidePanel, type Tab } from "./workspace"
 import { FlowSiteProvider, useEditorSite } from "./editor-site"
 import { DraftChat, DraftPreview, SitePanel } from "./site-panels"
@@ -34,9 +33,8 @@ export function GenerateApp() {
 }
 
 /**
- * One layout for both phases, so moving from planning to the editor is a single animation: the review sheet
- * closes, the centred chat shrinks into the left sidebar, the rail and the preview slide in, and the top bar
- * folds away (the editor has no top navbar — the logo lives on the rail).
+ * The editor from the first second: the chat plans and builds on the left while the preview fills in on the
+ * right. (The planning top bar is kept, folded away, for the planning-only states.)
  */
 export function Shell({ initialTab = "agent" }: { initialTab?: Tab }) {
   const { s } = useGen()
@@ -44,15 +42,8 @@ export function Shell({ initialTab = "agent" }: { initialTab?: Tab }) {
   const flow = editor.mode === "flow"
   const wide = useMedia("(min-width: 1024px)")
   const xl = useMedia("(min-width: 1440px)")
-  // let the review sheet finish closing before the layout changes
-  const [layout, setLayout] = useState(s.phase)
-  useEffect(() => {
-    if (layout === s.phase) return
-    const t = window.setTimeout(() => setLayout(s.phase), s.phase === "create" ? 380 : 0)
-    return () => window.clearTimeout(t)
-  }, [s.phase, layout])
-  // an account's website always opens straight into the editor
-  const create = !flow || layout === "create"
+  // planning happens in the editor too: the brief, style and pages are no longer reviewed on a separate screen
+  const create = true
 
   const [tab, setTab] = useState<Tab>(initialTab)
   const fullPanel = create && FULL_TABS.includes(tab)
@@ -195,7 +186,6 @@ export function Shell({ initialTab = "agent" }: { initialTab?: Tab }) {
           </AnimatePresence>
         </div>
 
-        {flow && <ReviewSheet />}
         {flow && <ScenarioPanel />}
         <AnimatePresence>
           {toast && (
@@ -217,7 +207,8 @@ function ChatColumn({ compact }: { compact: boolean }) {
   const doneCount = run?.tasks.filter((t) => t.status === "done").length ?? 0
   const pagesBuilt = Object.values(s.pages).filter((p) => p === "built").length
   // the questions and the plan that concludes them are answered on their cards, so the chat input steps aside
-  const asking = s.msgs.some((m) => ((m.type === "pb-question" || m.type === "pb-gate") && !m.answer) || (m.type === "pb-plan" && !m.confirmed))
+  // (after the build they don't hold anything up: the chat stays open for change requests)
+  const asking = s.phase === "plan" && s.msgs.some((m) => ((m.type === "pb-question" || m.type === "pb-gate") && !m.answer) || (m.type === "pb-plan" && !m.confirmed))
   const scroller = useRef<HTMLDivElement>(null)
   // follow new messages only while the reader is at the bottom; if they scrolled up to read, leave them there
   const following = useRef(true)

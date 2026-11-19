@@ -1,9 +1,11 @@
 "use client"
 
+import { useState } from "react"
 import { Check } from "lucide-react"
-import { Button } from "@/components/ui"
+import { Button, Dialog, DialogContent } from "@/components/ui"
 import { cn } from "@/lib/cn"
-import { moduleById } from "@/lib/playbooks/engine"
+import { moduleById, playbookOf, questionProgress, sharpenView } from "@/lib/playbooks/engine"
+import { BriefStep } from "./brief-step"
 import { useEditorNav } from "./editor-nav"
 import { useEditorSite } from "./editor-site"
 import { useGen } from "./gen-provider"
@@ -30,6 +32,22 @@ export function NextSteps({ compact }: { compact?: boolean }) {
   const live = s.publish.status === "live"
   const locked = Object.values(s.pages).filter((p) => p === "locked").length
   const pb = s.pb
+  const [briefOpen, setBriefOpen] = useState(false)
+
+  // the questions the build didn't wait for, while one is open in the chat
+  const openQ = s.msgs.find((m) => m.type === "pb-question" && !m.answer)
+  const asked = s.msgs.some((m) => m.type === "pb-question")
+  const left = openQ?.type === "pb-question" && pb ? (({ index, total }) => Math.max(1, total - index + 1))(questionProgress(sharpenView(pb, playbookOf(pb)), openQ.slot)) : 0
+  const showQuestion = () => {
+    dispatch({ type: "showQuestions" })
+    nav.goTo("agent")
+    window.setTimeout(() => document.querySelector("[data-question-open]")?.scrollIntoView({ behavior: "smooth", block: "start" }), 120)
+  }
+  const questionsStep: Step | null = asked
+    ? { id: "questions", title: openQ ? `Answer ${left} quick ${left === 1 ? "question" : "questions"}` : "Answer quick questions", done: !openQ, action: { label: "Answer", onClick: showQuestion } }
+    : null
+  // the brief the site was built from: the owner checks it here instead of before the build
+  const briefStep: Step = { id: "brief", title: "Confirm your brief", done: s.artifacts.brief === "confirmed", action: { label: "Review", onClick: () => setBriefOpen(true) } }
 
   // tools that run in test mode until the owner connects their own account
   const accounts = (modules?.list ?? []).map((m) => ({ m: moduleById(m.id), live: m.status === "live" })).filter((x) => x.m.needsAccount)
@@ -43,9 +61,7 @@ export function NextSteps({ compact }: { compact?: boolean }) {
         action: { label: "Connect", onClick: () => accounts.filter((x) => !x.live).forEach((x) => modules!.activate(x.m.id)) },
       }
     : null
-  const pagesStep: Step = locked
-    ? { id: "pages", title: `Build ${locked} more planned ${locked === 1 ? "page" : "pages"}`, done: false, action: { label: "Upgrade", onClick: () => nav.goTo("plan") } }
-    : { id: "pages", title: "Create additional pages", done: false, action: { label: "Create", onClick: () => dispatch({ type: "openReview", step: 2 }) } }
+  const pagesStep: Step | null = locked ? { id: "pages", title: `Build ${locked} more planned ${locked === 1 ? "page" : "pages"}`, done: false, action: { label: "Upgrade", onClick: () => nav.goTo("plan") } } : null
 
   // modules: one line; Modules lists what's recommended, and asks to publish first when the site isn't live yet
   const toolsStep: Step = {
@@ -55,9 +71,11 @@ export function NextSteps({ compact }: { compact?: boolean }) {
     action: { label: "See Details", onClick: () => nav.goTo("modules") },
   }
 
-  // at most five steps, one line each
+  // one line each
   const steps: Step[] = [
     { id: "created", title: "Website created", done: true },
+    ...(questionsStep ? [questionsStep] : []),
+    briefStep,
     ...(accountsStep ? [accountsStep] : []),
     {
       id: "publish",
@@ -72,7 +90,7 @@ export function NextSteps({ compact }: { compact?: boolean }) {
       done: usage.customDomain,
       action: usage.customDomain ? undefined : { label: "Connect", onClick: () => nav.goTo("domain") },
     },
-    ...(accountsStep ? [] : [pagesStep]),
+    ...(pagesStep && !accountsStep ? [pagesStep] : []),
   ]
   const done = steps.filter((x) => x.done).length
 
@@ -107,6 +125,45 @@ export function NextSteps({ compact }: { compact?: boolean }) {
           </li>
         ))}
       </ol>
+      <BriefDialog
+        open={briefOpen}
+        onClose={() => setBriefOpen(false)}
+        onConfirm={() => {
+          dispatch({ type: "confirmBrief" })
+          setBriefOpen(false)
+        }}
+      />
     </section>
+  )
+}
+
+/** the brief, checked and edited in the editor: confirming it updates the site if anything changed */
+function BriefDialog({ open, onClose, onConfirm }: { open: boolean; onClose: () => void; onConfirm: () => void }) {
+  const { s } = useGen()
+  const confirmed = s.artifacts.brief === "confirmed"
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      {open && (
+        <DialogContent
+          title="Your brief"
+          description="What I built your website from. Highlighted details are my guesses — click any point to change it."
+          className="max-w-[1080px]"
+          footer={
+            <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row [&>*]:max-sm:w-full">
+              <Button variant="secondary" onClick={onClose}>
+                Close
+              </Button>
+              <Button onClick={onConfirm} disabled={confirmed && !s.briefDirty}>
+                {s.briefDirty ? "Confirm & update site" : confirmed ? "Confirmed" : "Confirm brief"}
+              </Button>
+            </div>
+          }
+        >
+          <div className="flex h-[min(64dvh,640px)] min-h-0 flex-col">
+            <BriefStep />
+          </div>
+        </DialogContent>
+      )}
+    </Dialog>
   )
 }
