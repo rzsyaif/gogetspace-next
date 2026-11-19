@@ -36,7 +36,7 @@ export function DrawerContent({
         style={{ "--drawer-from": side === "right" ? "100%" : "-100%" } as React.CSSProperties}
         className={cn(
           "fixed inset-y-0 z-50 flex w-[min(320px,calc(100vw-48px))] flex-col bg-surface-raised shadow-soft-lg focus:outline-none",
-          "data-[state=open]:animate-[bp-drawer-in_260ms_cubic-bezier(0.2,0.9,0.3,1)] data-[state=closed]:animate-[bp-drawer-out_200ms_ease-in]",
+          "data-[state=open]:animate-[bp-drawer-in_260ms_cubic-bezier(0.2,0.9,0.3,1)] data-[state=closed]:animate-[bp-drawer-out_200ms_var(--ease-out)]",
           side === "right" ? "right-0 rounded-l-xl" : "left-0 rounded-r-xl",
           className,
         )}

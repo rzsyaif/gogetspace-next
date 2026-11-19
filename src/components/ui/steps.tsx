@@ -31,7 +31,11 @@ export function StepIndicator({ status }: { status: StepStatus }) {
         <AlertTriangle aria-label="Done with a warning" />
       </span>
     )
-  return <span className={cn(base, "border border-line-strong bg-surface")} aria-label="Not started" />
+  return (
+    <span className={cn(base, "border border-line-strong bg-surface")}>
+      <span className="sr-only">Not started</span>
+    </span>
+  )
 }
 
 /** Vertical list of steps; each marker is joined to the next by a line that runs the full height of the step. */

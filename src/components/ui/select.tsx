@@ -21,6 +21,7 @@ export function Select({
   onValueChange,
   disabled,
   className,
+  ariaLabel,
 }: {
   options: SelectOption[]
   placeholder?: string
@@ -29,12 +30,15 @@ export function Select({
   onValueChange?: (value: string) => void
   disabled?: boolean
   className?: string
+  /** names the control when there is no visible label (no Field around it) */
+  ariaLabel?: string
 }) {
   const field = useField()
   return (
     <S.Root value={value} defaultValue={defaultValue} onValueChange={onValueChange} disabled={disabled}>
       <S.Trigger
         id={field?.id}
+        aria-label={ariaLabel}
         aria-describedby={field?.describedBy}
         aria-invalid={field?.invalid || undefined}
         className={cn(fieldControl, "flex h-[50px] items-center justify-between gap-2 px-4 text-left data-placeholder:text-fg-tertiary", className)}

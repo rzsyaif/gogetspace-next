@@ -66,7 +66,7 @@ const TOAST: Record<"success" | "error" | "info" | "processing", { badge: string
   success: { badge: "bg-status-success-solid", Icon: Check },
   error: { badge: "bg-status-error-solid", Icon: X },
   info: { badge: "bg-status-info-solid", Icon: Info },
-  processing: { badge: "bg-inverse", Icon: Loader2, spin: true },
+  processing: { badge: "bg-transparent text-fg-inverse", Icon: Loader2, spin: true },
 }
 
 /** Presentational toast (dark pill). Pair with your own stacking/timing logic. */
@@ -84,12 +84,12 @@ export function Toast({
   const t = TOAST[tone]
   return (
     <div role="status" className={cn("inline-flex items-center gap-3 rounded-lg bg-inverse px-4 py-3 shadow-soft-md", className)}>
-      <span className={cn("grid size-7 shrink-0 place-items-center rounded-full text-fg-on-action", t.badge)}>
+      <span className={cn("grid size-7 shrink-0 place-items-center rounded-full", t.spin ? "" : "text-fg-on-action", t.badge)}>
         <t.Icon aria-hidden className={cn("size-4", t.spin && "animate-spin")} />
       </span>
       <span className="type-label-md text-fg-inverse">{message}</span>
       {action && (
-        <button type="button" onClick={action.onClick} className="type-label-md text-accent-yellow hover:underline focus-visible:outline-none focus-visible:focus-ring rounded-sm">
+        <button type="button" onClick={action.onClick} className="type-label-md text-fg-inverse-action hover:underline focus-visible:outline-none focus-visible:focus-ring rounded-sm">
           {action.label}
         </button>
       )}
@@ -107,8 +107,8 @@ export function ProgressBar({ value, label, ariaLabel, className }: { value: num
           <span className="type-label-md tabular-nums text-fg-secondary">{v}%</span>
         </div>
       )}
-      <div role="progressbar" aria-label={ariaLabel} aria-valuenow={v} aria-valuemin={0} aria-valuemax={100} className="h-3 overflow-hidden rounded-full bg-muted">
-        <div className="h-full rounded-full bg-action-primary transition-[width] duration-500 ease-out" style={{ width: `${v}%` }} />
+      <div role="progressbar" aria-label={ariaLabel ?? (typeof label === "string" ? label : "Progress")} aria-valuenow={v} aria-valuemin={0} aria-valuemax={100} className="h-3 overflow-hidden rounded-full bg-muted">
+        <div className="h-full origin-left rounded-full bg-action-primary transition-transform duration-300 ease-(--ease-out)" style={{ transform: `scaleX(${v / 100})` }} />
       </div>
     </div>
   )

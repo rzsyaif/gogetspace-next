@@ -109,7 +109,7 @@ export function StepDescribe({ play }: { play: number }) {
 
   return (
     <>
-      <div className="absolute top-1/2 left-1/2 grid w-[1200px] -translate-x-1/2 -translate-y-1/2 grid-cols-5 gap-2 p-2 opacity-50 blur-[2px]">
+      <div aria-hidden className="absolute top-1/2 left-1/2 grid w-[1200px] -translate-x-1/2 -translate-y-1/2 grid-cols-5 gap-2 p-2 opacity-50 blur-[2px]">
         {Array.from({ length: 15 }, (_, i) => {
           const base = FAINT.has(i) ? 0.2 : 1
           return (
@@ -130,7 +130,7 @@ export function StepDescribe({ play }: { play: number }) {
       </div>
       <div className="absolute top-1/2 left-1/2 w-[588px] -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_16px_24px_var(--color-shadow-soft)]">
         <PromptBox>
-          <p className="min-h-[84px] type-body-lg text-fg-primary" aria-label={PROMPT}>
+          <p className="min-h-[84px] type-body-lg text-fg-primary" aria-hidden>
             <span aria-hidden>{PROMPT.slice(0, typed)}</span>
             <motion.span
               aria-hidden

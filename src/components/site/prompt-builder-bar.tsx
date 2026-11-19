@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react"
 import { AnimatePresence, motion } from "motion/react"
 import { Check, ImageUp, Plus, X } from "lucide-react"
-import { cn } from "@/lib/cn"
+import { Chip } from "@/components/ui"
 import { BUSINESS_TYPES, apply, detailOf, goalChoices, styleChoices, type Reading, type SlotId } from "@/lib/prompt-builder"
 
 /**
@@ -76,26 +76,23 @@ export function PromptBuilderBar({
                 {s.value}
               </span>
               {s.id === "logo" && (
-                <button type="button" aria-label="Remove logo" onMouseDown={(e) => e.preventDefault()} onClick={() => setLogo(false)} className="-mr-1 grid size-5 place-items-center rounded-full hover:bg-blue-100">
+                <button type="button" aria-label="Remove logo" onMouseDown={(e) => e.preventDefault()} onClick={() => setLogo(false)} className="-mr-1 grid size-5 place-items-center rounded-full hover:bg-blue-100 focus-visible:outline-none focus-visible:focus-ring">
                   <X aria-hidden className="size-3" />
                 </button>
               )}
             </span>
           ) : (
-            <button
+            <Chip
               key={s.id}
-              type="button"
+              variant="add"
+              selected={open === s.id}
               aria-expanded={open === s.id}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => setOpen(open === s.id ? null : s.id)}
-              className={cn(
-                "flex h-8 items-center gap-1 rounded-full border border-dashed px-3 type-label-sm transition-colors",
-                open === s.id ? "border-blue-500 bg-blue-50 text-blue-700" : "border-neutral-300 text-neutral-600 hover:border-neutral-400 hover:text-neutral-900",
-              )}
+              icon={<Plus aria-hidden strokeWidth={2.5} />}
             >
-              <Plus aria-hidden className="size-3.5" strokeWidth={2.5} />
               {s.label}
-            </button>
+            </Chip>
           ),
         )}
       </div>
@@ -148,7 +145,7 @@ export function PromptBuilderBar({
                       type="button"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => pick("style", t.name)}
-                      className="flex items-center gap-2 rounded-md border border-neutral-200 bg-white py-1.5 pr-3 pl-1.5 type-label-sm text-neutral-800 hover:border-blue-500"
+                      className="flex items-center gap-2 rounded-md border border-neutral-200 bg-white py-1.5 pr-3 pl-1.5 type-label-sm text-neutral-800 hover:border-blue-500 transition-[border-color,scale] duration-150 ease-out active:scale-[0.97] focus-visible:outline-none focus-visible:focus-ring"
                     >
                       <span aria-hidden className="flex overflow-hidden rounded-sm">
                         {t.palette.slice(0, 3).map((c) => (
@@ -169,7 +166,7 @@ export function PromptBuilderBar({
                       setLogo(true)
                       setOpen(null)
                     }}
-                    className="flex h-9 items-center gap-2 rounded-md border border-neutral-300 bg-white px-3 type-label-sm text-neutral-900 hover:border-blue-500"
+                    className="flex h-9 items-center gap-2 rounded-md border border-neutral-300 bg-white px-3 type-label-sm text-neutral-900 hover:border-blue-500 transition-[border-color,scale] duration-150 ease-out active:scale-[0.97] focus-visible:outline-none focus-visible:focus-ring"
                   >
                     <ImageUp aria-hidden className="size-4" /> Upload logo
                   </button>
@@ -188,7 +185,7 @@ function Question({ title, children, onSkip, skipLabel = "Skip" }: { title: stri
     <>
       <div className="flex items-baseline justify-between gap-3">
         <p className="type-label-md text-neutral-900">{title}</p>
-        <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={onSkip} className="shrink-0 type-label-sm text-neutral-500 hover:text-neutral-900">
+        <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={onSkip} className="shrink-0 rounded-sm type-label-sm text-neutral-500 hover:text-neutral-900 focus-visible:outline-none focus-visible:focus-ring">
           {skipLabel}
         </button>
       </div>
@@ -203,7 +200,7 @@ function Pill({ children, onClick }: { children: ReactNode; onClick: () => void 
       type="button"
       onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
-      className="h-9 rounded-md border border-neutral-200 bg-white px-3 type-label-sm text-neutral-800 hover:border-blue-500 hover:text-blue-700"
+      className="h-9 rounded-md border border-neutral-200 bg-white px-3 type-label-sm text-neutral-800 hover:border-blue-500 hover:text-blue-700 transition-[border-color,color,scale] duration-150 ease-out active:scale-[0.97] focus-visible:outline-none focus-visible:focus-ring"
     >
       {children}
     </button>
@@ -233,7 +230,7 @@ function TextQuestion({ title, placeholder, onDone, onSkip }: { title: string; p
           }}
           className="h-9 min-w-0 flex-1 rounded-md border border-neutral-300 bg-white px-3 type-body-sm text-neutral-900 outline-none focus:border-blue-500"
         />
-        <button type="button" disabled={!v.trim()} onClick={done} className="h-9 shrink-0 rounded-md bg-neutral-900 px-3 type-label-sm text-white disabled:opacity-40">
+        <button type="button" disabled={!v.trim()} onClick={done} className="h-9 shrink-0 rounded-md bg-neutral-900 px-3 type-label-sm text-white transition-[scale] duration-150 ease-out active:scale-[0.97] disabled:opacity-40 focus-visible:outline-none focus-visible:focus-ring">
           Add
         </button>
       </div>

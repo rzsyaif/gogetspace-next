@@ -22,7 +22,7 @@ export function SiteFooter() {
           <div className="flex flex-col items-start gap-6 min-[1440px]:w-[384px]">
             <Logo />
             <div className="w-28">
-              <Select options={LANGUAGES} defaultValue="en" />
+              <Select options={LANGUAGES} defaultValue="en" ariaLabel="Language" />
             </div>
           </div>
           <nav aria-label="Footer" className="grid flex-1 grid-cols-2 gap-x-6 gap-y-8 min-[810px]:grid-cols-3 min-[810px]:gap-12">

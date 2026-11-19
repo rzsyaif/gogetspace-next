@@ -49,14 +49,14 @@ export function SiteNav() {
   return (
     <header
       className={cn(
-        "pointer-events-none sticky top-0 z-50 h-[88px] w-full transition-[padding] duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] motion-reduce:transition-none",
+        "pointer-events-none sticky top-0 z-50 h-[88px] w-full transition-[padding] duration-300 ease-out motion-reduce:transition-none",
         floating ? "px-2 pt-2 min-[810px]:px-6 min-[810px]:pt-3" : "px-0 pt-0",
       )}
     >
       <nav
         aria-label="Main"
         className={cn(
-          "pointer-events-auto mx-auto flex flex-col gap-6 border transition-[max-width,padding,border-radius,background-color,border-color,box-shadow] duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] min-[810px]:flex-row min-[810px]:items-center min-[810px]:gap-8 motion-reduce:transition-none",
+          "pointer-events-auto mx-auto flex flex-col gap-6 border transition-[max-width,padding,border-radius,background-color,border-color,box-shadow] duration-300 ease-out min-[810px]:flex-row min-[810px]:items-center min-[810px]:gap-8 motion-reduce:transition-none",
           floating
             ? "max-w-[1040px] rounded-xl border-neutral-300/70 bg-white/80 px-3 py-2 shadow-[0_10px_30px_-12px_rgba(23,46,140,0.22)] backdrop-blur-md min-[810px]:px-4"
             : "max-w-[1264px] rounded-none border-transparent bg-transparent px-5 py-6 shadow-none min-[810px]:px-8",
@@ -84,7 +84,7 @@ export function SiteNav() {
             <DropdownMenu>
               <DropdownMenuTrigger className={cn(navItem, "data-[state=open]:bg-action-ghost-hover [&[data-state=open]>svg]:rotate-180")}>
                 Solutions
-                <ChevronDown aria-hidden className="size-4 transition-transform" />
+                <ChevronDown aria-hidden className="size-4 transition-transform duration-200 ease-out" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-72">
                 {SOLUTIONS.map(({ title, desc, Icon }) => (
