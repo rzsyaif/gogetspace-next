@@ -4,18 +4,25 @@ import { useEffect, useRef, useState, type ReactNode } from "react"
 import Image from "next/image"
 import { motion, useInView, useReducedMotion, type Transition, type Variants } from "motion/react"
 import {
+  CalendarCheck,
   Check,
   Cloud,
+  CreditCard,
   Ellipsis,
+  FileText,
   Globe,
+  Inbox,
   KeyRound,
   Link2,
   Lock,
+  MapPin,
   MousePointer2,
   PencilLine,
   RefreshCw,
   Server,
+  Star,
   Upload,
+  type LucideIcon,
 } from "lucide-react"
 import { cn } from "@/lib/cn"
 import { CLINIC_PHOTO } from "./assets"
@@ -282,11 +289,47 @@ function EditMedia() {
 
 /* ---------------- 4. Hosting handled ---------------- */
 
-const RINGS = [
-  { color: "#3BF498", rest: { left: -145.6, top: -111.2, width: 690.7, height: 146.6, rotate: 177 }, hover: rot(407.4, 58.9, 404.9, 85.9, -177), opacity: 1 },
-  { color: "#D900FF", rest: { left: -201.1, top: -172.9, width: 830.7, height: 176.3, rotate: -177.8 }, hover: rot(452.8, 60.1, 486.9, 103.3, 177.8), opacity: 0.8 },
-  { color: "#2F5BFF", rest: { left: -148, top: 33, width: 711, height: 148, rotate: 0 }, hover: { left: -1, top: 68, width: 417, height: 87, rotate: 0 }, opacity: 1 },
+/** soft brand-colour glows circling the window on a flattened orbit, so they pass behind it and round the icons */
+const ORBIT_GLOWS = [
+  { color: "#2F5BFF", size: 150, angle: 0 },
+  { color: "#3BF498", size: 120, angle: 120 },
+  { color: "#FFC21F", size: 110, angle: 240 },
 ]
+const ORBIT_R = 170
+
+function OrbitGlows() {
+  return (
+    <motion.div
+      variants={{ rest: { opacity: 0, scale: 0.6 }, hover: { opacity: 1, scale: 1 } }}
+      transition={SPRING}
+      className="pointer-events-none absolute top-[140px] left-[200px] size-0"
+    >
+      {/* flatten the circle into an ellipse, then spin inside it */}
+      <div className="scale-y-[0.55]">
+        <div className="animate-[spin_7s_linear_infinite] motion-reduce:animate-none">
+          {ORBIT_GLOWS.map((g) => {
+            const r = (g.angle * Math.PI) / 180
+            return (
+              <span
+                key={g.color}
+                className="absolute rounded-full blur-[34px]"
+                style={{
+                  width: g.size,
+                  height: g.size,
+                  left: Math.cos(r) * ORBIT_R - g.size / 2,
+                  top: Math.sin(r) * ORBIT_R - g.size / 2,
+                  backgroundColor: g.color,
+                  opacity: 0.9,
+                }}
+              />
+            )
+          })}
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
 const SERVICES = [
   { Icon: Cloud, rest: { left: 19, top: 62, scale: 1 }, hover: { left: 11.3, top: 104, scale: 0.8 } },
   { Icon: Server, rest: { left: 254, top: 20, scale: 1 }, hover: { left: 255.3, top: 124, scale: 1 } },
@@ -297,17 +340,9 @@ const SERVICES = [
 function HostingMedia() {
   return (
     <>
-      {RINGS.map((r) => (
-        <motion.span
-          key={r.color}
-          variants={{ rest: { ...r.rest, opacity: 0 }, hover: { ...r.hover, opacity: r.opacity } }}
-          transition={SPRING}
-          className="absolute rounded-[50%] border"
-          style={{ borderColor: r.color }}
-        />
-      ))}
+      <OrbitGlows />
       <motion.div
-        variants={{ rest: { opacity: 1 }, hover: { opacity: 0.5 } }}
+        variants={{ rest: { opacity: 1 }, hover: { opacity: 0.85 } }}
         transition={SPRING}
         className="absolute top-[39.2px] left-[45.2px] flex h-[200.9px] w-[309.6px] flex-col gap-1.5 rounded-[17px] bg-neutral-700 p-[5.76px]"
       >
@@ -336,8 +371,8 @@ function HostingMedia() {
         <motion.span
           key={i}
           variants={{
-            rest: { ...rest, backgroundColor: "#48443E", color: "#A8A39A" },
-            hover: { ...hover, backgroundColor: "#FFFFFF", color: "#1E1C19" },
+            rest: { ...rest, backgroundColor: "#48443E", color: "#A8A39A", boxShadow: "0 0 0px 0px rgba(255,255,255,0)" },
+            hover: { ...hover, backgroundColor: "#FFFFFF", color: "#1E1C19", boxShadow: "0 0 28px 2px rgba(255,255,255,0.35)" },
           }}
           transition={SPRING}
           className="absolute grid size-16 place-items-center rounded-full"
@@ -356,70 +391,69 @@ function HostingMedia() {
   )
 }
 
-/* ---------------- 5. Choose your style ---------------- */
+/* ---------------- 5. Plug-in modules ---------------- */
 
-const STYLES = [
-  {
-    name: "editorial",
-    font: "font-(family-name:--font-dm-serif) text-[24px] leading-7",
-    body: "font-(family-name:--font-dm-sans)",
-    swatches: ["#FFFFFF", "#FFE0D9", "#E4E1DA", "#1E1C19", "#F2553A"],
-    secondary: "rounded-none",
-    primary: "rounded-none bg-neutral-900 text-white",
-    rest: { left: 45.05, top: 18.95, scale: 0.9025, opacity: 0.3 },
-    hover: { left: -276, top: 36.1, scale: 1, opacity: 1 },
-  },
-  {
-    name: "friendly",
-    font: "font-(family-name:--font-league-gothic) text-[30px] leading-8 uppercase",
-    body: "font-(family-name:--font-inter)",
-    swatches: ["#FFFFFF", "#FFF2C7", "#E4E1DA", "#057647", "#FFD24D"],
-    secondary: "rounded-full",
-    primary: "rounded-full bg-green-700 text-yellow-100",
-    rest: { left: 44.95, top: 31, scale: 0.95, opacity: 0.5 },
-    hover: { left: 366, top: 36.1, scale: 1, opacity: 1 },
-  },
-  {
-    name: "baseplate",
-    font: "font-heading text-[24px] leading-7 font-semibold",
-    body: "font-sans",
-    swatches: ["#FFFFFF", "#DCE6FF", "#E4E1DA", "#2F5BFF", "#FFC21F"],
-    secondary: "rounded-md",
-    primary: "rounded-md bg-blue-500 text-white",
-    rest: { left: 45, top: 44.9, scale: 1, opacity: 1 },
-    hover: { left: 45, top: 36, scale: 1, opacity: 1 },
-  },
+/** the baseplate: 8 studs wide, sitting at the bottom of the stage */
+const PLATE = { left: 28, top: 250, width: 344, height: 18 }
+const PITCH = PLATE.width / 8
+const BRICK = { width: PITCH * 2 - 2, height: 54 }
+/** where a brick sits once clicked on: `col` in studs from the plate's left edge, `row` 0 = on the plate */
+const seat = (col: number, row: number) => ({ left: PLATE.left + col * PITCH + 1, top: PLATE.top - BRICK.height * (row + 1), rotate: 0 })
+
+const MODULES: { Icon: LucideIcon; label: string; color: string; ink: string; lip: string; rest: { left: number; top: number; rotate: number }; seat: ReturnType<typeof seat> }[] = [
+  { Icon: CalendarCheck, label: "Booking", color: "#2F5BFF", ink: "#FFFFFF", lip: "#172E8C", rest: { left: -18, top: 26, rotate: -14 }, seat: seat(0, 0) },
+  { Icon: CreditCard, label: "Payments", color: "#FFC21F", ink: "#3E2302", lip: "#A86600", rest: { left: 158, top: -8, rotate: 9 }, seat: seat(2, 0) },
+  { Icon: Inbox, label: "Enquiries", color: "#12B76A", ink: "#032B1B", lip: "#057647", rest: { left: 318, top: 34, rotate: 16 }, seat: seat(4, 0) },
+  { Icon: FileText, label: "Estimates", color: "#F2553A", ink: "#FFFFFF", lip: "#B0311C", rest: { left: 22, top: 150, rotate: 8 }, seat: seat(6, 0) },
+  { Icon: Star, label: "Reviews", color: "#FFC1B3", ink: "#3D110A", lip: "#D63F25", rest: { left: 296, top: 160, rotate: -11 }, seat: seat(1, 1) },
+  { Icon: MapPin, label: "Locations", color: "#8EABFF", ink: "#0C173D", lip: "#1F45E0", rest: { left: 166, top: 92, rotate: -5 }, seat: seat(5, 1) },
+  // the website itself sits in the middle: everything plugs into one place
+  { Icon: Globe, label: "Your website", color: "#FFFFFF", ink: "#1E1C19", lip: "#A8A39A", rest: { left: 150, top: 172, rotate: 7 }, seat: seat(3, 1) },
 ]
 
-function StyleMedia() {
+/** the stud on top of a brick or the plate, in the same colour with a lighter cap */
+function Stud({ color, left, top, w = 18 }: { color: string; left: number; top: number; w?: number }) {
+  return <span className="absolute h-[7px] rounded-t-[4px]" style={{ left, top, width: w, backgroundColor: color, boxShadow: "inset 0 2px 0 rgba(255,255,255,0.25)" }} />
+}
+
+function ModulesMedia() {
   return (
-    <div className="contents">
-      {STYLES.map((s) => (
+    <>
+      {/* baseplate */}
+      <motion.div
+        variants={{ rest: { opacity: 0.55, y: 6 }, hover: { opacity: 1, y: 0 } }}
+        transition={SPRING}
+        className="absolute rounded-[4px]"
+        style={{ ...PLATE, backgroundColor: "#605B53", boxShadow: "0 5px 0 #302D29" }}
+      >
+        {Array.from({ length: 16 }, (_, i) => (
+          <Stud key={i} color="#605B53" left={i * (PITCH / 2) + (PITCH / 2 - 14) / 2} top={-7} w={14} />
+        ))}
+      </motion.div>
+
+      {/* bricks: floating, then clicked onto the plate (bottom row first, then the second layer) */}
+      {MODULES.map(({ Icon, label, color, ink, lip, rest, seat: to }, i) => (
         <motion.div
-          key={s.name}
-          variants={{ rest: s.rest, hover: s.hover }}
-          transition={SPRING}
-          style={{ originY: 0 }}
-          className="absolute flex h-[208px] w-[309px] flex-col gap-3 rounded-lg bg-neutral-50 px-5 py-4"
+          key={label}
+          variants={{
+            rest: { ...rest, scale: 1.04, boxShadow: `inset 0 -5px 0 ${lip}, 0 22px 24px rgba(0,0,0,0.45)`, transition: SPRING },
+            hover: {
+              ...to,
+              scale: 1,
+              boxShadow: `inset 0 -5px 0 ${lip}, 0 2px 0 rgba(0,0,0,0.35)`,
+              transition: { type: "spring", stiffness: 420, damping: 26, mass: 0.9, delay: Math.round((PLATE.top - to.top) / BRICK.height - 1) * 0.2 + (i % 4) * 0.05 },
+            },
+          }}
+          className="absolute flex flex-col items-center justify-center gap-0.5 rounded-[5px] pb-1"
+          style={{ ...BRICK, backgroundColor: color, color: ink }}
         >
-          <div className="flex flex-col">
-            <p className={cn("text-neutral-900", s.font)}>Heading</p>
-            <p className={cn("text-sm text-neutral-600", s.body)}>Paragraph text</p>
-          </div>
-          <div className="flex h-10 overflow-hidden rounded-[6px] border border-neutral-200">
-            {s.swatches.map((c) => (
-              <span key={c} className="flex-1" style={{ backgroundColor: c }} />
-            ))}
-          </div>
-          <div className={cn("flex gap-2 text-sm font-medium", s.body)}>
-            <span className={cn("grid h-9 flex-1 place-items-center border border-neutral-300 bg-white text-neutral-900", s.secondary)}>
-              Button
-            </span>
-            <span className={cn("grid h-9 flex-1 place-items-center", s.primary)}>Button</span>
-          </div>
+          <Stud color={color} left={(PITCH - 18) / 2} top={-7} />
+          <Stud color={color} left={PITCH + (PITCH - 18) / 2} top={-7} />
+          <Icon className="size-5" strokeWidth={2} />
+          <span className="text-[10px] leading-3 font-semibold">{label}</span>
         </motion.div>
       ))}
-    </div>
+    </>
   )
 }
 
@@ -496,9 +530,10 @@ export function Features() {
           media={<HostingMedia />}
         />
         <FeatureCard
-          title="Choose how your space looks"
-          desc="Pick a style before you start, or let the agent choose one that suits your business. Change it any time."
-          media={<StyleMedia />}
+          title="Plug in what you need"
+          desc="Bookings, payments, enquiries and more, all in one place. Snap a module on and it works. No plugins to hunt for."
+          media={<ModulesMedia />}
+          fit
         />
         <FeatureCard
           title="Oversee your domains"
