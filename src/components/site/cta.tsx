@@ -1,13 +1,18 @@
+import { HeroTiles } from "./hero-tiles"
 import { PromptInput } from "./prompt-input"
 
+/** The closing call-to-action: the hero's tile field again, so the page ends where it began. */
 export function Cta() {
   return (
-    <section aria-labelledby="cta-title" className="flex w-full justify-center px-4 py-20 min-[810px]:py-30">
-      <div className="flex w-full max-w-[588px] flex-col items-center gap-9">
-        <div className="flex flex-col items-center gap-4 text-center">
-          <h2 id="cta-title" className="type-display text-neutral-900">Ready to start building your space?</h2>
+    <section aria-labelledby="cta-title" className="relative flex w-full justify-center overflow-clip px-4 py-20 min-[810px]:py-30">
+      <HeroTiles className="absolute inset-0 z-0 [mask-image:linear-gradient(to_bottom,transparent,black_160px,black_calc(100%-160px),transparent)]" />
+      <div className="relative z-10 flex w-full max-w-[588px] flex-col items-center gap-9">
+        <h2 id="cta-title" data-hero-copy className="text-center type-display text-neutral-900">
+          Ready to start building your space?
+        </h2>
+        <div data-hero-prompt className="w-full">
+          <PromptInput flowHref="/generate" signals />
         </div>
-        <PromptInput flowHref="/generate" />
       </div>
     </section>
   )

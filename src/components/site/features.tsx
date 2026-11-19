@@ -210,7 +210,7 @@ function EditMedia() {
     [234, 150],
   ]
   return (
-    <div className={cn(demoFontVars, "contents")}>
+    <div className="contents">
       <motion.div
         variants={{ rest: { left: 16, top: 16, backgroundColor: "#EDEDED" }, hover: { left: 46, top: 1, backgroundColor: "#FFFCF2" } }}
         transition={SPRING}
@@ -393,7 +393,7 @@ const STYLES = [
 
 function StyleMedia() {
   return (
-    <div className={cn(demoFontVars, "contents")}>
+    <div className="contents">
       {STYLES.map((s) => (
         <motion.div
           key={s.name}
@@ -457,13 +457,17 @@ function DomainMedia() {
 /* ---------------- section ---------------- */
 
 export function Features() {
+  // the sample sites' typefaces load only once the grid is close; until then nothing on the page uses them
+  const ref = useRef<HTMLElement>(null)
+  const near = useInView(ref, { margin: "800px 0px", once: true })
   return (
     <section
+      ref={ref}
       id="features"
       aria-label="Features"
       className="relative z-20 -mt-[100svh] flex w-full max-w-[1400px] flex-col items-center justify-center overflow-clip rounded-[32px] bg-neutral-900 px-4 py-12 min-[810px]:rounded-[40px] min-[810px]:px-8 min-[810px]:py-16 min-[1440px]:min-h-[1080px] min-[1440px]:rounded-[48px] min-[1440px]:px-[100px] min-[1440px]:py-24"
     >
-      <div id="features-grid" className="grid w-full grid-cols-1 gap-px overflow-clip rounded-xl border border-neutral-700 bg-neutral-700 min-[810px]:grid-cols-2 min-[1100px]:grid-cols-3">
+      <div id="features-grid" className={cn(near && demoFontVars, "grid w-full grid-cols-1 gap-px overflow-clip rounded-xl border border-neutral-700 bg-neutral-700 min-[810px]:grid-cols-2 min-[1100px]:grid-cols-3")}>
         <FeatureCard
           mediaFirst
           media={null}

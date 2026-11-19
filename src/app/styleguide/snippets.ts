@@ -333,10 +333,11 @@ const [open, setOpen] = useState(false)
       name: "Card",
       file: "src/components/ui/card.tsx",
       from: UI,
-      exports: ["Badge", "Button", "Card", "StudsMedia"],
+      exports: ["Badge", "Button", "Card", "CardMedia", "StudsMedia"],
       usage: `// interactive adds the hover lift; selected the blue border
+// CardMedia shows a real thumbnail; StudsMedia is for empty states with nothing to show yet
 <Card interactive selected={chosen} className="flex flex-col">
-  <StudsMedia />
+  <CardMedia src="/images/gallery/lab-coral.jpg" />
   <div className="flex flex-col gap-2 p-5">
     <h3 className="type-h6">Clinical lab</h3>
     <p className="type-body-sm text-fg-secondary">Test menu, packages and doctor referrals.</p>
