@@ -44,7 +44,10 @@ export interface PromptInputProps {
 }
 
 interface FileItem extends DemoFile { id: number; ext: string }
-interface Attached { file: FileItem; key: number; uploading: boolean }
+interface Attached { file: FileItem; key: number; uploading: boolean; logo?: boolean }
+
+/** the logo the builder's "Upload logo" adds, shown with the other attachments */
+const LOGO_FILE: FileItem = { id: -1, name: "Logo.png", size: "48 KB", ext: ".PNG", image: "/images/demo-logo.svg" }
 
 const DEFAULT_FILES: DemoFile[] = [
   { name: "Clinic front.jpg", size: "2.34 MB", image: CLINIC_FRONT },
@@ -84,6 +87,8 @@ export function PromptInput({
   const [text, setText] = useState("")
   const [focused, setFocused] = useState(false)
   const [attached, setAttached] = useState<Attached[]>([])
+  // the logo is one of the attachments, flagged so the builder knows it has one
+  const logo = attached.some((a) => a.logo)
   const [generating, setGenerating] = useState(false)
   const [msg, setMsg] = useState(0)
   const taRef = useRef<HTMLTextAreaElement>(null)
@@ -93,7 +98,6 @@ export function PromptInput({
   const [launch, setLaunch] = useState<{ rect: DOMRect; text: string; href: string } | null>(null)
   // the prompt builder: which blank is open, the logo, blanks the owner skipped, and whether focus is in the box
   const [openSlot, setOpenSlot] = useState<SlotId | null>(null)
-  const [logo, setLogo] = useState(false)
   const [skipped, setSkipped] = useState<SlotId[]>([])
   const [inside, setInside] = useState(false)
   const reading = useMemo(() => read(text), [text])
@@ -127,19 +131,25 @@ export function PromptInput({
 
   const hasText = text.trim().length > 0
   const active = generating || focused || hasText || attached.length > 0
-  const canAttach = !generating && attached.length < files.length
+  const canAttach = !generating && attached.filter((a) => !a.logo).length < files.length
 
   const focusInput = () => taRef.current?.focus()
   const attach = () => {
     if (!canAttach) return
     const next = files.find((f) => !attached.some((a) => a.file.id === f.id))
-    if (!next) return
+    if (next) add(next)
+  }
+  const add = (file: FileItem, isLogo = false) => {
     const key = ++keyRef.current
-    setAttached((a) => [...a, { file: next, key, uploading: true }])
+    setAttached((a) => [...a, { file, key, uploading: true, logo: isLogo }])
     timers.current.push(
       window.setTimeout(() => setAttached((a) => a.map((x) => (x.key === key ? { ...x, uploading: false } : x))), 750),
     )
     focusInput()
+  }
+  const setLogo = (on: boolean) => {
+    if (on && !logo) add(LOGO_FILE, true)
+    if (!on) setAttached((a) => a.filter((x) => !x.logo))
   }
   const remove = (key: number) => setAttached((a) => a.filter((x) => x.key !== key))
   const submit = (e?: FormEvent) => {
@@ -151,7 +161,7 @@ export function PromptInput({
     if (signals) emitPromptLaunch()
     if (flowHref) {
       // hand off to the generation flow with the launch animation
-      const names = [...attached.map((a) => a.file.name), ...(logo ? ["Logo.png"] : [])]
+      const names = attached.map((a) => a.file.name)
       const note = names.length ? ` (attached: ${names.join(", ")})` : ""
       const prompt = text.trim() + note
       const href = `${flowHref}?q=${encodeURIComponent(prompt)}`
@@ -199,7 +209,7 @@ export function PromptInput({
   const frameShadow = active
     ? `0px 0px 0px 4px ${BLUE_100}, 0px 4px 0px 0px ${BLUE_800}`
     : `0px 0px 0px 0px ${BLUE_100}, 0px 4px 0px 0px ${N300}`
-  const nextLabel: Record<SlotId, string> = { type: "the business type", name: "the business name", place: "the city", goal: "the main goal", detail: "the speciality", style: "a style", logo: "your logo" }
+  const nextLabel: Record<SlotId, string> = { type: "the business type", name: "the business name", place: "the business location", goal: "the main goal", detail: "the speciality", style: "a style", logo: "your logo" }
   const hintText =
     attached.length > 0 && !hasText ? attachedHint : builder && next && hasText && focused && !openSlot && !touch ? `Tab to add ${nextLabel[next]} · Enter to start` : focused || hasText ? typingHint : hint
   const ghost = builder && focused && !openSlot ? ghostFor(next, text) : ""
@@ -382,6 +392,8 @@ export function PromptInput({
               onChange={(e) => {
                 setText(e.target.value)
                 if (signals) emitPromptText(e.target.value.trim().length)
+                // a cleared prompt starts over: details skipped earlier are offered again
+                if (!e.target.value.trim()) setSkipped([])
               }}
               onFocus={() => {
                 setFocused(true)
