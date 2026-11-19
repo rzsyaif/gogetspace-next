@@ -28,7 +28,6 @@ export function Faq() {
     <section id="faq" aria-labelledby="faq-title" className="flex w-full justify-center px-4 py-20 min-[810px]:py-30">
       <div className="flex w-full max-w-[1200px] flex-col gap-8 min-[810px]:flex-row min-[810px]:gap-6">
         <div className="flex flex-col gap-3 min-[810px]:w-[384px] min-[810px]:shrink-0">
-          <p className="type-label-sm text-blue-500">QUESTIONS</p>
           <h2 id="faq-title" className="type-h2 text-neutral-900">Frequently asked questions</h2>
           <p className="type-body-lg text-neutral-600">Good to know before you start</p>
         </div>

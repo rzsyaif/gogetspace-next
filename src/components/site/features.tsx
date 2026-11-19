@@ -60,6 +60,7 @@ function FeatureCard({
   mediaFirst,
   body,
   backdrop,
+  fit,
   className,
 }: {
   title?: string
@@ -69,6 +70,8 @@ function FeatureCard({
   body?: ReactNode
   /** decoration behind the whole card */
   backdrop?: ReactNode
+  /** shrink the 400px stage on narrow phones, for art that has to be seen whole */
+  fit?: boolean
   className?: string
 }) {
   const ref = useRef<HTMLElement>(null)
@@ -86,7 +89,7 @@ function FeatureCard({
     >
       {backdrop}
       <div className="relative min-h-0 flex-1 overflow-clip" aria-hidden>
-        <div className="absolute inset-y-0 left-1/2 w-[400px] -translate-x-1/2">{media}</div>
+        <div className={cn("absolute inset-y-0 left-1/2 w-[400px] -translate-x-1/2", fit && "max-[440px]:origin-top max-[440px]:scale-[0.8]")}>{media}</div>
       </div>
       <div className="relative z-10 flex flex-col gap-2 p-8">
         {body}
@@ -179,7 +182,7 @@ const fade: Variants = { rest: { opacity: 0 }, hover: { opacity: 1 } }
 
 function EditMenu({ title, items }: { title: string; items: { label: string; Icon: typeof Check }[] }) {
   return (
-    <div className="flex w-[229px] flex-col gap-0.5 rounded-lg border border-neutral-200 bg-white p-1 shadow-soft-md">
+    <div className="flex w-max flex-col gap-0.5 rounded-lg border border-neutral-200 bg-white p-1 shadow-soft-md">
       <p className="px-3 py-2 type-h6 text-neutral-900">{title}</p>
       {items.map(({ label, Icon }) => (
         <p key={label} className="flex items-center gap-2 rounded-sm px-3 py-2 type-body-md text-neutral-900 first-of-type:bg-neutral-100">
@@ -252,7 +255,7 @@ function EditMedia() {
         </motion.div>
       </motion.div>
 
-      <motion.div variants={{ rest: { left: -288, top: 132 }, hover: { left: 12, top: 132 } }} transition={SPRING} className="absolute">
+      <motion.div variants={{ rest: { left: -288, top: 132 }, hover: { left: 8, top: 132 } }} transition={SPRING} className="absolute">
         <EditMenu
           title="Text"
           items={[
@@ -261,7 +264,8 @@ function EditMedia() {
           ]}
         />
       </motion.div>
-      <motion.div variants={{ rest: { left: 272, top: 335 }, hover: { left: 262, top: 165 } }} transition={SPRING} className="absolute">
+      {/* both menus sit inside the 400px stage, so neither is cut off at the card's edge */}
+      <motion.div variants={{ rest: { left: 201, top: 335 }, hover: { left: 201, top: 165 } }} transition={SPRING} className="absolute">
         <EditMenu
           title="Image"
           items={[
@@ -466,7 +470,6 @@ export function Features() {
           backdrop={<AllSetUpGlows />}
           body={
             <>
-              <p className="type-label-sm text-yellow-300">ALL SET UP</p>
               <h3 className="mb-2 type-h2 whitespace-pre-line text-neutral-50">{"Type.\nRefine.\nPublish."}</h3>
             </>
           }
@@ -481,6 +484,7 @@ export function Features() {
           title="Edit at your fingertips"
           desc="Want to change text, images, or layout? Edit them directly on the platform with no coding required."
           media={<EditMedia />}
+          fit
         />
         <FeatureCard
           title="Hosting? Server? Handled"

@@ -139,6 +139,8 @@ export function missing(r: Reading, logo: boolean): SlotId[] {
 
 /** the template, as shown when the box is empty */
 export const TEMPLATE = "Build a website for [business type] named [business name] in [city], so [main goal]…"
+/** the same template, short enough for two lines on a phone (the chips below ask for the rest) */
+export const TEMPLATE_SHORT = "A website for [business type] in [city]…"
 
 /** writes a picked blank into the prompt */
 export function apply(text: string, slot: Exclude<SlotId, "logo">, value: string): string {

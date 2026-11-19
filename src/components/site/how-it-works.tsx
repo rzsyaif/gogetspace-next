@@ -13,18 +13,25 @@ const STEPS = [
 ]
 /** the preview for each step (Figma 190:3583) */
 const ART = [StepDescribe, StepBrief, StepStyle, StepLive]
-/** scroll length in viewport heights: one per step, plus extra for the last step and the hand-off to Features */
-const SEGMENTS = 6
+/** scroll segments: one per step, plus one for the hand-off to Features */
+const SEGMENTS = STEPS.length + 1
+/** scroll per step, in viewport heights — short enough that the section never feels like a trap */
+const STEP_VH = 55
+/** the hand-off takes a full screen, the time Features needs to slide over (it overlaps by 100svh) */
+const HANDOFF_VH = 100
+const RANGE_VH = STEPS.length * STEP_VH + HANDOFF_VH
+/** where the steps end and the hand-off starts, as scroll progress */
+const STEPS_END = (STEPS.length * STEP_VH) / RANGE_VH
 
 /**
- * Sticky "How it works" panel. Each 100vh of scroll moves to the next step; the bar above each step
- * fills with real scroll progress (the last bar fills over the remaining length).
+ * Sticky "How it works" panel. Each STEP_VH of scroll moves to the next step; the bar above each step
+ * fills with real scroll progress. The steps are buttons too, so nobody has to scroll through to reach one.
  */
 export function HowItWorks({ ref }: { ref?: Ref<HTMLElement> }) {
   const targetRef = useRef<HTMLElement | null>(null)
   const reduce = useReducedMotion()
   const { scrollYProgress } = useScroll({ target: targetRef, offset: ["start start", "end end"] })
-  const seg = useTransform(scrollYProgress, (p) => p * SEGMENTS)
+  const seg = useTransform(scrollYProgress, [0, STEPS_END, 1], [0, SEGMENTS - 1, SEGMENTS])
   const scale = useTransform(seg, [SEGMENTS - 1, SEGMENTS], [1, reduce ? 1 : 0.95])
   const [active, setActive] = useState(0)
   const [plays, setPlays] = useState(0)
@@ -35,6 +42,14 @@ export function HowItWorks({ ref }: { ref?: Ref<HTMLElement> }) {
       setPlays((n) => n + 1)
     }
   })
+
+  // jump to a step: scroll to just inside its segment
+  const goTo = (i: number) => {
+    const el = targetRef.current
+    if (!el) return
+    const top = el.getBoundingClientRect().top + window.scrollY
+    window.scrollTo({ top: top + ((i + 0.1) / STEPS.length) * STEPS_END * (el.offsetHeight - window.innerHeight), behavior: reduce ? "auto" : "smooth" })
+  }
 
   const setRefs = (el: HTMLElement | null) => {
     targetRef.current = el
@@ -48,12 +63,11 @@ export function HowItWorks({ ref }: { ref?: Ref<HTMLElement> }) {
       id="how-it-works"
       aria-labelledby="how-title"
       className="relative z-10 w-full max-w-[1400px]"
-      style={{ height: `${(SEGMENTS + 1) * 100}svh` }}
+      style={{ height: `${RANGE_VH + 100}svh` }}
     >
       <motion.div style={{ scale }} className="sticky top-0 h-svh min-h-[640px] origin-top">
         <div className="flex h-full flex-col gap-8 overflow-clip rounded-[32px] border border-neutral-200 bg-white px-5 pt-12 min-[810px]:gap-9 min-[810px]:rounded-[40px] min-[810px]:px-8 min-[810px]:pt-16 min-[1440px]:rounded-[48px] min-[1440px]:px-[100px] min-[1440px]:pt-24">
           <div className="flex flex-col gap-3">
-            <p className="type-label-sm text-blue-500">HOW IT WORKS</p>
             <h2 id="how-title" className="type-h2 text-neutral-900">From a sentence to a live website</h2>
             <p className="max-w-[640px] type-body-lg text-neutral-600">
               Describe your business in plain words. We build the first version right away, then you make it yours.
@@ -62,15 +76,27 @@ export function HowItWorks({ ref }: { ref?: Ref<HTMLElement> }) {
 
           <ol className="grid grid-cols-4 gap-3 lg:gap-6">
             {STEPS.map((s, i) => (
-              <li key={s.title} aria-current={i === active ? "step" : undefined} className="flex flex-col gap-3 lg:gap-4">
-                <ProgressBar seg={seg} index={i} />
-                <div className="hidden flex-col gap-1 lg:flex">
-                  <span className={cn("type-label-md transition-colors", i === active ? "text-blue-500" : "text-neutral-500")}>
-                    {s.title}
+              <li key={s.title}>
+                <button
+                  type="button"
+                  onClick={() => goTo(i)}
+                  aria-current={i === active ? "step" : undefined}
+                  className="group -my-3 flex w-full flex-col gap-3 rounded-sm py-3 text-left focus-visible:outline-none focus-visible:focus-ring lg:-my-2 lg:gap-4 lg:py-2"
+                >
+                  <ProgressBar seg={seg} index={i} />
+                  <span className="hidden flex-col gap-1 lg:flex">
+                    <span
+                      className={cn(
+                        "type-label-md transition-colors duration-150 ease-out",
+                        i === active ? "text-blue-500" : "text-neutral-500 group-hover:text-neutral-900",
+                      )}
+                    >
+                      {s.title}
+                    </span>
+                    <span className="type-body-sm text-neutral-500">{s.caption}</span>
                   </span>
-                  <span className="type-body-sm text-neutral-500">{s.caption}</span>
-                </div>
-                <span className="sr-only lg:hidden">{s.title}</span>
+                  <span className="sr-only lg:hidden">{s.title}</span>
+                </button>
               </li>
             ))}
           </ol>

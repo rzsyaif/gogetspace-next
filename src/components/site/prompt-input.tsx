@@ -9,7 +9,7 @@ import { cn } from "@/lib/cn"
 import { CLINIC_FRONT, CLINIC_PHOTO } from "./assets"
 import { emitPromptActive, emitPromptLaunch, emitPromptText } from "./prompt-events"
 import { PromptBuilderBar } from "./prompt-builder-bar"
-import { TEMPLATE, ghostFor, missing, read, type SlotId } from "@/lib/prompt-builder"
+import { TEMPLATE, TEMPLATE_SHORT, ghostFor, missing, read, type SlotId } from "@/lib/prompt-builder"
 
 /**
  * AI prompt input from the homepage: type a brief, attach demo files (no file picker — it adds
@@ -356,7 +356,14 @@ export function PromptInput({
           <div className="relative">
             {!text && (
               <div aria-hidden className="pointer-events-none absolute inset-0 text-lg leading-7 text-neutral-500">
-                {builder ? TEMPLATE : placeholder}
+                {builder ? (
+                  <>
+                    <span className="max-sm:hidden">{TEMPLATE}</span>
+                    <span className="sm:hidden">{TEMPLATE_SHORT}</span>
+                  </>
+                ) : (
+                  placeholder
+                )}
               </div>
             )}
             {ghost && (

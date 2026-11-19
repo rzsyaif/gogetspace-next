@@ -12,7 +12,6 @@ export function Hero() {
       <HeroTiles className="absolute inset-0 z-0" />
       <div className="relative z-10 flex w-full max-w-[588px] flex-col items-center gap-9">
         <div data-hero-copy className="flex flex-col items-center gap-4 text-center">
-          <p className="type-label-sm text-blue-500">YOUR ALL-IN-ONE WEBSITE SOLUTION</p>
           <h1 id="hero-title" className="type-display text-neutral-900">
             Your business,
             <br />
