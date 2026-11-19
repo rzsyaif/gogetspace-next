@@ -38,7 +38,7 @@ export function DashboardHome() {
           What space do you want to build today, {ACCOUNT.firstName}?
         </h1>
         <div ref={prompt}>
-          <PromptInput flowHref="/generate" />
+          <PromptInput flowHref="/generate" builder />
         </div>
       </section>
 

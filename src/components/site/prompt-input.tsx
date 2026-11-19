@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type MouseEvent } from "react"
+import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent, type MouseEvent } from "react"
 import { useRouter } from "next/navigation"
 import { LaunchOverlay } from "./launch-overlay"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
@@ -8,6 +8,8 @@ import { ArrowUp, Plus, Sparkle, X } from "lucide-react"
 import { cn } from "@/lib/cn"
 import { CLINIC_FRONT, CLINIC_PHOTO } from "./assets"
 import { emitPromptActive, emitPromptLaunch, emitPromptText } from "./prompt-events"
+import { PromptBuilderBar } from "./prompt-builder-bar"
+import { TEMPLATE, ghostFor, missing, read, type SlotId } from "@/lib/prompt-builder"
 
 /**
  * AI prompt input from the homepage: type a brief, attach demo files (no file picker — it adds
@@ -36,6 +38,8 @@ export interface PromptInputProps {
   flowHref?: string
   /** tell the hero background what's being typed and when it's sent */
   signals?: boolean
+  /** offer the blanks the builder still needs (type, name, city, goal, style, logo) under the prompt */
+  builder?: boolean
   className?: string
 }
 
@@ -65,6 +69,7 @@ export function PromptInput({
   onSubmit,
   flowHref,
   signals = false,
+  builder = false,
   className,
 }: PromptInputProps) {
   const reduce = useReducedMotion()
@@ -86,6 +91,16 @@ export function PromptInput({
   const timers = useRef<number[]>([])
   const formRef = useRef<HTMLFormElement>(null)
   const [launch, setLaunch] = useState<{ rect: DOMRect; text: string; href: string } | null>(null)
+  // the prompt builder: which blank is open, the logo, blanks the owner skipped, and whether focus is in the box
+  const [openSlot, setOpenSlot] = useState<SlotId | null>(null)
+  const [logo, setLogo] = useState(false)
+  const [skipped, setSkipped] = useState<SlotId[]>([])
+  const [inside, setInside] = useState(false)
+  const reading = useMemo(() => read(text), [text])
+  // no Tab key to point at on a touch screen
+  // (only read once focused, so the server's guess never shows)
+  const [touch] = useState(() => typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches)
+  const next = builder ? missing(reading, logo).filter((s) => !skipped.includes(s))[0] : undefined
 
   useEffect(() => {
     const t = timers.current
@@ -136,7 +151,8 @@ export function PromptInput({
     if (signals) emitPromptLaunch()
     if (flowHref) {
       // hand off to the generation flow with the launch animation
-      const note = attached.length ? ` (attached: ${attached.map((a) => a.file.name).join(", ")})` : ""
+      const names = [...attached.map((a) => a.file.name), ...(logo ? ["Logo.png"] : [])]
+      const note = names.length ? ` (attached: ${names.join(", ")})` : ""
       const prompt = text.trim() + note
       const href = `${flowHref}?q=${encodeURIComponent(prompt)}`
       try {
@@ -155,6 +171,12 @@ export function PromptInput({
     focusInput()
   }
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    // Tab opens the next blank the builder would like
+    if (e.key === "Tab" && !e.shiftKey && next && hasText && !openSlot) {
+      e.preventDefault()
+      setOpenSlot(next)
+      return
+    }
     if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault()
       submit()
@@ -168,7 +190,7 @@ export function PromptInput({
   // clicking anywhere in the box (outside buttons) focuses the textarea
   const onBoxDown = (e: MouseEvent) => {
     const t = e.target as HTMLElement
-    if (t.closest("button") || t.tagName === "TEXTAREA") return
+    if (t.closest("button, input") || t.tagName === "TEXTAREA") return
     e.preventDefault()
     focusInput()
   }
@@ -177,10 +199,37 @@ export function PromptInput({
   const frameShadow = active
     ? `0px 0px 0px 4px ${BLUE_100}, 0px 4px 0px 0px ${BLUE_800}`
     : `0px 0px 0px 0px ${BLUE_100}, 0px 4px 0px 0px ${N300}`
-  const hintText = attached.length > 0 && !hasText ? attachedHint : focused || hasText ? typingHint : hint
+  const nextLabel: Record<SlotId, string> = { type: "the business type", name: "the business name", place: "the city", goal: "the main goal", detail: "the speciality", style: "a style", logo: "your logo" }
+  const hintText =
+    attached.length > 0 && !hasText ? attachedHint : builder && next && hasText && focused && !openSlot && !touch ? `Tab to add ${nextLabel[next]} · Enter to start` : focused || hasText ? typingHint : hint
+  const ghost = builder && focused && !openSlot ? ghostFor(next, text) : ""
+  const showBuilder = builder && !generating && !launch && (active || inside || !!openSlot)
+  const setPromptText = (v: string) => {
+    setText(v)
+    if (signals) emitPromptText(v.trim().length)
+    // back to the prompt, cursor at the end, ready for the next blank
+    window.setTimeout(() => {
+      const ta = taRef.current
+      if (!ta) return
+      ta.focus()
+      ta.setSelectionRange(v.length, v.length)
+    }, 0)
+  }
 
   return (
-    <form ref={formRef} onSubmit={submit} aria-busy={generating} className={cn("relative w-full font-sans", launch && "invisible", className)}>
+    <form
+      ref={formRef}
+      onSubmit={submit}
+      onFocus={() => setInside(true)}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+          setInside(false)
+          setOpenSlot(null)
+        }
+      }}
+      aria-busy={generating}
+      className={cn("relative w-full font-sans", launch && "invisible", className)}
+    >
       {launch && <LaunchOverlay from={launch.rect} text={launch.text} onDone={() => router.push(launch.href)} />}
       {/* pulsing glow while generating */}
       <AnimatePresence>
@@ -307,7 +356,14 @@ export function PromptInput({
           <div className="relative">
             {!text && (
               <div aria-hidden className="pointer-events-none absolute inset-0 text-lg leading-7 text-neutral-500">
-                {placeholder}
+                {builder ? TEMPLATE : placeholder}
+              </div>
+            )}
+            {ghost && (
+              // the next blank, faintly, right after what's typed
+              <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden text-lg leading-7 break-words whitespace-pre-wrap text-transparent">
+                {text}
+                <span className="text-neutral-400">{ghost}</span>
               </div>
             )}
             <textarea
@@ -315,7 +371,7 @@ export function PromptInput({
               rows={2}
               value={text}
               readOnly={generating}
-              aria-label={placeholder}
+              aria-label={builder ? "Describe your business" : placeholder}
               onChange={(e) => {
                 setText(e.target.value)
                 if (signals) emitPromptText(e.target.value.trim().length)
@@ -332,6 +388,20 @@ export function PromptInput({
               className="block max-h-42 min-h-14 w-full resize-none overflow-y-auto bg-transparent p-0 text-lg leading-7 text-neutral-900 outline-none"
             />
           </div>
+
+          {showBuilder && (
+            <PromptBuilderBar
+              text={text}
+              reading={reading}
+              open={openSlot}
+              setOpen={setOpenSlot}
+              logo={logo}
+              setLogo={setLogo}
+              skipped={skipped}
+              skip={(s) => setSkipped((x) => [...x, s])}
+              onText={setPromptText}
+            />
+          )}
 
           <div className="flex items-center gap-2">
             <motion.button

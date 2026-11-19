@@ -1,5 +1,6 @@
 "use client"
 
+import { LAUNCH_KEY } from "@/components/site/launch-overlay"
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
@@ -67,6 +68,14 @@ export function Shell({ initialTab = "agent" }: { initialTab?: Tab }) {
   }, [toast])
 
   const sidebar = xl ? 380 : 340
+  // arriving from the homepage prompt: the launch animation already built the editor frame, so it doesn't play again
+  const [launched] = useState(() => {
+    try {
+      return Date.now() - Number(sessionStorage.getItem(LAUNCH_KEY) ?? 0) < 4000
+    } catch {
+      return false
+    }
+  })
   const chatWidth = !create || !wide ? "100%" : chatOpen && !fullPanel ? sidebar : 0
 
   const goTo = (t: Tab) => {
@@ -129,7 +138,7 @@ export function Shell({ initialTab = "agent" }: { initialTab?: Tab }) {
         )}
 
         <div className="flex min-h-0 flex-1">
-          <AnimatePresence initial={false}>
+          <AnimatePresence initial={!launched}>
             {create && wide && (
               <motion.div key="rail" initial={{ width: 0, opacity: 0 }} animate={{ width: 84, opacity: 1 }} exit={{ width: 0, opacity: 0 }} transition={{ duration: 0.55, ease: EASE }} className="shrink-0 overflow-hidden">
                 <Rail tab={tab} onTab={(t) => { setTab(t); setChatOpen(true) }} />
@@ -175,7 +184,7 @@ export function Shell({ initialTab = "agent" }: { initialTab?: Tab }) {
               <motion.section
                 key="preview"
                 aria-label="Preview"
-                initial={{ opacity: 0, x: 64 }}
+                initial={launched ? false : { opacity: 0, x: 64 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2, duration: 0.6, ease: EASE }}
                 className={cn("min-h-0 min-w-0 flex-1 flex-col gap-1 p-1", wide || mobileView === "preview" ? "flex" : "hidden")}
