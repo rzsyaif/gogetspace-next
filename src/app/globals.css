@@ -38,6 +38,13 @@
 @keyframes bp-sheet-out {
   to { opacity: 0; transform: translateY(64px); }
 }
+/* modals on phones: a bottom sheet sliding up from the edge */
+@keyframes bp-sheet-up {
+  from { transform: translateY(100%); }
+}
+@keyframes bp-sheet-down {
+  to { transform: translateY(100%); }
+}
 @keyframes bp-drawer-in {
   from { transform: translateX(var(--drawer-from, 100%)); }
 }

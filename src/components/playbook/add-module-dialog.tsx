@@ -89,7 +89,8 @@ function Flow({ module, onClose, api, goals, book, billing, onImplement }: { mod
           {m.name}
         </span>
       }
-      className="max-w-[960px]"
+      className="max-w-[960px] sm:h-[min(720px,calc(100dvh-32px))]"
+      scroll={false}
       footer={
         <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row [&>*]:max-sm:w-full">
           <Button variant="secondary" onClick={onClose}>
@@ -101,9 +102,11 @@ function Flow({ module, onClose, api, goals, book, billing, onImplement }: { mod
         </div>
       }
     >
-      <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-8">
+      {/* the preview stays put and only the description beside it scrolls; on a phone (a bottom sheet) the
+          preview scrolls with the description between the fixed header and Install button */}
+      <div className="-mb-2 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain pb-6 md:grid md:overflow-hidden md:pb-0 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-8">
         {/* what it looks like, for customers and for the owner */}
-        <div className="flex flex-col gap-4 rounded-lg bg-subtle p-4 md:sticky md:top-0 md:self-start">
+        <div className="flex shrink-0 flex-col gap-3 rounded-lg bg-subtle p-3 md:gap-4 md:self-start md:p-4">
           <div role="group" aria-label="Preview" className="grid grid-cols-2 gap-1 rounded-md bg-surface p-1">
             {(
               [
@@ -125,11 +128,11 @@ function Flow({ module, onClose, api, goals, book, billing, onImplement }: { mod
           <div className="max-md:-my-[38px] max-md:scale-[0.8]">
             <ModulePreview sc={sc} view={view} />
           </div>
-          <p className="text-center type-caption text-fg-tertiary">{view === "customer" ? "On your website, phone and desktop" : "In the module's own app, from Modules › Manage"}</p>
+          <p className="text-center type-caption text-fg-tertiary max-md:hidden">{view === "customer" ? "On your website, phone and desktop" : "In the module's own app, from Modules › Manage"}</p>
         </div>
 
         {/* what it does, what it needs, what it costs */}
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-5 md:-mx-1 md:h-full md:min-h-0 md:overflow-y-auto md:overscroll-contain md:px-1 md:pb-6">
           <p className="type-body-md text-fg-primary">{sc.about}</p>
 
           <div className="flex flex-col gap-2">
