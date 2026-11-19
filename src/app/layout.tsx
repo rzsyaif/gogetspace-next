@@ -5,7 +5,7 @@ import "./globals.css"
 
 export const metadata: Metadata = {
   title: { default: "GoGetSpace", template: "%s · GoGetSpace" },
-  description: "Your business, online today. Build a dream space for your business.",
+  description: "Your business, online today. A website for your clinic or practice, built from one sentence.",
 }
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

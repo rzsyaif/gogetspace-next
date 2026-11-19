@@ -15,6 +15,8 @@
 @layer base {
   html {
     background: var(--color-canvas);
+    /* in-page links land below the floating nav */
+    scroll-padding-top: 88px;
   }
 
   body {

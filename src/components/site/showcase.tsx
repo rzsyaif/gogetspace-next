@@ -43,11 +43,11 @@ export function Showcase() {
             </span>
           </div>
           <h2 id="everyone-title" className="type-h2 text-neutral-50">
-            Now everyone can build, literally
+            Built for professionals, not developers
           </h2>
           <p className="type-body-lg text-neutral-300">
-            You focus on managing businesses and serving clients in the best way. Everything that usually needs a developer,
-            consider it done.
+            Clinics, law firms and labs get a website that takes bookings, answers enquiries and handles payments. No developer
+            needed.
           </p>
         </div>
       </motion.section>

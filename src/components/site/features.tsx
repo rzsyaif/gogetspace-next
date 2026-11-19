@@ -459,7 +459,7 @@ export function Features() {
       aria-label="Features"
       className="relative z-20 -mt-[100svh] flex w-full max-w-[1400px] flex-col items-center justify-center overflow-clip rounded-[32px] bg-neutral-900 px-4 py-12 min-[810px]:rounded-[40px] min-[810px]:px-8 min-[810px]:py-16 min-[1440px]:min-h-[1080px] min-[1440px]:rounded-[48px] min-[1440px]:px-[100px] min-[1440px]:py-24"
     >
-      <div className="grid w-full grid-cols-1 gap-px overflow-clip rounded-xl border border-neutral-700 bg-neutral-700 min-[810px]:grid-cols-2 min-[1100px]:grid-cols-3">
+      <div id="features-grid" className="grid w-full grid-cols-1 gap-px overflow-clip rounded-xl border border-neutral-700 bg-neutral-700 min-[810px]:grid-cols-2 min-[1100px]:grid-cols-3">
         <FeatureCard
           mediaFirst
           media={null}
@@ -470,11 +470,11 @@ export function Features() {
               <h3 className="mb-2 type-h2 whitespace-pre-line text-neutral-50">{"Type.\nRefine.\nPublish."}</h3>
             </>
           }
-          desc="You focus on managing businesses and serving clients in the best way possible."
+          desc="You run your practice. We build the website, host it and keep it running."
         />
         <FeatureCard
-          title="Plan how your space is built"
-          desc="The agent will help you outline the brief for your business website. All you need to do is review and confirm."
+          title="Built from your words"
+          desc="The agent plans your pages and builds a first version straight away. Check the brief whenever you like."
           media={<PlanMedia />}
         />
         <FeatureCard
@@ -489,7 +489,7 @@ export function Features() {
         />
         <FeatureCard
           title="Choose how your space looks"
-          desc="Our agent will create multiple design system options for you to choose from in advance."
+          desc="Pick a style before you start, or let the agent choose one that suits your business. Change it any time."
           media={<StyleMedia />}
         />
         <FeatureCard
