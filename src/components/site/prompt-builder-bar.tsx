@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react"
 import { AnimatePresence, motion } from "motion/react"
-import { Check, ImageUp, Plus, X } from "lucide-react"
+import { ImageUp, Plus } from "lucide-react"
 import { Chip } from "@/components/ui"
 import { BUSINESS_TYPES, apply, detailOf, goalChoices, styleChoices, type Reading, type SlotId } from "@/lib/prompt-builder"
 
@@ -40,11 +40,11 @@ export function PromptBuilderBar({
     { id: "goal", label: "Main goal", value: r.goal?.label ?? null },
     ...(detail ? [{ id: "detail" as const, label: detail.label, value: r.detail?.label ?? null }] : []),
     { id: "style", label: "Style", value: r.style?.name ?? null },
+    // the uploaded logo shows with the prompt's other attachments
     { id: "logo", label: "Logo", value: logo ? "Logo.png" : null },
   ]
-  // a detail the prompt already has leaves the list (deleting it from the prompt brings it back); the logo is a file,
-  // not words in the prompt, so it stays as a chip you can remove
-  const shown = slots.filter((s) => (s.id === "logo" ? true : !s.value) && (s.value || !skipped.includes(s.id)))
+  // a detail the prompt already has leaves the list; deleting it from the prompt (or removing the logo file) brings it back
+  const shown = slots.filter((s) => !s.value && !skipped.includes(s.id))
   const filled = slots.filter((s) => s.value).length
 
   const pick = (slot: Exclude<SlotId, "logo">, value: string) => {
@@ -80,31 +80,16 @@ export function PromptBuilderBar({
               transition={{ type: "spring", duration: 0.3, bounce: 0 }}
               className="flex max-w-full"
             >
-              {s.value ? (
-                <span className="flex h-8 max-w-full items-center gap-1.5 rounded-full bg-blue-50 px-3 type-label-sm text-blue-700">
-                  <Check aria-hidden className="size-3.5 shrink-0" strokeWidth={2.5} />
-                  <span className="truncate">
-                    <span className="sr-only">{s.label}: </span>
-                    {s.value}
-                  </span>
-                  {s.id === "logo" && (
-                    <button type="button" aria-label="Remove logo" onMouseDown={(e) => e.preventDefault()} onClick={() => setLogo(false)} className="-mr-1 grid size-5 place-items-center rounded-full hover:bg-blue-100 focus-visible:outline-none focus-visible:focus-ring">
-                      <X aria-hidden className="size-3" />
-                    </button>
-                  )}
-                </span>
-              ) : (
-                <Chip
-                  variant="add"
-                  selected={open === s.id}
-                  aria-expanded={open === s.id}
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => setOpen(open === s.id ? null : s.id)}
-                  icon={<Plus aria-hidden strokeWidth={2.5} />}
-                >
-                  {s.label}
-                </Chip>
-              )}
+              <Chip
+                variant="add"
+                selected={open === s.id}
+                aria-expanded={open === s.id}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => setOpen(open === s.id ? null : s.id)}
+                icon={<Plus aria-hidden strokeWidth={2.5} />}
+              >
+                {s.label}
+              </Chip>
             </motion.span>
           ))}
         </AnimatePresence>
