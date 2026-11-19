@@ -3,9 +3,9 @@
 import { Logo, Select } from "@/components/ui"
 
 const COLUMNS = [
-  { title: "PRODUCT", links: [["AI Website Builder", "#"], ["Managed Hosting", "#"], ["Domain", "#"]] },
-  { title: "COMPANY", links: [["Pricing", "#pricing"], ["About Us", "#"], ["Contact Us", "#"], ["Enterprise", "#"]] },
-  { title: "LEGAL", links: [["Terms and Conditions", "#"], ["Privacy Policy", "#"], ["Cookie Settings", "#"], ["Licensing Agreement", "#"]] },
+  // only links with somewhere to go; Company and Legal come back when their pages exist
+  { title: "PRODUCT", links: [["AI Website Builder", "#start"], ["Managed Hosting", "#features-grid"], ["Domains", "/dashboard/domains"]] },
+  { title: "GET STARTED", links: [["How it works", "#how-it-works"], ["Pricing", "#pricing"], ["Questions", "#faq"]] },
 ]
 
 const LANGUAGES = [

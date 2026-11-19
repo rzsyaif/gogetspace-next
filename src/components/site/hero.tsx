@@ -18,7 +18,7 @@ export function Hero() {
             <br />
             <span className="text-blue-500">online</span> today
           </h1>
-          <p className="type-body-lg text-neutral-600">Build a dream space for your business. Start for free.</p>
+          <p className="type-body-lg text-neutral-600">A website for your clinic or practice, built from one sentence. Free to start.</p>
         </div>
         <div data-hero-prompt className="w-full">
           <PromptInput flowHref="/generate" signals builder />

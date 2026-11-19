@@ -10,9 +10,9 @@ import { focusHeroPrompt } from "./prompt-events"
 import { LoginDialog } from "@/components/auth/login-dialog"
 
 const SOLUTIONS = [
-  { title: "AI Website Builder", desc: "Describe your business, get a site", Icon: Sparkles },
-  { title: "Managed Hosting", desc: "Fast, secure and always on", Icon: Server },
-  { title: "Domains", desc: "Find, buy and connect a domain", Icon: Globe },
+  { title: "AI Website Builder", desc: "Describe your business, get a site", Icon: Sparkles, href: "#start" },
+  { title: "Managed Hosting", desc: "Fast, secure and always on", Icon: Server, href: "#features-grid" },
+  { title: "Domains", desc: "Find, buy and connect a domain", Icon: Globe, href: "/dashboard/domains" },
 ]
 
 const navItem =
@@ -58,7 +58,7 @@ export function SiteNav() {
         className={cn(
           "pointer-events-auto mx-auto flex flex-col gap-6 border transition-[max-width,padding,border-radius,background-color,border-color,box-shadow] duration-300 ease-out min-[810px]:flex-row min-[810px]:items-center min-[810px]:gap-8 motion-reduce:transition-none",
           floating
-            ? "max-w-[1040px] rounded-xl border-neutral-300/70 bg-white/80 px-3 py-2 shadow-[0_10px_30px_-12px_rgba(23,46,140,0.22)] backdrop-blur-md min-[810px]:px-4"
+            ? "max-w-[1040px] rounded-xl border-neutral-300/70 bg-white/95 px-3 py-2 shadow-[0_10px_30px_-12px_rgba(23,46,140,0.22)] backdrop-blur-lg min-[810px]:px-4"
             : "max-w-[1264px] rounded-none border-transparent bg-transparent px-5 py-6 shadow-none min-[810px]:px-8",
         )}
       >
@@ -87,25 +87,27 @@ export function SiteNav() {
                 <ChevronDown aria-hidden className="size-4 transition-transform duration-200 ease-out" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-72">
-                {SOLUTIONS.map(({ title, desc, Icon }) => (
-                  <DropdownMenuItem key={title} className="items-start gap-3 py-2.5">
-                    <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-md bg-accent-blue-subtle text-fg-link">
-                      <Icon aria-hidden className="size-4" />
-                    </span>
-                    <span className="flex flex-col">
-                      <span className="type-label-md text-fg-primary">{title}</span>
-                      <span className="type-body-sm text-fg-secondary">{desc}</span>
-                    </span>
+                {SOLUTIONS.map(({ title, desc, Icon, href }) => (
+                  <DropdownMenuItem key={title} asChild className="items-start gap-3 py-2.5">
+                    <a href={href}>
+                      <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-md bg-accent-blue-subtle text-fg-link">
+                        <Icon aria-hidden className="size-4" />
+                      </span>
+                      <span className="flex flex-col">
+                        <span className="type-label-md text-fg-primary">{title}</span>
+                        <span className="type-body-sm text-fg-secondary">{desc}</span>
+                      </span>
+                    </a>
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
           </li>
           <li>
-            <a href="#pricing" className={navItem}>Pricing</a>
+            <a href="#how-it-works" className={navItem}>How it works</a>
           </li>
           <li>
-            <a href="#" className={navItem}>About Us</a>
+            <a href="#pricing" className={navItem}>Pricing</a>
           </li>
         </ul>
         <div className="hidden flex-1 items-center justify-end gap-2 min-[810px]:flex">
@@ -128,19 +130,19 @@ export function SiteNav() {
               <div className="flex flex-col gap-6 pb-2">
                 <ul className="flex flex-col gap-1">
                   <li className="px-3 pt-1.5 type-label-sm text-fg-tertiary">SOLUTIONS</li>
-                  {SOLUTIONS.map(({ title, Icon }) => (
+                  {SOLUTIONS.map(({ title, Icon, href }) => (
                     <li key={title}>
-                      <a href="#" className={cn(navItem, "w-full gap-3")} onClick={() => setOpen(false)}>
+                      <a href={href} className={cn(navItem, "w-full gap-3")} onClick={() => setOpen(false)}>
                         <Icon aria-hidden className="size-4 text-fg-link" />
                         {title}
                       </a>
                     </li>
                   ))}
                   <li>
-                    <a href="#pricing" className={cn(navItem, "w-full")} onClick={() => setOpen(false)}>Pricing</a>
+                    <a href="#how-it-works" className={cn(navItem, "w-full")} onClick={() => setOpen(false)}>How it works</a>
                   </li>
                   <li>
-                    <a href="#" className={cn(navItem, "w-full")} onClick={() => setOpen(false)}>About Us</a>
+                    <a href="#pricing" className={cn(navItem, "w-full")} onClick={() => setOpen(false)}>Pricing</a>
                   </li>
                 </ul>
                 <div className="flex flex-col gap-2">

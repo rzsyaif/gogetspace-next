@@ -6,10 +6,10 @@ import { cn } from "@/lib/cn"
 import { Stage, StepBrief, StepDescribe, StepLive, StepStyle } from "./how-it-works-art"
 
 const STEPS = [
-  { title: "Describe your business", caption: "Type a sentence or two about what you do. Add photos or documents if you have them." },
-  { title: "Check your brief", caption: "We turn it into a short plan of pages, sections and features. Change anything you like." },
-  { title: "Pick a style", caption: "Choose colors and fonts, and see a live preview before you decide." },
-  { title: "Go live", caption: "Purchase domain and publish. Hosting and security are already set up." },
+  { title: "Describe your business", caption: "A sentence or two is enough. Add your name, city, goal, style or logo if you have them." },
+  { title: "Watch it build", caption: "We plan the pages and build a first version straight away. No forms to fill in first." },
+  { title: "Make it yours", caption: "Answer a few quick questions, check the brief, and change any text, photo or colour." },
+  { title: "Go live", caption: "Publish on a free address or your own domain. Hosting and security are already set up." },
 ]
 /** the preview for each step (Figma 190:3583) */
 const ART = [StepDescribe, StepBrief, StepStyle, StepLive]
@@ -56,7 +56,7 @@ export function HowItWorks({ ref }: { ref?: Ref<HTMLElement> }) {
             <p className="type-label-sm text-blue-500">HOW IT WORKS</p>
             <h2 id="how-title" className="type-h2 text-neutral-900">From a sentence to a live website</h2>
             <p className="max-w-[640px] type-body-lg text-neutral-600">
-              Answer a few questions in plain words. We handle the design, the pages, and the technical setup.
+              Describe your business in plain words. We build the first version right away, then you make it yours.
             </p>
           </div>
 
