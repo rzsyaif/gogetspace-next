@@ -68,6 +68,7 @@ function FeatureCard({
   body,
   backdrop,
   fit,
+  fade,
   className,
 }: {
   title?: string
@@ -79,6 +80,8 @@ function FeatureCard({
   backdrop?: ReactNode
   /** shrink the 400px stage on narrow phones, for art that has to be seen whole */
   fit?: boolean
+  /** fade the top of the art out, for art that rises into the card's text */
+  fade?: boolean
   className?: string
 }) {
   const ref = useRef<HTMLElement>(null)
@@ -95,7 +98,7 @@ function FeatureCard({
       className={cn("relative isolate flex h-[457px] flex-col overflow-clip", mediaFirst ? "" : "flex-col-reverse", className)}
     >
       {backdrop}
-      <div className="relative min-h-0 flex-1 overflow-clip" aria-hidden>
+      <div className={cn("relative min-h-0 flex-1 overflow-clip", fade && "mask-[linear-gradient(to_bottom,transparent,black_72px)]")} aria-hidden>
         <div className={cn("absolute inset-y-0 left-1/2 w-[400px] -translate-x-1/2", fit && "max-[440px]:origin-top max-[440px]:scale-[0.8]")}>{media}</div>
       </div>
       <div className="relative z-10 flex flex-col gap-2 p-8">
@@ -289,41 +292,38 @@ function EditMedia() {
 
 /* ---------------- 4. Hosting handled ---------------- */
 
-/** soft brand-colour glows circling the window on a flattened orbit, so they pass behind it and round the icons */
-const ORBIT_GLOWS = [
-  { color: "#2F5BFF", size: 150, angle: 0 },
-  { color: "#3BF498", size: 120, angle: 120 },
-  { color: "#FFC21F", size: 110, angle: 240 },
-]
-const ORBIT_R = 170
+/** a ring of brand colour that forms around the window and slowly turns: a circle flattened into an orbit */
+const RING = 460
+const RING_COLORS = "conic-gradient(#2F5BFF, #3BF498 22%, transparent 36%, #FFC21F 56%, #2F5BFF 74%, transparent 88%, #2F5BFF)"
 
-function OrbitGlows() {
+/** `half="back"` is drawn behind the window, `half="front"` (its lower half) in front, so the ring wraps round it */
+function GlowRing({ half }: { half: "back" | "front" }) {
   return (
     <motion.div
-      variants={{ rest: { opacity: 0, scale: 0.6 }, hover: { opacity: 1, scale: 1 } }}
-      transition={SPRING}
+      variants={{ rest: { opacity: 0, scale: 0.55 }, hover: { opacity: 1, scale: 1 } }}
+      transition={{ ...SPRING, damping: 20 }}
       className="pointer-events-none absolute top-[140px] left-[200px] size-0"
     >
-      {/* flatten the circle into an ellipse, then spin inside it */}
-      <div className="scale-y-[0.55]">
-        <div className="animate-[spin_7s_linear_infinite] motion-reduce:animate-none">
-          {ORBIT_GLOWS.map((g) => {
-            const r = (g.angle * Math.PI) / 180
-            return (
-              <span
-                key={g.color}
-                className="absolute rounded-full blur-[34px]"
-                style={{
-                  width: g.size,
-                  height: g.size,
-                  left: Math.cos(r) * ORBIT_R - g.size / 2,
-                  top: Math.sin(r) * ORBIT_R - g.size / 2,
-                  backgroundColor: g.color,
-                  opacity: 0.9,
-                }}
-              />
-            )
-          })}
+      <div className="scale-y-[0.6]" style={half === "front" ? { clipPath: `inset(0 -${RING}px -${RING}px -${RING}px)` } : undefined}>
+        <div className="relative animate-[spin_14s_linear_infinite] motion-reduce:animate-none" style={{ width: RING, height: RING, marginLeft: -RING / 2, marginTop: -RING / 2 }}>
+          {/* wide soft glow, then the bright core */}
+          {[
+            { band: "transparent 58%, #000 66%, #000 70%, transparent 78%", blur: 16, opacity: 0.75 },
+            { band: "transparent 66%, #000 67.5%, #000 68.5%, transparent 70%", blur: 1, opacity: 0.95 },
+          ].map((l) => (
+            <span
+              key={l.blur}
+              className="absolute top-0 left-0 rounded-full"
+              style={{
+                width: RING,
+                height: RING,
+                background: RING_COLORS,
+                maskImage: `radial-gradient(closest-side, ${l.band})`,
+                filter: `blur(${l.blur}px)`,
+                opacity: l.opacity,
+              }}
+            />
+          ))}
         </div>
       </div>
     </motion.div>
@@ -340,7 +340,7 @@ const SERVICES = [
 function HostingMedia() {
   return (
     <>
-      <OrbitGlows />
+      <GlowRing half="back" />
       <motion.div
         variants={{ rest: { opacity: 1 }, hover: { opacity: 0.85 } }}
         transition={SPRING}
@@ -367,6 +367,7 @@ function HostingMedia() {
           <Globe className="size-[92px]" strokeWidth={1} />
         </div>
       </motion.div>
+      <GlowRing half="front" />
       {SERVICES.map(({ Icon, rest, hover }, i) => (
         <motion.span
           key={i}
@@ -412,9 +413,12 @@ const MODULES: { Icon: LucideIcon; label: string; color: string; ink: string; li
 ]
 
 /** the stud on top of a brick or the plate, in the same colour with a lighter cap */
-function Stud({ color, left, top, w = 18 }: { color: string; left: number; top: number; w?: number }) {
-  return <span className="absolute h-[7px] rounded-t-[4px]" style={{ left, top, width: w, backgroundColor: color, boxShadow: "inset 0 2px 0 rgba(255,255,255,0.25)" }} />
+function Stud({ color = "inherit", left, top, w = 18 }: { color?: string; left: number; top: number; w?: number }) {
+  return <span className="absolute h-[7px] rounded-t-[4px]" style={{ left, top, width: w, backgroundColor: color, boxShadow: "inset 0 2px 0 rgba(255,255,255,0.18)" }} />
 }
+
+/** a loose brick is plain grey like the hosting card's icons; it takes its colour when it clicks on */
+const LOOSE = { color: "#48443E", ink: "#A8A39A", lip: "#302D29" }
 
 function ModulesMedia() {
   return (
@@ -436,19 +440,28 @@ function ModulesMedia() {
         <motion.div
           key={label}
           variants={{
-            rest: { ...rest, scale: 1.04, boxShadow: `inset 0 -5px 0 ${lip}, 0 22px 24px rgba(0,0,0,0.45)`, transition: SPRING },
+            rest: {
+              ...rest,
+              scale: 1.04,
+              backgroundColor: LOOSE.color,
+              color: LOOSE.ink,
+              boxShadow: `inset 0 -5px 0 ${LOOSE.lip}, 0 22px 24px rgba(0,0,0,0.45)`,
+              transition: SPRING,
+            },
             hover: {
               ...to,
               scale: 1,
+              backgroundColor: color,
+              color: ink,
               boxShadow: `inset 0 -5px 0 ${lip}, 0 2px 0 rgba(0,0,0,0.35)`,
               transition: { type: "spring", stiffness: 420, damping: 26, mass: 0.9, delay: Math.round((PLATE.top - to.top) / BRICK.height - 1) * 0.2 + (i % 4) * 0.05 },
             },
           }}
           className="absolute flex flex-col items-center justify-center gap-0.5 rounded-[5px] pb-1"
-          style={{ ...BRICK, backgroundColor: color, color: ink }}
+          style={BRICK}
         >
-          <Stud color={color} left={(PITCH - 18) / 2} top={-7} />
-          <Stud color={color} left={PITCH + (PITCH - 18) / 2} top={-7} />
+          <Stud left={(PITCH - 18) / 2} top={-7} />
+          <Stud left={PITCH + (PITCH - 18) / 2} top={-7} />
           <Icon className="size-5" strokeWidth={2} />
           <span className="text-[10px] leading-3 font-semibold">{label}</span>
         </motion.div>
@@ -528,12 +541,14 @@ export function Features() {
           title="Hosting? Server? Handled"
           desc="You don’t need to know all those terms. All you need to know is that your website is published."
           media={<HostingMedia />}
+          fade
         />
         <FeatureCard
           title="Plug in what you need"
           desc="Bookings, payments, enquiries and more, all in one place. Snap a module on and it works. No plugins to hunt for."
           media={<ModulesMedia />}
           fit
+          fade
         />
         <FeatureCard
           title="Oversee your domains"
