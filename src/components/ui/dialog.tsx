@@ -7,7 +7,7 @@ import { cn } from "@/lib/cn"
 
 /** Dimmed, blurred backdrop shared by every modal surface (dialogs, drawers, the review sheet). */
 export const overlayClass =
-  "fixed inset-0 z-50 bg-overlay-scrim backdrop-blur-[6px] data-[state=open]:animate-[bp-fade-in_160ms_ease-out] data-[state=closed]:animate-[bp-fade-out_200ms_ease-in]"
+  "fixed inset-0 z-50 bg-overlay-scrim backdrop-blur-[6px] data-[state=open]:animate-[bp-fade-in_160ms_ease-out] data-[state=closed]:animate-[bp-fade-out_150ms_var(--ease-out)]"
 
 export const Dialog = D.Root
 export const DialogTrigger = D.Trigger
@@ -41,7 +41,7 @@ export function DialogContent({
           "fixed left-1/2 top-1/2 z-50 flex max-h-[calc(100dvh-32px)] w-[calc(100vw-32px)] max-w-[480px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden",
           "rounded-xl bg-surface-raised shadow-block-md focus:outline-none data-[state=open]:animate-[bp-dialog-in_200ms_cubic-bezier(0.2,0.9,0.3,1.2)]",
           // phones: a bottom sheet
-          "max-sm:inset-x-0 max-sm:top-auto max-sm:bottom-0 max-sm:left-0 max-sm:max-h-[calc(100dvh-40px)] max-sm:w-full max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-b-none max-sm:pb-[env(safe-area-inset-bottom)] max-sm:data-[state=open]:animate-[bp-sheet-up_280ms_cubic-bezier(0.2,0.9,0.3,1)] max-sm:data-[state=closed]:animate-[bp-sheet-down_200ms_ease-in]",
+          "max-sm:inset-x-0 max-sm:top-auto max-sm:bottom-0 max-sm:left-0 max-sm:max-h-[calc(100dvh-40px)] max-sm:w-full max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-b-none max-sm:pb-[env(safe-area-inset-bottom)] max-sm:data-[state=open]:animate-[bp-sheet-up_320ms_var(--ease-drawer)] max-sm:data-[state=closed]:animate-[bp-sheet-down_200ms_var(--ease-out)]",
           className,
         )}
       >

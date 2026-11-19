@@ -10,7 +10,7 @@ export const menuPanelClass = cn(
 )
 
 export const menuItemClass = cn(
-  "relative flex h-10 cursor-pointer select-none items-center gap-2 rounded-sm px-3 type-body-md text-fg-primary outline-none",
+  "relative flex min-h-10 cursor-pointer select-none transition-[background-color,scale] duration-150 ease-out active:scale-[0.98] items-center gap-2 rounded-sm px-3 type-body-md text-fg-primary outline-none",
   "data-highlighted:bg-subtle data-disabled:pointer-events-none data-disabled:text-fg-disabled",
   "[&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-fg-secondary",
 )

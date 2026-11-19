@@ -52,7 +52,7 @@
   --color-neutral-200: #e4e1da;
   --color-neutral-300: #d1cdc4;
   --color-neutral-400: #a8a39a;
-  --color-neutral-500: #7f7a71;
+  --color-neutral-500: #6e695f;
   --color-neutral-600: #605b53;
   --color-neutral-700: #48443e;
   --color-neutral-800: #302d29;
@@ -98,6 +98,7 @@
   --color-fg-tertiary: var(--bp-text-tertiary);
   --color-fg-disabled: var(--bp-text-disabled);
   --color-fg-inverse: var(--bp-text-inverse);
+  --color-fg-inverse-action: var(--bp-text-inverse-action);
   --color-fg-on-action: var(--bp-text-on-action);
   --color-fg-link: var(--bp-text-link);
   --color-fg-brand: var(--bp-text-brand);
@@ -221,6 +222,7 @@
   --bp-text-tertiary: var(--color-neutral-500);
   --bp-text-disabled: var(--color-neutral-400);
   --bp-text-inverse: var(--color-white);
+  --bp-text-inverse-action: var(--color-yellow-300);
   --bp-text-on-action: var(--color-white);
   --bp-text-link: var(--color-blue-600);
   --bp-text-brand: var(--color-blue-500);
@@ -341,6 +343,7 @@
   --bp-text-tertiary: var(--color-neutral-400);
   --bp-text-disabled: var(--color-neutral-600);
   --bp-text-inverse: var(--color-neutral-900);
+  --bp-text-inverse-action: var(--color-blue-600);
   --bp-text-on-action: var(--color-white);
   --bp-text-link: var(--color-blue-300);
   --bp-text-brand: var(--color-blue-300);
@@ -404,6 +407,7 @@
   --bp-text-tertiary: var(--color-neutral-500);
   --bp-text-disabled: var(--color-neutral-400);
   --bp-text-inverse: var(--color-white);
+  --bp-text-inverse-action: var(--color-yellow-300);
   --bp-text-on-action: var(--color-white);
   --bp-text-link: var(--color-blue-600);
   --bp-text-brand: var(--color-blue-500);
