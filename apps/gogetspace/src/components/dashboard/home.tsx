@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { Plus, Search, Users } from "lucide-react"
 import { Input, SegmentedControl } from "@gogetspace/baseplate"
-import { PixelBackground } from "@/components/pixel-background"
+import { HeroTiles } from "@/components/site/hero-tiles"
 import { PromptInput } from "@/components/site/prompt-input"
 import { ACCOUNT, ENQUIRIES } from "@/lib/account/data"
 import { useAccountState } from "@/lib/account/store"
@@ -31,14 +31,16 @@ export function DashboardHome() {
 
   return (
     <div className="relative isolate flex min-h-full flex-col items-center">
-      <PixelBackground src="/images/dashboard-bg.svg" width={1666} height={2189} />
-
-      <section aria-labelledby="dash-title" className="flex w-full max-w-[628px] flex-col gap-9 px-5 pt-16 pb-16 sm:pt-[clamp(64px,16vh,240px)] lg:pb-30">
-        <h1 id="dash-title" className="text-center type-h1 text-fg-primary">
-          What space do you want to build today, {ACCOUNT.firstName}?
-        </h1>
-        <div ref={prompt}>
-          <PromptInput flowHref="/generate" builder />
+      {/* the homepage hero's tile field behind the greeting: it reacts to typing in the prompt the same way */}
+      <section aria-labelledby="dash-title" className="relative flex w-full justify-center overflow-clip px-5 pt-16 pb-16 sm:pt-[clamp(64px,16vh,240px)] lg:pb-30">
+        <HeroTiles className="absolute inset-0 z-0" />
+        <div className="relative z-10 flex w-full max-w-[588px] flex-col gap-9">
+          <h1 id="dash-title" data-hero-copy className="text-center type-h1 text-fg-primary">
+            What space do you want to build today, {ACCOUNT.firstName}?
+          </h1>
+          <div ref={prompt} data-hero-prompt>
+            <PromptInput flowHref="/generate" signals builder />
+          </div>
         </div>
       </section>
 

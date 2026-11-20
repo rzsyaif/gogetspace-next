@@ -136,7 +136,7 @@ export async function getPeeks(projectId: string): Promise<Peeks> {
   return PEEKS[projectId] ?? {}
 }
 
-/** the size of each widget on a project's home screen; every widget is small until the person changes it */
+/** the size and order of the widgets on a project's home screen; every widget is small, in the default order, until the person changes it */
 export async function getHomeLayout(projectId: string): Promise<HomeLayout> {
   void projectId
   return { sizes: {} }
