@@ -1,10 +1,10 @@
 "use client"
 
-import type { ReactNode } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { House, Settings2, SlidersHorizontal } from "lucide-react"
-import { Drawer, DrawerContent, DrawerTrigger, Tooltip, Button } from "@gogetspace/baseplate"
+import { House, PanelRightClose, PanelRightOpen, Settings2, SlidersHorizontal } from "lucide-react"
+import { Button, Drawer, DrawerContent, DrawerTrigger, IconButton, Tooltip } from "@gogetspace/baseplate"
 import { cn } from "@gogetspace/baseplate/cn"
 import { DEFAULT_TOOLS, toolById, type Project, type ToolId } from "@gogetspace/modules"
 import { ToolGlyph } from "./tool-icon"
@@ -55,11 +55,34 @@ function ToolRail({ project }: { project: Project }) {
   )
 }
 
+const SETTINGS_KEY = "ariyes:settings-open"
+
+/** whether the settings column is open on wide screens; remembered per browser, open by default */
+function useSettingsOpen() {
+  const [open, setOpen] = useState(true)
+  useEffect(() => {
+    try {
+      // a remembered preference only exists in the browser, so it's read after hydration
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (localStorage.getItem(SETTINGS_KEY) === "0") setOpen(false)
+    } catch {}
+  }, [])
+  const set = (v: boolean) => {
+    setOpen(v)
+    try {
+      localStorage.setItem(SETTINGS_KEY, v ? "1" : "0")
+    } catch {}
+  }
+  return [open, set] as const
+}
+
 /**
  * Every Ariyes app's layout: the app rail on the left, the app's main view in the middle, and its settings on the
- * right. Below 1024px the settings move into a side sheet opened from the view's header.
+ * right. The settings column folds away from the header; below 1024px it's a side sheet instead.
  */
 export function AppShell({ project, title, actions, main, settings }: { project: Project; title: string; actions?: ReactNode; main: ReactNode; settings?: ReactNode }) {
+  const [open, setOpen] = useSettingsOpen()
+  const label = `${title} settings`
   return (
     <div className="flex h-[calc(100svh-64px)] min-h-[480px]">
       <ToolRail project={project} />
@@ -69,24 +92,39 @@ export function AppShell({ project, title, actions, main, settings }: { project:
           <div className="flex flex-1 flex-wrap items-center justify-end gap-2 max-sm:basis-full max-sm:justify-start">
             {actions}
             {settings && (
-              <Drawer>
-                <DrawerTrigger asChild>
-                  <Button size="sm" variant="secondary" leadingIcon={<SlidersHorizontal />} className="lg:hidden">
-                    Settings
-                  </Button>
-                </DrawerTrigger>
-                <DrawerContent title={`${title} settings`} side="right">
-                  {settings}
-                </DrawerContent>
-              </Drawer>
+              <>
+                <Drawer>
+                  <DrawerTrigger asChild>
+                    <Button size="sm" variant="secondary" leadingIcon={<SlidersHorizontal />} className="lg:hidden">
+                      Settings
+                    </Button>
+                  </DrawerTrigger>
+                  <DrawerContent title={label} side="right">
+                    {settings}
+                  </DrawerContent>
+                </Drawer>
+                <Tooltip content={open ? "Hide settings" : "Show settings"}>
+                  <IconButton aria-label={open ? "Hide settings" : "Show settings"} aria-expanded={open} aria-controls="app-settings" onClick={() => setOpen(!open)} className="max-lg:hidden">
+                    {open ? <PanelRightClose /> : <PanelRightOpen />}
+                  </IconButton>
+                </Tooltip>
+              </>
             )}
           </div>
         </div>
         <div className="min-h-0 flex-1">{main}</div>
       </main>
       {settings && (
-        <aside aria-label={`${title} settings`} className="hidden w-[360px] shrink-0 overflow-y-auto border-l border-line-default bg-surface lg:block">
-          {settings}
+        <aside
+          id="app-settings"
+          aria-label={label}
+          inert={!open}
+          className={cn(
+            "hidden shrink-0 overflow-hidden bg-surface transition-[width] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none lg:block",
+            open ? "w-[360px] border-l border-line-default" : "w-0",
+          )}
+        >
+          <div className="h-full w-[360px] overflow-y-auto">{settings}</div>
         </aside>
       )}
     </div>
