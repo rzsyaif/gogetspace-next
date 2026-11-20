@@ -40,3 +40,17 @@ export function ToolIcon({ tool, size = "md" }: { tool: Tool; size?: "sm" | "md"
     </span>
   )
 }
+
+const GLYPH_TONES: Record<Tool["accent"], string> = {
+  blue: "text-fg-link",
+  green: "text-status-success-text",
+  yellow: "text-status-warning-text",
+  coral: "text-status-error-text",
+  neutral: "text-fg-secondary",
+}
+
+/** a tool's icon as a widget shows it: large, with a hairline (0.75px) stroke */
+export function ToolGlyph({ tool, className }: { tool: Tool; className?: string }) {
+  const Icon = ICONS[tool.icon] ?? SquareCheck
+  return <Icon aria-hidden absoluteStrokeWidth strokeWidth={0.75} className={cn("size-8 shrink-0", GLYPH_TONES[tool.accent], className)} />
+}

@@ -1,12 +1,15 @@
 "use client"
 
-import { useState } from "react"
+import { useState, type ReactNode } from "react"
 import Link from "next/link"
-import { ArrowUpRight, Plus } from "lucide-react"
+import { motion, useReducedMotion } from "motion/react"
+import { LayoutGrid, Plus } from "lucide-react"
 import { Badge, Button, Card } from "@gogetspace/baseplate"
-import { DEFAULT_TOOLS, TOOLS, toolById, type Peeks, type Project, type ToolId } from "@gogetspace/modules"
-import { Peek } from "./peek"
-import { ToolIcon } from "./tool-icon"
+import { cn } from "@gogetspace/baseplate/cn"
+import { DEFAULT_TOOLS, TOOLS, toolById, type HomeLayout, type Peeks, type Project, type Tool, type ToolId, type WidgetSize } from "@gogetspace/modules"
+import { WidgetContent } from "./widget-content"
+import { ToolGlyph, ToolIcon } from "./tool-icon"
+import { useWidgetSizes } from "./widget-size"
 
 /** the home screen's order: what a practice checks first, settings last */
 const HOME_ORDER: ToolId[] = [
@@ -14,13 +17,77 @@ const HOME_ORDER: ToolId[] = [
   "locations", "sequences", "broadcasts", "helpdesk", "todo", "drive", "settings",
 ]
 
+const SPAN: Record<WidgetSize, string> = {
+  small: "col-span-1 row-span-1",
+  wide: "col-span-2 row-span-1",
+  large: "col-span-2 row-span-2",
+}
+
+const SIZES: { size: WidgetSize; label: string; glyph: ReactNode }[] = [
+  { size: "small", label: "Small", glyph: <rect x="5" y="5" width="6" height="6" rx="1.5" /> },
+  { size: "wide", label: "Wide", glyph: <rect x="2" y="5" width="12" height="6" rx="1.5" /> },
+  { size: "large", label: "Large", glyph: <rect x="2" y="2" width="12" height="12" rx="2" /> },
+]
+
+/** the three sizes, shown on each widget while customising */
+function SizePicker({ tool, size, onChange }: { tool: Tool; size: WidgetSize; onChange: (s: WidgetSize) => void }) {
+  return (
+    <div
+      role="radiogroup"
+      aria-label={`Size of ${tool.name}`}
+      className="absolute top-3 right-3 z-10 flex gap-0.5 rounded-full border border-line-default bg-surface p-0.5 shadow-soft-sm"
+    >
+      {SIZES.map((s) => (
+        <button
+          key={s.size}
+          type="button"
+          role="radio"
+          aria-checked={size === s.size}
+          aria-label={s.label}
+          title={s.label}
+          onClick={() => onChange(s.size)}
+          className={cn(
+            "grid size-8 place-items-center rounded-full transition-[background-color,color,scale] duration-150 ease-out active:scale-[0.94] focus-visible:outline-none focus-visible:focus-ring",
+            size === s.size ? "bg-action-primary text-fg-on-action" : "text-fg-secondary hover:bg-action-ghost-hover hover:text-fg-primary",
+          )}
+        >
+          <svg aria-hidden viewBox="0 0 16 16" className="size-4 fill-current">
+            {s.glyph}
+          </svg>
+        </button>
+      ))}
+    </div>
+  )
+}
+
+/** one widget: icon and name on top, the tool's peek at the bottom, space between */
+function Widget({ tool, size, isNew, children }: { tool: Tool; size: WidgetSize; isNew: boolean; children: ReactNode }) {
+  return (
+    <>
+      <span className="flex flex-col items-start gap-2 @max-[799px]:gap-1.5">
+        <ToolGlyph tool={tool} className={cn(size !== "small" && "size-9", "@max-[799px]:size-6")} />
+        <span className="flex max-w-full items-center gap-2">
+          <span className="truncate type-label-lg text-fg-primary @max-[799px]:type-label-md">{tool.name}</span>
+          {isNew && <Badge tone="brand">New</Badge>}
+        </span>
+      </span>
+      <div className="min-w-0">{children}</div>
+    </>
+  )
+}
+
 /**
- * The project's tools as tiles, each with a sneak peek of its latest numbers, then the add-ons it doesn't have
- * yet. Adding one here is local to the prototype (a real install goes through billing).
+ * The project's tools as widgets, iOS-style: every widget is a square cell by default (small 1×1) and can be made
+ * wide (2×1) or large (2×2) from Customize. Then the add-ons the project doesn't have yet. Adding one is local to
+ * the prototype (a real install goes through billing).
  */
-export function HomeTools({ project, peeks }: { project: Project; peeks: Peeks }) {
+export function HomeTools({ project, peeks, layout, header }: { project: Project; peeks: Peeks; layout: HomeLayout; header: ReactNode }) {
   const [installed, setInstalled] = useState<ToolId[]>(project.installed)
   const [justAdded, setJustAdded] = useState<ToolId[]>([])
+  const [editing, setEditing] = useState(false)
+  const [sizes, setSize] = useWidgetSizes(project.id, layout.sizes)
+  const reduce = useReducedMotion()
+
   const have = new Set<ToolId>([...DEFAULT_TOOLS, ...installed])
   const tiles = HOME_ORDER.filter((id) => have.has(id)).map(toolById)
   const available = TOOLS.filter((t) => t.kind === "addon" && !have.has(t.id))
@@ -32,33 +99,49 @@ export function HomeTools({ project, peeks }: { project: Project; peeks: Peeks }
 
   return (
     <div className="flex flex-col gap-14">
-      <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {tiles.map((tool) => (
-          <li key={tool.id} className="flex">
-            <Link
-              href={`/${project.id}/${tool.id}`}
-              className="group flex w-full rounded-lg focus-visible:outline-none focus-visible:focus-ring"
-            >
-              <Card interactive className="flex w-full flex-col gap-5 p-5 sm:min-h-[212px]">
-                <span className="flex items-center gap-3">
-                  <ToolIcon tool={tool} />
-                  <span className="type-label-lg text-fg-primary">{tool.name}</span>
-                  {justAdded.includes(tool.id) && (
-                    <Badge tone="brand" className="ml-1">
-                      New
-                    </Badge>
+      <div className="flex flex-col gap-8">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          {header}
+          <Button variant={editing ? "primary" : "secondary"} size="sm" leadingIcon={editing ? undefined : <LayoutGrid />} onClick={() => setEditing((e) => !e)} aria-pressed={editing}>
+            {editing ? "Done" : "Customize"}
+          </Button>
+        </div>
+        {editing && <p className="-mt-4 type-body-sm text-fg-secondary">Pick a size for each tool: small, wide or large. Your layout is saved for this website.</p>}
+
+        {/* square cells: the row height is one column's width, measured from this container */}
+        <div className="@container">
+          <ul className="grid grid-flow-row-dense grid-cols-2 gap-(--gap) [--cols:2] [--gap:12px] auto-rows-[calc((100cqw_-_(var(--cols)_-_1)_*_var(--gap))_/_var(--cols))] @[600px]:grid-cols-4 @[600px]:[--cols:4] @[600px]:[--gap:16px] @[1180px]:grid-cols-6 @[1180px]:[--cols:6]">
+            {tiles.map((tool) => {
+              const size = sizes[tool.id] ?? "small"
+              const body = (
+                <Widget tool={tool} size={size} isNew={justAdded.includes(tool.id)}>
+                  <WidgetContent tool={tool.id} size={size} data={peeks[tool.id]} project={project} />
+                </Widget>
+              )
+              const cardClass = cn(
+                "flex h-full w-full flex-col justify-between gap-3 overflow-hidden @max-[799px]:gap-2",
+                size === "small" ? "p-4 @max-[799px]:p-3.5" : "p-5 @max-[799px]:p-4",
+              )
+              return (
+                <motion.li key={tool.id} layout={!reduce} transition={{ type: "spring", duration: 0.45, bounce: 0.12 }} className={cn("relative flex min-w-0", SPAN[size])}>
+                  {editing ? (
+                    <>
+                      <Card className={cn(cardClass, "outline-2 outline-offset-2 outline-dashed outline-line-strong")}>{body}</Card>
+                      <SizePicker tool={tool} size={size} onChange={(s) => setSize(tool.id, s)} />
+                    </>
+                  ) : (
+                    <Link href={`/${project.id}/${tool.id}`} className="flex w-full rounded-lg focus-visible:outline-none focus-visible:focus-ring">
+                      <Card interactive className={cardClass}>
+                        {body}
+                      </Card>
+                    </Link>
                   )}
-                  <ArrowUpRight
-                    aria-hidden
-                    className="ml-auto size-4 text-fg-tertiary opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100"
-                  />
-                </span>
-                <Peek tool={tool.id} data={peeks[tool.id]} project={project} />
-              </Card>
-            </Link>
-          </li>
-        ))}
-      </ul>
+                </motion.li>
+              )
+            })}
+          </ul>
+        </div>
+      </div>
 
       {available.length > 0 && (
         <section aria-labelledby="add-title" className="flex flex-col gap-4">
