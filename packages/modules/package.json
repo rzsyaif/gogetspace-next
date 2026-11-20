@@ -1,0 +1,14 @@
+{
+  "name": "@gogetspace/modules",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The tools a project can have (Ariyes apps and GoGetSpace modules), the project model, and the mock data the prototype runs on.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./mock": "./src/mock/index.ts"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}
