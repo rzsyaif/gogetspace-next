@@ -31,4 +31,6 @@ export type WidgetSize = "small" | "wide" | "large"
 /** how a person arranged a project's home screen */
 export interface HomeLayout {
   sizes: Partial<Record<ToolId, WidgetSize>>
+  /** widgets in the order the person put them; tools not in it follow in the default order */
+  order?: ToolId[]
 }
