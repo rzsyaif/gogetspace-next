@@ -34,7 +34,7 @@ function ProjectMark({ name }: { name: string }) {
 export function TopBar({ project, projects, me }: { project: Project; projects: Project[]; me: Member }) {
   return (
     <header className="sticky top-0 z-20 border-b border-line-default bg-surface/90 backdrop-blur-lg">
-      <div className="mx-auto flex h-16 max-w-[1280px] items-center gap-3 px-4 sm:px-6">
+      <div className="flex h-16 items-center gap-3 px-4 sm:px-5">
         <Link href={`/${project.id}`} className="rounded-sm font-heading text-[22px] font-bold tracking-tight text-fg-primary focus-visible:outline-none focus-visible:focus-ring">
           ariyes
         </Link>
