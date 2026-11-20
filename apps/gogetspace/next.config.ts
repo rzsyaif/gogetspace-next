@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
   // shared workspace packages ship TypeScript source
-  transpilePackages: ["@gogetspace/baseplate"],
+  transpilePackages: ["@gogetspace/baseplate", "@gogetspace/modules"],
   partialPrefetching: true,
   images: {
     // homepage imagery still lives on the Framer CDN (see src/components/site/assets.ts)

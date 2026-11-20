@@ -89,7 +89,7 @@ export const SITES: Site[] = [
     creditsUsed: 34,
     renews: "12 Nov 2026",
     modules: [
-      { id: "appointments", status: "test" },
+      { id: "appointments", status: "live" },
       { id: "reviews", status: "live" },
     ],
   },

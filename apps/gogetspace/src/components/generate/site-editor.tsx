@@ -13,7 +13,7 @@ import type { Tab } from "./workspace"
 
 const TABS: Tab[] = ["agent", "analytics", "plan", "modules", "domain", "settings"]
 
-/** /sites/[id] — the editor for an existing website; `?tab=` opens Analytics, Plan, Modules… directly (each module's own app is at /sites/[id]/apps/[module]). */
+/** /sites/[id] — the editor for an existing website; `?tab=` opens Analytics, Plan, Modules… directly (Manage on a module opens it in Ariyes Apps). */
 export function SiteEditor({ siteId }: { siteId: string }) {
   const site = useSite(siteId)
   const raw = useSearchParams().get("tab")

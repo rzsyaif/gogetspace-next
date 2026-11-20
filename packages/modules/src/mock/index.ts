@@ -7,20 +7,20 @@ import type { HomeLayout, Peeks } from "../peeks"
 
 const PROJECTS: Project[] = [
   {
-    id: "rahma-family-dental",
+    id: "rahma-dental",
     name: "Rahma Family Dental",
-    domain: "rahmadental.com",
-    plan: "Business",
+    domain: "rahma-family-dental.get.space",
+    plan: "Starter",
     installed: ["appointments", "payments", "crm", "campaigns", "reviews"],
     currency: "RM",
   },
-  { id: "rahma-kids", name: "Rahma Kids Dental", domain: "rahmakids.get.space", plan: "Starter", installed: ["appointments"], currency: "RM" },
+  { id: "bakti-analisa", name: "Bakti Analisa Clinical Laboratory Penang", domain: "baktianalisa.my", plan: "Starter", installed: [], currency: "RM" },
 ]
 
 const ME: Member = { name: "Aisyah Rahman", email: "aisyah@rahmadental.com", role: "Owner" }
 
 const PEEKS: Record<string, Peeks> = {
-  "rahma-family-dental": {
+  "rahma-dental": {
     appointments: {
       today: 6,
       next: [
@@ -94,15 +94,14 @@ const PEEKS: Record<string, Peeks> = {
         { label: "Documents", gb: 0.5 },
       ],
     },
-    settings: { plan: "Business", domain: "rahmadental.com", seats: 4 },
+    settings: { plan: "Starter", domain: "rahma-family-dental.get.space", seats: 4 },
   },
-  "rahma-kids": {
-    appointments: { today: 0, next: [] },
-    inbox: { unread: 0 },
+  "bakti-analisa": {
+    inbox: { unread: 2, recent: [{ from: "Website form", preview: "Corporate screening quote for 40 staff", when: "2h" }] },
     contacts: { total: 0, newThisWeek: 0 },
     todo: { open: 0, dueToday: 0 },
     drive: { usedGb: 0.1, totalGb: 5, files: 6 },
-    settings: { plan: "Starter", domain: "rahmakids.get.space", seats: 1 },
+    settings: { plan: "Starter", domain: "baktianalisa.my", seats: 1 },
   },
 }
 
@@ -114,8 +113,22 @@ export async function listProjects(): Promise<Project[]> {
   return PROJECTS
 }
 
+/**
+ * A project's id is its GoGetSpace site's id. A site published in this session isn't in the list above, so the mock
+ * makes a fresh project for it (named after the id, nothing installed yet): what a brand-new account would see.
+ */
 export async function getProject(id?: string): Promise<Project> {
-  return PROJECTS.find((p) => p.id === id) ?? PROJECTS[0]
+  if (!id) return PROJECTS[0]
+  return (
+    PROJECTS.find((p) => p.id === id) ?? {
+      id,
+      name: id.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+      domain: `${id}.get.space`,
+      plan: "Free",
+      installed: [],
+      currency: "RM",
+    }
+  )
 }
 
 /** the numbers on each tile of a project's home screen */

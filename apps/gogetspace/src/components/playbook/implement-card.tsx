@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import Link from "next/link"
 import { ArrowUpRight, Check, Loader, Plug } from "lucide-react"
 import { Button } from "@gogetspace/baseplate"
 import { cn } from "@gogetspace/baseplate/cn"
@@ -10,7 +9,7 @@ import { moduleById } from "@/lib/playbooks/engine"
 import { useGen } from "@/components/generate/gen-provider"
 import { useEditorSiteMaybe } from "@/components/generate/editor-site"
 import { showcaseOf } from "@/lib/playbooks/module-showcase"
-import { moduleAppUrl } from "./modules-panel"
+import { ariyesUrl } from "@/lib/ariyes"
 
 const STEP_MS = 1400
 
@@ -74,9 +73,9 @@ export function ImplementCard({ m }: { m: Extract<Msg, { type: "pb-implement" }>
               </Button>
             )}
             <Button size="sm" variant="secondary" trailingIcon={<ArrowUpRight />} asChild>
-              <Link href={moduleAppUrl(editor?.site.id ?? "new-site", mod.id)} target="_blank" rel="noreferrer">
-                Manage {mod.name}
-              </Link>
+              <a href={ariyesUrl(editor?.site.id ?? "new-site", mod.id)} target="_blank" rel="noreferrer">
+                Manage {mod.name} in Ariyes
+              </a>
             </Button>
           </div>
           {live && mod.needsAccount && <p className="type-caption text-fg-tertiary">{mod.needsAccount.label} connected — {mod.name} is live.</p>}

@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { ariyesUrl } from "@/lib/ariyes"
 import { ExternalLink, NotebookPen } from "lucide-react"
 import { Badge, Button, Card, Tooltip } from "@gogetspace/baseplate"
 import { HeroPreview } from "@/components/bakti-site/hero-preview"
@@ -58,9 +59,9 @@ export function SiteCard({ site, newEnquiries }: { site: Site; newEnquiries: num
           </p>
           {newEnquiries > 0 && (
             <Button asChild variant="link" size="sm" className="self-start type-body-sm">
-              <Link href={`/sites/${site.id}/apps/enquiries`}>
+              <a href={ariyesUrl(site.id, "enquiries")} target="_blank" rel="noreferrer">
                 {newEnquiries} new {newEnquiries === 1 ? "enquiry" : "enquiries"}
-              </Link>
+              </a>
             </Button>
           )}
         </div>
