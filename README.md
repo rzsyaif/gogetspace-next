@@ -38,7 +38,7 @@ Environment variables (one per app, pointing at the other):
 
 | App | Variable | Used by | Default |
 | --- | --- | --- | --- |
-| GoGetSpace | `NEXT_PUBLIC_ARIYES_URL` | Modules › Manage, and "new enquiries" on dashboard cards, which open the site's Ariyes project | `http://localhost:3001` in dev, `https://gogetspace-ariyes.vercel.app` in builds |
+| GoGetSpace | `NEXT_PUBLIC_ARIYES_URL` | Modules › Manage, and "new enquiries" on dashboard cards, which open the site's Ariyes project | `http://localhost:3001` in dev, `https://gogetspace-next-pde9.vercel.app` in builds |
 | Ariyes | `NEXT_PUBLIC_GOGETSPACE_URL` | "Build another website" in the project switcher | `http://localhost:3000` |
 
 An Ariyes project's id is its GoGetSpace site's id, so `/{siteId}/{tool}` opens the right project. Each GoGetSpace module
