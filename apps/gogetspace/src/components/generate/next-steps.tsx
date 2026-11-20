@@ -61,6 +61,24 @@ export function NextSteps({ compact }: { compact?: boolean }) {
         action: { label: "Connect", onClick: () => accounts.filter((x) => !x.live).forEach((x) => modules!.activate(x.m.id)) },
       }
     : null
+  // a booking tool on the site: it needs the hours bookings can be made (asked in the chat, or later in Ariyes)
+  const hoursMsg = s.msgs.find((m) => m.type === "pb-hours")
+  const hoursStep: Step | null = hoursMsg
+    ? {
+        id: "hours",
+        title: "Set your booking hours",
+        detail: s.hours === "skipped" ? "Skipped. Ariyes asks when you open Appointments." : undefined,
+        done: !!s.hours && s.hours !== "skipped",
+        action: {
+          label: "Set hours",
+          onClick: () => {
+            if (hoursMsg.type === "pb-hours" && hoursMsg.answer) dispatch({ type: "reopenHours", id: hoursMsg.id })
+            nav.goTo("agent")
+            window.setTimeout(() => document.querySelector("[data-hours-card]")?.scrollIntoView({ behavior: "smooth", block: "start" }), 120)
+          },
+        },
+      }
+    : null
   const pagesStep: Step | null = locked ? { id: "pages", title: `Build ${locked} more planned ${locked === 1 ? "page" : "pages"}`, done: false, action: { label: "Upgrade", onClick: () => nav.goTo("plan") } } : null
 
   // modules: one line; Modules lists what's recommended, and asks to publish first when the site isn't live yet
@@ -77,6 +95,7 @@ export function NextSteps({ compact }: { compact?: boolean }) {
     ...(questionsStep ? [questionsStep] : []),
     briefStep,
     ...(accountsStep ? [accountsStep] : []),
+    ...(hoursStep ? [hoursStep] : []),
     {
       id: "publish",
       title: "Publish website",

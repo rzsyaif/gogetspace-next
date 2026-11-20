@@ -49,6 +49,8 @@ maps to its Ariyes tool through `gogetspaceModules` in the catalog; modules with
 | What | Mocked in | Replace with |
 | --- | --- | --- |
 | Ariyes account, projects, tile numbers | `packages/modules/src/mock/index.ts` (`getMe`, `listProjects`, `getProject`, `getPeeks`) | API calls with the same return types. They are async already, so the screens don't change. |
+| Appointments: settings and the week's bookings | `getAppointmentSettings`, `weekBookings` in `packages/modules/src/mock/index.ts`; edits are local state in `apps/ariyes/src/components/appointments/appointments-app.tsx` | the account's appointment settings and a fetch of the visible week; save each settings change |
+| Booking hours answered in the GoGetSpace chat | passed to Ariyes in the Manage link (`?hours=`, `encodeWeek` / `decodeWeek`) | saved on the account when the module is installed |
 | Installing a tool from the Ariyes home | local state in `apps/ariyes/src/components/home-tools.tsx` (`add`) | an install request (billing + provisioning), then refresh the project |
 | GoGetSpace agent (planning, questions, building) | `apps/gogetspace/src/lib/generation`, `src/lib/playbooks` | the real agent. The playbooks describe the reasoning it should follow. See that app's README. |
 | Publishing → Ariyes account | not wired yet | on publish + sign-up, create the account and a project named after the site, with the site's modules installed |

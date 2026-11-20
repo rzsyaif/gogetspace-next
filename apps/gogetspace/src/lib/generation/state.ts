@@ -3,6 +3,7 @@
  * prompt is read; the brief is confirmed later from the to-do list and the questions come after the first build.
  * Pure reducer; timing lives in the provider's runner. Edge cases are driven by `scenario`.
  */
+import { describeWeek, type WeekHours } from "@gogetspace/modules"
 import { read as readPrompt } from "@/lib/prompt-builder"
 import { DEFAULT_BRIEF, DEFAULT_QUESTIONS, countAssumptions, type BriefSection, type OpenQuestion } from "./brief"
 import { SITEMAP, flatten, unlockedIds, type PageNode, type Plan } from "@/lib/bakti/sitemap"
@@ -121,6 +122,8 @@ export type Msg =
   | { id: string; type: "pb-implement"; module: string; pages: { id: string; title: string }[]; at: number }
   /** after the first build: the checklist of what's left before customers can use the site */
   | { id: string; type: "next-steps" }
+  /** Appointments was added: the one thing the agent can't set up itself, the hours bookings can be made */
+  | { id: string; type: "pb-hours"; module: string; answer?: "set" | "skipped" }
 
 export interface FeedbackAnswer {
   rating: "good" | "fine" | "bad"
@@ -171,6 +174,8 @@ export interface GenState {
   briefDirty?: boolean
   /** the questions after the build stay out of the chat until the owner opens them from the to-do list */
   sharpenOpen?: boolean
+  /** when bookings can be made (Appointments), from the chat; "skipped" means Ariyes asks on first visit */
+  hours?: WeekHours | "skipped"
   seq: number
 }
 
@@ -336,6 +341,9 @@ export type Action =
   | { type: "pbPatch"; id: string; decisions: Record<string, Decision> | null }
   | { type: "pbActivate"; module: string }
   | { type: "pbImplement"; module: string; at: number }
+  | { type: "setHours"; id: string; hours: WeekHours }
+  | { type: "skipHours"; id: string }
+  | { type: "reopenHours"; id: string }
   | { type: "confirmBrief" }
   | { type: "showQuestions" }
 
@@ -683,6 +691,15 @@ export function reducer(s: GenState, a: Action): GenState {
       const n: GenState = { ...s, artifacts: { ...s.artifacts, brief: "confirmed" }, briefDirty: false }
       return s.briefDirty ? push(n, { type: "agent", text: "Brief confirmed — I've updated the site to match your changes." }) : n
     }
+    case "setHours":
+      return setHours(s, a.id, a.hours)
+    case "skipHours":
+      return push(
+        { ...s, hours: "skipped", msgs: s.msgs.map((m) => (m.id === a.id && m.type === "pb-hours" ? { ...m, answer: "skipped" as const } : m)) },
+        { type: "agent", text: "No problem. Appointments is on your site, and it starts taking bookings once it has hours. I'll ask when you open Appointments in Ariyes." },
+      )
+    case "reopenHours":
+      return { ...s, msgs: s.msgs.map((m) => (m.id === a.id && m.type === "pb-hours" ? { ...m, answer: undefined } : m)) }
     case "pbActivate":
       if (!s.pb || s.pb.activated.includes(a.module)) return s
       return push({ ...s, pb: { ...s.pb, activated: [...s.pb.activated, a.module] } }, { type: "agent", text: `Connected — ${moduleById(a.module).name} is out of test mode and live.` })
@@ -690,6 +707,21 @@ export function reducer(s: GenState, a: Action): GenState {
 }
 
 /* ---------- playbook conversation (dentist) ---------- */
+
+/** the modules that take bookings, and so need opening hours */
+export const BOOKING_MODULES = ["appointments", "consultations"]
+const needsHours = (s: GenState, module: string) => BOOKING_MODULES.includes(module) && s.hours === undefined && !s.msgs.some((m) => m.type === "pb-hours")
+
+/** the hours are in: everything else about Appointments the agent sets up itself, and says what it did */
+function setHours(s: GenState, id: string, hours: WeekHours): GenState {
+  const msg = s.msgs.find((m) => m.id === id && m.type === "pb-hours")
+  const name = msg?.type === "pb-hours" ? moduleById(msg.module).name : "Appointments"
+  const n = { ...s, hours, msgs: s.msgs.map((m) => (m.id === id && m.type === "pb-hours" ? { ...m, answer: "set" as const } : m)) }
+  return push(n, {
+    type: "agent",
+    text: `Done — ${name} takes bookings ${describeWeek(hours)}. I also set it up: a booking type for each ${s.pb?.niche === "lawyer" ? "kind of consultation" : "treatment"} with its usual length, 15-minute slots with at least 2 hours' notice, a confirmation email when someone books and a reminder the day before. You can change any of it in Ariyes › ${name}.`,
+  })
+}
 
 /** "Add it to my site now": the module's pages join the plan and the agent builds them in the chat */
 function pbImplement(s: GenState, module: string, at: number): GenState {
@@ -705,7 +737,8 @@ function pbImplement(s: GenState, module: string, at: number): GenState {
   const pages = { ...s.pages }
   for (const p of extra) pages[p.id] = "built"
   const n: GenState = { ...s, pb, brief: planOf(pb).brief(pb), sitemap: { ...s.sitemap, children }, pagePriority: planOf(pb).priority(pb), pages }
-  return push(n, { type: "user", text: `Add ${m.name} to my website.` }, { type: "pb-implement", module, pages: extra.map((p) => ({ id: p.id, title: p.title })), at })
+  const added = push(n, { type: "user", text: `Add ${m.name} to my website.` }, { type: "pb-implement", module, pages: extra.map((p) => ({ id: p.id, title: p.title })), at })
+  return needsHours(s, module) ? push(added, { type: "pb-hours", module }) : added
 }
 
 const isPending = (m: Msg) => (m.type === "pb-question" || m.type === "pb-gate") && !m.answer
@@ -1128,6 +1161,9 @@ function finishBuild(s: GenState): GenState {
   text += " Have a look around the preview, then publish when you're happy."
   let n = push(s, { type: "agent", text })
   for (const q of s.queued) n = push(n, { type: "agent", text: `Done — I've applied your note: “${q}”.` })
+  // a booking tool built into the site: ask for the hours, the one thing the agent can't decide for the owner
+  const booking = BOOKING_MODULES.find((id) => s.pb?.decisions[id] === "added")
+  if (booking && needsHours(n, booking)) n = push(n, { type: "pb-hours", module: booking })
   // what's left before customers can use the site (publish, domain, accounts for test-mode tools…), once
   if (!n.msgs.some((m) => m.type === "next-steps")) n = push(n, { type: "next-steps" })
   // ask how it went once, after the first build only

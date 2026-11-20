@@ -41,7 +41,7 @@ export function Select({
         aria-label={ariaLabel}
         aria-describedby={field?.describedBy}
         aria-invalid={field?.invalid || undefined}
-        className={cn(fieldControl, "flex h-[50px] items-center justify-between gap-2 px-4 text-left data-placeholder:text-fg-tertiary", className)}
+        className={cn(fieldControl, "flex h-[50px] items-center justify-between gap-2 px-4 text-left whitespace-nowrap data-placeholder:text-fg-tertiary [&>span]:min-w-0 [&>span]:truncate", className)}
       >
         <S.Value placeholder={placeholder} />
         <S.Icon asChild>

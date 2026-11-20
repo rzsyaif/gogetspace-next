@@ -1,10 +1,10 @@
 import type { Metadata } from "next"
-import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ArrowLeft } from "lucide-react"
 import { StudsMedia } from "@gogetspace/baseplate"
-import { TOOLS, type ToolId } from "@gogetspace/modules"
-import { getProject, listProjects } from "@gogetspace/modules/mock"
+import { TOOLS, decodeWeek, type ToolId } from "@gogetspace/modules"
+import { getAppointmentSettings, getProject, listProjects } from "@gogetspace/modules/mock"
+import { AppShell } from "@/components/app-shell"
+import { AppointmentsApp } from "@/components/appointments/appointments-app"
 import { ToolIcon } from "@/components/tool-icon"
 
 export async function generateStaticParams() {
@@ -18,31 +18,43 @@ export async function generateMetadata({ params }: PageProps<"/[project]/[tool]"
   return { title: tool?.name }
 }
 
-/** placeholder until each tool's own screens are designed */
-export default async function ToolPage({ params }: PageProps<"/[project]/[tool]">) {
+/**
+ * One app inside a project, in the shared three-column layout. Appointments is designed; the others are placeholders
+ * until their screens are.
+ */
+export default async function ToolPage({ params, searchParams }: PageProps<"/[project]/[tool]">) {
   const { project: projectId, tool: toolId } = await params
   const tool = TOOLS.find((t) => t.id === (toolId as ToolId))
   if (!tool) notFound()
   const project = await getProject(projectId)
+
+  if (tool.id === "appointments") {
+    // hours answered in the GoGetSpace chat arrive in the link (?hours=…); a real app reads them from the account
+    const raw = (await searchParams).hours
+    const hours = typeof raw === "string" ? decodeWeek(raw) : null
+    const settings = await getAppointmentSettings(project.id, hours ?? undefined)
+    return <AppointmentsApp project={project} initial={settings} />
+  }
+
   return (
-    <div className="flex flex-col gap-8">
-      <Link
-        href={`/${project.id}`}
-        className="flex w-fit items-center gap-2 rounded-sm type-label-md text-fg-secondary hover:text-fg-primary focus-visible:outline-none focus-visible:focus-ring"
-      >
-        <ArrowLeft aria-hidden className="size-4" /> All tools
-      </Link>
-      <div className="flex items-center gap-4">
-        <ToolIcon tool={tool} />
-        <div className="flex flex-col">
-          <h1 className="type-h3 text-fg-primary">{tool.name}</h1>
-          <p className="type-body-md text-fg-secondary">{tool.description}</p>
+    <AppShell
+      project={project}
+      title={tool.name}
+      main={
+        <div className="h-full overflow-y-auto p-4 sm:p-6">
+          <div className="mx-auto flex max-w-[720px] flex-col gap-6">
+            <div className="flex items-center gap-4">
+              <ToolIcon tool={tool} />
+              <p className="type-body-md text-fg-secondary">{tool.description}</p>
+            </div>
+            <div className="overflow-hidden rounded-lg border border-line-default bg-surface">
+              <StudsMedia className="h-48" />
+              <p className="p-6 type-body-md text-fg-secondary">The {tool.name} screens for {project.name} come next.</p>
+            </div>
+          </div>
         </div>
-      </div>
-      <div className="overflow-hidden rounded-lg border border-line-default bg-surface">
-        <StudsMedia className="h-48" />
-        <p className="p-6 type-body-md text-fg-secondary">The {tool.name} screens for {project.name} come next.</p>
-      </div>
-    </div>
+      }
+      settings={tool.id === "settings" ? undefined : <p className="p-5 type-body-md text-fg-secondary">{tool.name} settings come with its screens.</p>}
+    />
   )
 }
