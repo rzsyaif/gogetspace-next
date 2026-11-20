@@ -1,0 +1,4 @@
+@import "tailwindcss";
+@import "@gogetspace/baseplate/styles.css";
+/* Tailwind only scans this app by default; the Baseplate components live in the shared package */
+@source "../../../../packages/baseplate/src";

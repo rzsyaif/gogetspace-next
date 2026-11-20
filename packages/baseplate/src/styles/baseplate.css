@@ -1,0 +1,106 @@
+/* Baseplate by GoGetSpace: tokens, theme switch, motion curves and shared utilities.
+   An app's globals.css imports Tailwind first, then this file, then adds an @source for the components. */
+@import "./tokens.css";
+
+/* `dark:` follows the explicit data-theme switch */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* Motion: stronger curves than the built-in ones (which are too weak to feel intentional).
+   ease-out — enter, exit and feedback; ease-in-out — things moving on screen; ease-drawer — sheets and drawers. */
+@theme {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@layer base {
+  html {
+    background: var(--color-canvas);
+  }
+
+  body {
+    background: var(--color-canvas);
+    color: var(--color-fg-primary);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background: var(--color-accent-blue-subtle);
+    color: var(--color-fg-primary);
+  }
+}
+
+@keyframes bp-fade-in {
+  from { opacity: 0; }
+}
+@keyframes bp-pop-in {
+  from { opacity: 0; transform: scale(0.96) translateY(-4px); }
+}
+@keyframes bp-dialog-in {
+  from { opacity: 0; transform: scale(0.94); }
+}
+@keyframes bp-sheet-in {
+  from { opacity: 0; transform: translateY(48px); }
+}
+@keyframes bp-sheet-out {
+  to { opacity: 0; transform: translateY(64px); }
+}
+/* modals on phones: a bottom sheet sliding up from the edge */
+@keyframes bp-sheet-up {
+  from { transform: translateY(100%); }
+}
+@keyframes bp-sheet-down {
+  to { transform: translateY(100%); }
+}
+@keyframes bp-drawer-in {
+  from { transform: translateX(var(--drawer-from, 100%)); }
+}
+@keyframes bp-drawer-out {
+  to { transform: translateX(var(--drawer-from, 100%)); }
+}
+@keyframes bp-fade-out {
+  to { opacity: 0; }
+}
+/* "working on it" text shimmer */
+@keyframes bp-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+@utility shimmer-text {
+  background-image: linear-gradient(90deg, var(--color-fg-primary) 0%, var(--color-fg-primary) 35%, var(--color-fg-disabled) 50%, var(--color-fg-primary) 65%, var(--color-fg-primary) 100%);
+  background-size: 200% 100%;
+  background-clip: text;
+  color: transparent;
+  animation: bp-shimmer 1.8s linear infinite;
+}
+/* Radix Accordion/Collapsible content height */
+@keyframes bp-accordion-down {
+  from { height: 0; opacity: 0; }
+  to { height: var(--radix-accordion-content-height); opacity: 1; }
+}
+@keyframes bp-accordion-up {
+  from { height: var(--radix-accordion-content-height); opacity: 1; }
+  to { height: 0; opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}
+
+/* Baseplate focus ring: 2px surface gap + 4px translucent blue */
+@utility focus-ring {
+  outline: none;
+  box-shadow: var(--bp-effect-focus-ring);
+}
+
+/* Lego "stud" pattern used on cards and empty states */
+@utility studs {
+  background-image: radial-gradient(circle, currentColor 0 8px, transparent 8.5px);
+  background-size: 32px 32px;
+  background-repeat: space; /* whole studs only, evenly spread */
+}

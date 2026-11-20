@@ -1,0 +1,38 @@
+{
+  "name": "@gogetspace/baseplate",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Baseplate by GoGetSpace: design tokens, base styles, fonts and React components shared by every app in this repo.",
+  "type": "module",
+  "exports": {
+    ".": "./src/ui/index.ts",
+    "./cn": "./src/cn.ts",
+    "./theme": "./src/theme.tsx",
+    "./styles.css": "./src/styles/baseplate.css",
+    "./tokens.json": "./tokens/baseplate.tokens.json",
+    "./fonts/*": "./fonts/*"
+  },
+  "scripts": {
+    "tokens": "node scripts/build-tokens.mjs"
+  },
+  "dependencies": {
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.62.0",
+    "radix-ui": "^1.8.1",
+    "tailwind-merge": "^3.7.0"
+  },
+  "peerDependencies": {
+    "next": "16.4.3",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "next": "16.4.3",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "typescript": "^5"
+  }
+}

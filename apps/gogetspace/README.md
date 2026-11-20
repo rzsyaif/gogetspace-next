@@ -1,0 +1,293 @@
+# GoGetSpace — app UI prototype
+
+> Part of the GoGetSpace monorepo: see the [root README](../../README.md) for how the apps and shared packages fit
+> together. Run the commands below from this folder, or from the root with `pnpm --filter gogetspace <script>`.
+
+Front-end prototype of the GoGetSpace builder (generating flow, agentic editor, dashboard).
+There is no backend: screens run on sample data and a scripted agent.
+
+Built with **Next.js 16** (App Router, Turbopack), **React 19**, **TypeScript**, **Tailwind CSS 4**,
+**Radix UI** primitives, **Motion** and **lucide-react**, styled with the **Baseplate by GoGetSpace** design system.
+
+## Getting started
+
+```bash
+pnpm install
+pnpm dev          # http://localhost:3000
+```
+
+| Script | What it does |
+| --- | --- |
+| `pnpm dev` | Start the dev server |
+| `pnpm build` / `pnpm start` | Production build / serve it |
+| `pnpm lint` | ESLint |
+| `pnpm typecheck` | Generate route types, then `tsc --noEmit` |
+| `pnpm test` | Vitest: the playbook evals and the dentist conversation flow |
+| `pnpm tokens` (from the repo root) | Regenerate `packages/baseplate/src/styles/tokens.css` from `packages/baseplate/tokens/baseplate.tokens.json` |
+
+Routes:
+
+| Route | What it is |
+| --- | --- |
+| `/` | Marketing homepage (ported from the Framer site) |
+| `/generate?q=…` | Generation flow: plan → review brief, style, sitemap → build → publish |
+| `/preview/[style]/[page]` | The generated Bakti Analisa site — 11 pages in every style option |
+| `/preview/dental/[style]/[page]?n=…` | A generated dental practice site (dentist playbook), configured from the plan in the query string |
+| `/dashboard` | Account home: new-site prompt and all websites; also `/websites`, `/domains`, `/billing`, `/settings`, `/inbox` |
+| `/sites/[id]` | The editor for one website (`?tab=analytics`, `enquiries`, `plan`, `domain`…) |
+| `/screens` | Index of the prototype screens |
+| `/styleguide` | Every token and component in light and dark, with copyable usage and source for each component |
+
+## Design tokens
+
+The tokens live in the shared `@gogetspace/baseplate` package. `packages/baseplate/tokens/baseplate.tokens.json` is
+exported from the Baseplate Figma library (variables, text styles and effect styles). `pnpm tokens` turns it into
+`packages/baseplate/src/styles/tokens.css`, which:
+
+- replaces Tailwind's default palette with Baseplate primitives (`bg-blue-500`, `text-neutral-600`, …)
+- adds semantic colors that switch automatically in dark mode
+- maps radius (`rounded-sm|md|lg|xl|full` = 6/10/16/24/999px) and shadows (`shadow-block-sm|md|lg`, `shadow-soft-sm|md|lg`)
+- defines one utility per Figma text style; sizes drop to the mobile scale below 810px
+
+Don't edit `tokens.css` by hand — change the JSON (or re-export from Figma) and run `pnpm tokens`.
+
+### Cheat sheet
+
+| Figma | Tailwind |
+| --- | --- |
+| `color/bg/canvas`, `surface`, `subtle`, `muted`, `inverse` | `bg-canvas`, `bg-surface`, `bg-subtle`, `bg-muted`, `bg-inverse` |
+| `color/text/primary`, `secondary`, `tertiary`, `brand`, `link` | `text-fg-primary`, `text-fg-secondary`, `text-fg-tertiary`, `text-fg-brand`, `text-fg-link` |
+| `color/border/default`, `strong` | `border-line-default`, `border-line-strong` |
+| `color/action/primary/default`, `hover`, `pressed` | `bg-action-primary`, `bg-action-primary-hover`, `bg-action-primary-pressed` |
+| `color/status/success/bg` … | `bg-status-success-bg`, `text-status-success-text`, … |
+| Heading/H2, Body/Small, Label/Medium … | `type-h2`, `type-body-sm`, `type-label-md`, … |
+| Effect `Block/Medium`, `Soft/Medium`, `Focus/Ring` | `shadow-block-md`, `shadow-soft-md`, `focus-ring` |
+
+Theme: **light by default** on every page. `<ThemeToggle />` switches to Dark, or to System (follows the OS); the choice is saved in `localStorage` and applied as `data-theme` on `<html>` before first paint.
+
+## Components
+
+`packages/baseplate/src/ui` (imported as `@gogetspace/baseplate`) mirrors the Baseplate component set:
+
+Button (sm/md/lg/icon × primary/secondary/ghost/destructive, with the lego press), Logo, Badge, Chip, Avatar,
+Field + Input + Textarea, Select, DropdownMenu, Checkbox, Switch, Tabs, Tooltip, Dialog (modal), Alert, Toast,
+ProgressBar, Card and StudsMedia.
+
+App components built for the generation flow (also on `/styleguide` → App patterns):
+
+- **SegmentedControl** — pill switch for plan, device size, theme, Chat/Preview and Preview/Edit Mode (radio group or
+  tabs; `look="floating"` for bars over content; arrow keys move the selection)
+- **IconButton** — quiet icon-only button for close, reload, zoom and row menus
+- **StepList / Step / StepIndicator** — vertical task list whose markers are joined by one continuous line
+- **PromptBox**, **PromptAttachButton**, **PromptSendButton**, **AttachmentChip** — the chat and "create your own style" boxes
+- **Drawer** — side panel (phone menus in the editor and the dashboard)
+- **RadioCard** / **RadioDot** — bordered radio choices (publish domain, style options)
+- **Accordion** (`Accordion`, `AccordionItem`, `AccordionTrigger`, `AccordionContent`) — bordered collapsible sections
+- **CopyField** — monospace value with a copy button (DNS records, keys)
+- **Table** (`Table`, `TableHead`, `TableBody`, `TableRow`, `TableHeaderCell`, `TableCell`, `TableEmpty`) — bordered data table that scrolls sideways on phones
+- **Stepper** — horizontal stepper (review sheet footer, Buy a domain); reached steps can be clickable
+- **NavItem** — sidebar/menu row used by the dashboard sidebar and the editor's phone menu
+- **Divider** — rule with an optional centred label ("or")
+- **Button `variant="link"`** — inline text action (Forgot password?, Disconnect, Retry)
+- **DetailCard** (`account/panel.tsx`) — label / value / badge card for settings, domain and database rows
+- **AuthForm** (`auth/login-dialog.tsx`) — one log-in / sign-up form shared by the homepage login and publish flow
+- Every modal and drawer overlay uses `overlayClass` from `ui/dialog.tsx` (scrim + background blur)
+- **Alert** now also has a `neutral` tone, `actions`, a custom or hidden `icon` and a compact `size="sm"`
+
+The marketing homepage prompt (`site/prompt-input.tsx`) keeps its own Figma-matched motion buttons, and the generated
+site (`bakti-site/`) uses its own themed components on purpose.
+
+```tsx
+import { Button, Field, Input } from "@gogetspace/baseplate"
+
+<Field label="Business name" helper="Shown on your site header">
+  <Input placeholder="e.g. Rahma Family Clinic" />
+</Field>
+<Button size="lg" trailingIcon={<ArrowRight />}>Start building</Button>
+```
+
+### Copying components into another project
+
+`/styleguide` has a **Setup** section (the npm install line plus `tokens.css`, `globals.css`, `cn.ts` and `fonts.ts`,
+each collapsed until opened, with a copy button) and a collapsed **Code** panel under every group of components: **Usage** gives the import and
+example JSX, **Source** gives the whole component file (read from `src/` at build time, so it never drifts) and lists
+what it depends on. Usage snippets live in `src/app/styleguide/snippets.ts` — update them when a component's props
+change.
+
+## Fonts
+
+Bricolage Grotesque (headings) and Geist / Geist Mono (body, code) are self-hosted from `packages/baseplate/fonts`
+(SIL Open Font License) via `next/font/local` in `src/app/fonts.ts`, so builds don't depend on Google Fonts. The
+sample-site fonts (DM Sans, Fraunces…) stay in this app's `src/fonts`.
+
+## Homepage
+
+`src/app/page.tsx` composes the sections in `src/components/site`. The closing call-to-action and footer sit on the Figma footer
+background (`site/footer-background.tsx`): the colour wash in `public/images/footer-bg.svg` with Figma's Pixelate
+shader on top, via the Figma shader runtime in `src/lib/shader-runtime` and the shader in `src/lib/custom-effects`
+(both copied as exported; lint skips them). The shader needs WebGPU + HTML-in-Canvas; other browsers show the wash
+without the pixel pattern. The page is always light (`data-theme="light"`).
+
+- **Pixel Blocks** (`pixel-blocks.tsx`): canvas falling-blocks game behind the hero. Clicking drops the next piece at the cursor.
+  When the visitor focuses a prompt input, the board dissolves; it rebuilds when they cancel or scroll away (`prompt-events.ts`).
+- **Prompt input** (`prompt-input.tsx`): demo attachments, Enter to "generate", animated outline and glow.
+- **How it works**: a sticky panel. Each 100vh of scroll is one step, and the bars show real scroll progress.
+- **Feature cards**: illustrations animate on hover, or when scrolled into view on touch screens.
+- Images still load from the Framer CDN (`assets.ts`, allowed in `next.config.ts`). Move them to `/public` when the Framer site is retired.
+
+## Generation flow
+
+Typing a prompt on the homepage opens `/generate`. A scripted agent (`src/lib/generation/state.ts`, timers in
+`gen-provider.tsx`) plans the site, then the person reviews three artifacts in a sheet: an editable brief (guesses are
+highlighted until confirmed; there's no separate open-questions list), style options previewed on one hero section, and a sitemap (list and map side by side, with
+rename / add / remove, plan limits and the sections planned for each page). "Start Creation" opens the workspace: chat, build progress, credits, and a
+preview of the generated site with device sizes and a page switcher. Sign-up is asked for only when publishing. When the first build finishes, a feedback card in the chat asks how it turned out (Good / Fine / Bad + why) and whether we may contact them for research.
+
+Style step and tokens: the hero (`bakti-site/hero-preview.tsx`) is generated once from the brief with a fixed layout;
+each style option is only a set of ~15 design tokens (palette, fonts, radii) applied as CSS variables. Comparing or
+switching styles costs no generation, and the full site (with its own layouts) is generated once, after confirming.
+
+Product decisions built in: a follow-up sent while planning **restarts the plan**; **sign-up happens at Publish**.
+
+Transitions: sending the homepage prompt plays a hand-off (`site/launch-overlay.tsx`) — the homepage fades into the light
+`/generate` canvas while the prompt box stays, the box glides to the chat input position and the prompt lifts into the first bubble, then `/generate` takes over
+in the same place. When planning finishes the brief review opens by itself; closing it leaves the filled chat. After
+"Start Creation" one layout (`generate-app.tsx`) animates: the sheet closes, the chat shrinks into the sidebar, the rail
+(logo, tabs, Account) and the preview slide in, and the top bar folds away.
+
+Edit Mode: the preview has a Preview Mode / Edit Mode switch. In Edit Mode the site's `EditBridge`
+(`bakti-site/edit-bridge.tsx`, active only inside the preview iframe) outlines what's under the pointer and reports
+clicks; the editor shows a menu: sections → ask the agent; text → edit it in place or ask the agent; images → upload
+your own or regenerate with a prompt. Requests go to the agent chat. Edits live in the preview until it reloads.
+
+The session is kept in `sessionStorage`, so a refresh resumes. The **Prototype** button (bottom-left) replays the flow
+with an edge case (vague prompt, nothing found online, several matches, search down, a failing or slow step, a declined
+request, low or exhausted credits, a page that fails to build), jumps to any stage, and changes the speed.
+
+The generated site lives in `src/components/bakti-site` and reads only theme variables, so every style option restyles
+all pages. Content is in `src/lib/bakti`.
+
+## Niche playbooks (dentist)
+
+The builder is sharper for specific professionals through **playbooks**: data files that tell the agent how to plan
+a website for one kind of practice. The first is the dentist playbook (v0.3), in `src/lib/playbooks`:
+
+- `types.ts` — the shape of a playbook; `dentist.ts` — the dentist playbook itself: detection signals, scenarios
+  (S1–S8), questions (Q0–Q4), goals (G1–G8) and the modules each brings, module prices, defaults, guardrails and the
+  Malaysian market overlay (MDC, 999, PDPA 2010). Adding a niche is adding a file like it.
+- `engine.ts` — plain functions over a playbook: detect the niche, read what the prompt already answers, pick the
+  next question (at most four, never one the prompt or the web search answered), map goals to modules (fixed, and
+  dependencies kept together — Payments needs Appointments or Estimates), the main button and its fallback, the
+  monthly add-on total, and the guardrail checks. The prompt is read with patterns here; a model fills the same
+  interface in production.
+- `dentist-plan.ts` — the brief, sitemap, page priority and open questions generated from the answers, plus the
+  treatment library by focus and the demo clinic (Rahma Family Dental).
+- `site-config.ts` — what the generated dental site needs, encoded in its preview URL.
+
+In `/generate`, a dental prompt runs the playbook conversation (`components/generate/playbook-blocks.tsx`):
+
+1. The agent reads the prompt and starts the web search; **questions are asked while it searches**, and the search
+   fills answers too (e.g. the number of dentists). Questions come **one at a time on a card**
+   (`question-series.tsx`, Figma 125:982): a counter ("2 / 4"), the answers as a radio list (checkboxes for goals,
+   with a main goal), "Something else" with a text field, "You decide", Back to change the previous answer, and
+   "Skip these questions" to let the agent decide the rest. On the prices question, choosing a way to show prices
+   opens a follow-up to upload a price list (PDF, sheet or photo) or type it; without one, the brief drafts typical
+   prices to check. On the size question, "Several dentists" or "Several branches" opens the same kind of follow-up
+   for the team: upload a team list, or add each dentist with their registration number (optional) and branch — or
+   skip it and fill it in the brief. Names typed here appear on the preview's Our dentists page. The chat input is hidden while a card is open. Once
+   done, the answers fold into one summary.
+2. Claims and data the site can't publish ("best dentist", "painless", medical history on a form, before-and-after
+   photos without consent…) get a guardrail card with the reason and a compliant alternative.
+3. One **"Here's my plan"** card: assumptions tagged with where they came from (your message, found online, you chose,
+   my default) with Edit (four lines on phones, "Show all assumptions"). Under it, **Recommended Tools**
+   (`components/playbook/recommended-tools.tsx`, Figma 185:1960): one card per tool with its own monthly price and
+   Add / Added, in a row with previous/next buttons on desktop and swipe on phones; what's included for free; tools
+   that can be connected later; and the running total with "Later" and "Create Website Plan". Nothing is
+   charged until publish. The plan concludes the questions: the chat input stays hidden until it's confirmed. Declining the main goal's tool switches the main button to "Call or message us".
+4. Confirming writes the brief, style and page plan from the playbook, and the review and build continue as before
+   — with the dental styles and the Rahma Family Dental site in the preview. New goals after the plan become a patch
+   card that only adds their modules (and pages). After the build, tools that need the owner's accounts (WhatsApp,
+   payouts) run in **test mode** until connected.
+5. After the first build, the agent chat shows **what to do next** (`components/generate/next-steps.tsx`, Figma
+   143:3369), at most five one-line steps: website created, connect accounts for test-mode tools (if any), publish,
+   add a proper domain, add more tools, and build the remaining pages when there's room. Each step has one button that
+   goes where it's done (publish dialog, Domain, Modules or Plan tab) and ticks itself off.
+
+Each add-on is **billed per website**: the editor's **Modules** tab (`components/playbook/modules-panel.tsx`) adds,
+removes and connects them, the Plan tab itemises plan + add-ons, and Dashboard → Billings lists the add-ons under each
+website. Module prices in `dentist.ts` are placeholders. The prototype panel has every eval prompt (E1–E17) as a preset;
+`pnpm test` runs the evals against the engine and walks the reducer through each one.
+
+## Dashboard and editor
+
+An account has several websites and **each website has its own plan** (`src/lib/plans.ts`, shared with the pricing
+section). Sample data lives in `src/lib/account/data.ts`; `src/lib/account/store.ts` keeps plan changes, enquiry
+statuses and invoices in sessionStorage so the dashboard and the editor stay in step.
+
+- `/dashboard` (Figma 94:2350, `components/dashboard`): sidebar with New Website, Websites, Domains, the account's
+  websites with Live/Draft, Billings, Settings, the account menu and the inbox; it collapses to icons on desktop and
+  becomes a drawer on phones. Home greets by name with the prompt and lists the websites (plan + status on each card).
+- `/sites/[id]`: the editor on its own. The rail is Agent, **Analytics**, **Plan**, **Modules**, Domain and Settings.
+  Analytics, Plan and Modules open full-width pages (`components/account`). Modules lists the site's modules in two
+  columns, Enquiries first; **Manage ↗** opens each module's own app in a new tab (`/sites/[id]/apps/[module]` — the
+  inbox for Enquiries, a stand-in for the others, since modules will run in their own environment). Below are modules
+  to add and third-party tools to connect (CRM, calendar, payments…). The logo goes back to the dashboard and the site
+  picker switches websites. Drafts that haven't been built show where planning stopped. The editor at the end of `/generate` is the same component.
+- Connecting a domain bought elsewhere (editor Domain tab, or Dashboard → Domains) is a 3-step dialog
+  (`account/connect-domain.tsx`): domain + provider → the A/CNAME records with copy buttons and where that provider
+  keeps DNS settings → a check that can finish as "Waiting for DNS". Subdomains get a single CNAME.
+- Domains: buy one from Dashboard → Domains (search → duration → payment, optionally pointed at a website). Bought
+  domains that aren't used appear in the editor's Domain tab under "Connect a domain you own" and connect without DNS
+  steps; domains bought elsewhere still go through DNS. The editor's Plan tab shows the plan (8 columns) beside a
+  Custom domain card (4 columns).
+- Upgrades name the website and the charge, apply to that website only, and add an invoice in Billings. Analytics
+  history depends on the plan (Free 7 days, Starter 30 days, Business 12 months).
+
+## Admin console
+
+`/admin` is the internal console for the GoGetSpace team (`components/admin`, sample data in `src/lib/admin/data.ts`,
+changes kept in sessionStorage by `src/lib/admin/store.ts`). Every action asks for a reason where it touches a client
+and writes an entry to the audit log.
+
+- **Overview** — MRR, paying websites, new clients, AI cost, and a "needs attention" list (failed payments, recent
+  "Bad" ratings, domains stuck on DNS, SSL/renewal issues, websites over their credit allowance, degraded services)
+- **Clients** and **Clients → one client** — search/filter; per client: websites (credits, failed builds, plan),
+  billing, domains, activity, internal notes; log in as the client, password reset, suspend, schedule deletion
+- **Websites** — every site with status, plan, credits and failed builds; change plan, grant credits, re-run failed
+  builds, unpublish or republish
+- **Billing** — MRR by plan, subscriptions, payments (refund), failed payments (retry, email the client)
+- **Domains** — bought here vs connected from elsewhere; re-check DNS, email the DNS steps, re-issue SSL, renew
+- **AI usage** — generations, success rate, cost by step and model, **model routing per step**, top credit users,
+  recent generations
+- **Feedback** — answers from the card shown after the first build in `/generate` (Good / Fine / Bad, a follow-up
+  on why, optional comment, and "you can contact me for research"): rating split, trend, top reasons per rating, every
+  answer, and a research-participant status per person with a CSV export. Answers sent from the builder show up here
+  straight away (same browser tab)
+- **System** — service status, generation queue, recent errors, sent emails
+- **Plans & features** — price, pages, credits, analytics history and custom domain per plan; free-website limit per
+  account (still undecided); feature flags
+- **Team & roles** — members, roles, two-factor, and a permissions matrix
+- **Audit log** — searchable, filter by person, CSV export
+
+Press <kbd>/</kbd> anywhere in the console to search clients, websites, domains and payment IDs.
+
+## Project layout
+
+```
+src/
+  app/              routes (App Router)
+  components/ui/    Baseplate components
+  components/site/  marketing homepage sections (Pixel Blocks, AI prompt input, feature cards, …)
+  components/generate/   generation flow (chat, review sheet, workspace, publish, prototype controls)
+  components/bakti-site/ the generated client site (lab)
+  components/dental-site/ the generated dental practice site
+  components/playbook/   module cards and the editor's Modules tab
+  lib/generation/   flow state and the brief; lib/bakti/ site content, themes, sitemap
+  lib/playbooks/    niche playbooks (dentist), the engine and its evals
+  components/       app-level pieces (theme toggle, …)
+  fonts/            self-hosted font files + licenses
+  lib/              helpers (cn)
+  styles/tokens.css generated — do not edit
+tokens/             Baseplate token source (from Figma)
+scripts/            build-tokens.mjs
+```

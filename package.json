@@ -1,38 +1,14 @@
 {
-  "name": "gogetspace-next",
-  "version": "0.1.0",
+  "name": "gogetspace-workspace",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint",
-    "typecheck": "next typegen && tsc --noEmit",
-    "tokens": "node scripts/build-tokens.mjs",
-    "test": "vitest run"
-  },
-  "dependencies": {
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "lucide-react": "^1.62.0",
-    "motion": "^14.7.0",
-    "next": "16.4.3",
-    "radix-ui": "^1.8.1",
-    "react": "19.3.0",
-    "react-dom": "19.3.0",
-    "tailwind-merge": "^3.7.0"
-  },
-  "devDependencies": {
-    "@tailwindcss/turbopack": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "@webgpu/types": "^0.1.74",
-    "eslint": "^9",
-    "eslint-config-next": "16.4.3",
-    "tailwindcss": "^4",
-    "typescript": "^5",
-    "vitest": "3.2.4"
+    "dev": "pnpm --filter gogetspace dev",
+    "dev:ariyes": "pnpm --filter ariyes dev",
+    "build": "pnpm -r --filter ./apps/* build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "tokens": "pnpm --filter @gogetspace/baseplate tokens"
   },
   "packageManager": "pnpm@10.28.0"
 }
