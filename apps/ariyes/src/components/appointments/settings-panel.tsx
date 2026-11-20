@@ -48,7 +48,7 @@ function Labeled({ label, children }: { label: string; children: ReactNode }) {
 }
 
 /**
- * The right-hand column of Appointments: opening hours, what can be booked, reminders, booking rules and the public
+ * The right-hand column of Appointments: availability, what can be booked, reminders, booking rules and the public
  * booking page. Changes apply at once (the calendar redraws); a real app saves each one.
  */
 export function SettingsPanel({ value, onChange }: { value: AppointmentSettings; onChange: (v: AppointmentSettings) => void }) {
@@ -60,8 +60,8 @@ export function SettingsPanel({ value, onChange }: { value: AppointmentSettings;
   return (
     <div className="flex flex-col">
       <Section
-        title="Opening hours"
-        description={value.hours ? describeWeek(value.hours) : "Not set yet. People can't book until you add your hours."}
+        title="Availability"
+        description={value.hours ? describeWeek(value.hours) : "Not set yet. People can't book until you add when you're available."}
         action={
           value.hours && (
             <button
@@ -78,7 +78,7 @@ export function SettingsPanel({ value, onChange }: { value: AppointmentSettings;
         {value.hours && editHours && <WeekEditor value={value.hours} onChange={(h) => set("hours", h)} />}
       </Section>
 
-      <Section title="What people can book" description="Set from your services. The length decides how much of the calendar each booking takes.">
+      <Section title="What people can book" description="Set from your services. The length decides how much of your availability each booking takes.">
         <ul className="flex flex-col gap-2">
           {value.types.map((t) => (
             <li key={t.id} className="flex items-center gap-2">
@@ -112,7 +112,7 @@ export function SettingsPanel({ value, onChange }: { value: AppointmentSettings;
         </button>
       </Section>
 
-      <Section title="Reminders" description="Sent for you, from your practice's name.">
+      <Section title="Reminders" description="Sent for you, in your business's name.">
         <Switch label="Confirmation email when someone books" checked={r.confirmation} onCheckedChange={(on) => set("reminders", { ...r, confirmation: on })} />
         <Switch label="Email reminder" checked={r.email} onCheckedChange={(on) => set("reminders", { ...r, email: on })} />
         <Switch label="Text message reminder" checked={r.sms} onCheckedChange={(on) => set("reminders", { ...r, sms: on })} />

@@ -696,7 +696,7 @@ export function reducer(s: GenState, a: Action): GenState {
     case "skipHours":
       return push(
         { ...s, hours: "skipped", msgs: s.msgs.map((m) => (m.id === a.id && m.type === "pb-hours" ? { ...m, answer: "skipped" as const } : m)) },
-        { type: "agent", text: "No problem. Appointments is on your site, and it starts taking bookings once it has hours. I'll ask when you open Appointments in Ariyes." },
+        { type: "agent", text: "No problem. Appointments is on your site, and it starts taking bookings once it knows your availability. I'll ask when you open Appointments in Ariyes." },
       )
     case "reopenHours":
       return { ...s, msgs: s.msgs.map((m) => (m.id === a.id && m.type === "pb-hours" ? { ...m, answer: undefined } : m)) }

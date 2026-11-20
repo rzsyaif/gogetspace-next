@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { ArrowUpRight, CalendarClock, Plus, X } from "lucide-react"
 import { Button, Select, Switch } from "@gogetspace/baseplate"
-import { HOURS_PRESETS, WEEKDAYS, describeWeek, formatTime, fromMinutes, type WeekHours } from "@gogetspace/modules"
+import { HOURS_PRESETS, WEEKDAYS, describeWeek, formatTime, fromMinutes, toMinutes, type Shift, type WeekHours } from "@gogetspace/modules"
 import type { Msg } from "@/lib/generation/state"
 import { moduleById } from "@/lib/playbooks/engine"
 import { useGen } from "@/components/generate/gen-provider"
@@ -14,46 +14,54 @@ import { cn } from "@gogetspace/baseplate/cn"
 
 const CUSTOM = "custom"
 
-/** every half hour from 6am to 11pm, for the time pickers */
-const TIMES = Array.from({ length: 35 }, (_, i) => fromMinutes(360 + i * 30)).map((t) => ({ value: t, label: formatTime(t) }))
+/** every half hour from 5am to midnight, for the time pickers */
+const TIMES = Array.from({ length: 39 }, (_, i) => fromMinutes(300 + i * 30)).map((t) => ({ value: t, label: t === "24:00" ? "Midnight" : formatTime(t) }))
 
-/** the week, one row per day: open or closed, and from–to (a second block for a lunch break) */
+/** a sensible next block for "Add hours": an hour after the day's last one, two hours long */
+function nextBlock(shifts: Shift[]): Shift | null {
+  const after = Math.max(...shifts.map((x) => toMinutes(x.end))) + 60
+  if (after + 30 > 24 * 60) return null
+  return { start: fromMinutes(after), end: fromMinutes(Math.min(after + 120, 24 * 60)) }
+}
+
+const overlaps = (shifts: Shift[]) => {
+  const sorted = [...shifts].sort((a, b) => toMinutes(a.start) - toMinutes(b.start))
+  return sorted.some((x, i) => toMinutes(x.end) <= toMinutes(x.start) || (i > 0 && toMinutes(x.start) < toMinutes(sorted[i - 1].end)))
+}
+
+/** the week, one row per day: available or not, and as many from–to blocks as the day needs */
 function WeekEditor({ value, onChange }: { value: WeekHours; onChange: (w: WeekHours) => void }) {
-  const set = (i: number, shifts: WeekHours[number]) => onChange(value.map((d, j) => (j === i ? shifts : d)))
+  const set = (i: number, shifts: Shift[]) => onChange(value.map((d, j) => (j === i ? shifts : d)))
   return (
     <ul className="flex min-w-0 flex-col divide-y divide-line-default rounded-md border border-line-default bg-surface">
       {WEEKDAYS.map((day, i) => {
         const shifts = value[i]
+        const next = shifts.length ? nextBlock(shifts) : null
         return (
           <li key={day} className="flex min-w-0 flex-col gap-2 px-3 py-2.5">
             <div className="flex items-center justify-between gap-3">
               <Switch label={day} checked={shifts.length > 0} onCheckedChange={(on) => set(i, on ? [{ start: "09:00", end: "17:00" }] : [])} />
-              {!shifts.length && <span className="type-body-sm text-fg-tertiary">Closed</span>}
+              {!shifts.length && <span className="type-body-sm text-fg-tertiary">Unavailable</span>}
             </div>
-            {shifts.length > 0 && (
-              <div className="flex min-w-0 flex-col gap-2">
-                {shifts.map((sh, k) => (
-                  <div key={k} className="flex min-w-0 items-center gap-2">
-                    <Select ariaLabel={`${day} opens`} value={sh.start} options={TIMES} onValueChange={(v) => set(i, shifts.map((x, n) => (n === k ? { ...x, start: v } : x)))} className="h-10 min-w-0 flex-1 px-3" />
-                    <span className="type-body-sm text-fg-tertiary">to</span>
-                    <Select ariaLabel={`${day} closes`} value={sh.end} options={TIMES} onValueChange={(v) => set(i, shifts.map((x, n) => (n === k ? { ...x, end: v } : x)))} className="h-10 min-w-0 flex-1 px-3" />
-                    {k > 0 && (
-                      <button type="button" aria-label={`Remove ${day}'s second block`} onClick={() => set(i, shifts.filter((_, n) => n !== k))} className="grid size-8 shrink-0 place-items-center rounded-sm text-fg-tertiary hover:bg-subtle hover:text-fg-primary focus-visible:outline-none focus-visible:focus-ring">
-                        <X className="size-4" />
-                      </button>
-                    )}
-                  </div>
-                ))}
-                {shifts.length === 1 && (
-                  <button
-                    type="button"
-                    onClick={() => set(i, [{ start: shifts[0].start, end: "13:00" }, { start: "14:00", end: shifts[0].end > "14:00" ? shifts[0].end : "18:00" }])}
-                    className="flex w-fit items-center gap-1 rounded-sm px-1 py-0.5 type-label-sm text-fg-link hover:bg-subtle focus-visible:outline-none focus-visible:focus-ring"
-                  >
-                    <Plus className="size-3.5" /> Add a lunch break
-                  </button>
-                )}
+            {shifts.map((sh, k) => (
+              <div key={k} className="flex min-w-0 items-center gap-2">
+                <Select ariaLabel={`${day}, block ${k + 1}, from`} value={sh.start} options={TIMES.slice(0, -1)} onValueChange={(v) => set(i, shifts.map((x, n) => (n === k ? { ...x, start: v } : x)))} className="h-10 min-w-0 flex-1 px-3" />
+                <span className="type-body-sm text-fg-tertiary">to</span>
+                <Select ariaLabel={`${day}, block ${k + 1}, until`} value={sh.end} options={TIMES.slice(1)} onValueChange={(v) => set(i, shifts.map((x, n) => (n === k ? { ...x, end: v } : x)))} className="h-10 min-w-0 flex-1 px-3" />
+                <button type="button" aria-label={`Remove ${day} ${formatTime(sh.start)} to ${formatTime(sh.end)}`} onClick={() => set(i, shifts.filter((_, n) => n !== k))} className="grid size-8 shrink-0 place-items-center rounded-sm text-fg-tertiary hover:bg-subtle hover:text-fg-primary focus-visible:outline-none focus-visible:focus-ring">
+                  <X className="size-4" />
+                </button>
               </div>
+            ))}
+            {overlaps(shifts) && (
+              <p role="alert" className="type-body-sm text-status-error-text">
+                Two blocks overlap, or one ends before it starts.
+              </p>
+            )}
+            {next && (
+              <button type="button" onClick={() => set(i, [...shifts, next])} className="flex w-fit items-center gap-1 rounded-sm px-1 py-0.5 type-label-sm text-fg-link hover:bg-subtle focus-visible:outline-none focus-visible:focus-ring">
+                <Plus className="size-3.5" /> Add hours
+              </button>
             )}
           </li>
         )
@@ -74,7 +82,7 @@ export function HoursCard({ m, compact }: { m: Extract<Msg, { type: "pb-hours" }
   const [pick, setPick] = useState<string>(() => (current ? (HOURS_PRESETS.find((p) => JSON.stringify(p.week) === JSON.stringify(current))?.id ?? CUSTOM) : ""))
   const [custom, setCustom] = useState<WeekHours>(() => current ?? HOURS_PRESETS[0].week)
   const chosen = pick === CUSTOM ? custom : HOURS_PRESETS.find((p) => p.id === pick)?.week
-  const valid = !!chosen && chosen.some((d) => d.length) && chosen.every((d) => d.every((x) => x.start < x.end))
+  const valid = !!chosen && chosen.some((d) => d.length) && chosen.every((d) => !overlaps(d))
   const link = ariyesUrl(editor?.site.id ?? "new-site", m.module, { hours: s.hours })
 
   if (m.answer) {
@@ -84,11 +92,11 @@ export function HoursCard({ m, compact }: { m: Extract<Msg, { type: "pb-hours" }
           <CalendarClock className="size-5" />
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <p className="type-label-md text-fg-primary">{name} hours</p>
-          <p className="type-body-sm text-fg-secondary">{current ? describeWeek(current) : "Not set yet — Ariyes will ask when you open Appointments."}</p>
+          <p className="type-label-md text-fg-primary">{name} availability</p>
+          <p className="type-body-sm text-fg-secondary">{current ? describeWeek(current) : "Not set yet. Ariyes asks when you open Appointments."}</p>
           <div className="mt-2 flex flex-wrap gap-2">
             <Button size="sm" variant="secondary" onClick={() => dispatch({ type: "reopenHours", id: m.id })}>
-              {current ? "Change hours" : "Set hours now"}
+              {current ? "Change availability" : "Set it now"}
             </Button>
             <Button size="sm" variant="ghost" trailingIcon={<ArrowUpRight />} asChild>
               <a href={link} target="_blank" rel="noreferrer">
@@ -107,7 +115,7 @@ export function HoursCard({ m, compact }: { m: Extract<Msg, { type: "pb-hours" }
         compact={compact}
         title={`Set up ${name}`}
         help="This is the only part I can't decide for you. Booking types, slot lengths, the confirmation and the reminder are already set up from your services."
-        description={`${name} is on your site. I've set up the rest from your services. I just need your hours, so people can only book when you're there.`}
+        description={`${name} is on your site. I've set up the rest from your services. I just need your availability, so people only book when you can see them.`}
         question="When can people book an appointment?"
         footer={
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -116,7 +124,7 @@ export function HoursCard({ m, compact }: { m: Extract<Msg, { type: "pb-hours" }
               <span className="max-sm:hidden">Skip, ask me in Ariyes</span>
             </Button>
             <Button disabled={!valid} onClick={() => chosen && dispatch({ type: "setHours", id: m.id, hours: chosen })}>
-              Use these hours
+              Use this availability
             </Button>
           </div>
         }
@@ -125,7 +133,7 @@ export function HoursCard({ m, compact }: { m: Extract<Msg, { type: "pb-hours" }
           {HOURS_PRESETS.map((p) => (
             <Row key={p.id} checked={pick === p.id} label={p.label} description={describeWeek(p.week)} onSelect={() => setPick(p.id)} />
           ))}
-          <Row checked={pick === CUSTOM} label="Set my own hours" onSelect={() => setPick(CUSTOM)}>
+          <Row checked={pick === CUSTOM} label="Set my own availability" onSelect={() => setPick(CUSTOM)}>
             {pick === CUSTOM ? <WeekEditor value={custom} onChange={setCustom} /> : undefined}
           </Row>
         </Options>
