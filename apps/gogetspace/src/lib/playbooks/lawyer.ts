@@ -148,7 +148,6 @@ export const LAWYER: Playbook = {
       price: 12,
       benefit: { LG1: "Because you want more consultations booked online", LG3: "For urgent call-backs the same day", LG4: "Clients pay the consultation fee when they book", LG8: "Clients book with a specific lawyer" },
       included: ["Consultation requests you confirm first, so you can run a conflict check", "Reminders 24 hours and 2 hours before", "A video link for online meetings"],
-      needsAccount: { label: "WhatsApp", testMode: "Reminders go by email until you connect WhatsApp", connect: "Connect WhatsApp" },
       fallback: "Call or message us",
       pages: ["book"],
     },

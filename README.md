@@ -34,8 +34,15 @@ pnpm dev:ariyes    # Ariyes on :3001
 | `pnpm tokens` | Regenerate Baseplate's `tokens.css` from the Figma token export |
 | `pnpm --filter <app> <script>` | Run one app's script, e.g. `pnpm --filter ariyes build` |
 
-Set `NEXT_PUBLIC_GOGETSPACE_URL` in Ariyes to the GoGetSpace URL (used by "Build another website"; defaults to
-`http://localhost:3000`).
+Environment variables (one per app, pointing at the other):
+
+| App | Variable | Used by | Default |
+| --- | --- | --- | --- |
+| GoGetSpace | `NEXT_PUBLIC_ARIYES_URL` | Modules › Manage, and "new enquiries" on dashboard cards, which open the site's Ariyes project | `http://localhost:3001` in dev, `https://gogetspace-ariyes.vercel.app` in builds |
+| Ariyes | `NEXT_PUBLIC_GOGETSPACE_URL` | "Build another website" in the project switcher | `http://localhost:3000` |
+
+An Ariyes project's id is its GoGetSpace site's id, so `/{siteId}/{tool}` opens the right project. Each GoGetSpace module
+maps to its Ariyes tool through `gogetspaceModules` in the catalog; modules with no tool there open the project home.
 
 ## Handing off: what's mocked and where to plug in
 

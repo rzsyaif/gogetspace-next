@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, type ReactNode } from "react"
-import Link from "next/link"
 import { ArrowUpRight, Check, FlaskConical, Inbox, Plus, Rocket, Sparkles, Trash2 } from "lucide-react"
 import { Alert, Badge, Button } from "@gogetspace/baseplate"
 import { PanelHeader, PanelSection } from "@/components/account/panel"
@@ -13,9 +12,8 @@ import type { ModulesApi } from "@/components/generate/editor-site"
 import { MODULE_ICON } from "./recommended-tools"
 import { priceLabel } from "./module-card"
 import { AddModuleDialog, type AddBilling } from "./add-module-dialog"
+import { ariyesUrl } from "@/lib/ariyes"
 
-/** where a module's own app opens (a separate environment; the prototype has a stand-in page) */
-export const moduleAppUrl = (siteId: string, module: string) => `/sites/${siteId}/apps/${module}`
 
 /** tools the owner may already use, by what they replace or feed (logos in public/integrations) */
 export const THIRD_PARTY_TOOLS = [
@@ -55,9 +53,9 @@ function AppCard({ icon, title, status, price, children, actions, tone = "defaul
 function ManageLink({ siteId, module, name }: { siteId: string; module: string; name: string }) {
   return (
     <Button asChild size="sm" variant="secondary">
-      <Link href={moduleAppUrl(siteId, module)} target="_blank" rel="noreferrer" aria-label={`Manage ${name} (opens in a new tab)`}>
+      <a href={ariyesUrl(siteId, module)} target="_blank" rel="noreferrer" aria-label={`Manage ${name} in Ariyes (opens in a new tab)`}>
         Manage <ArrowUpRight />
-      </Link>
+      </a>
     </Button>
   )
 }
@@ -125,7 +123,7 @@ export function ModulesPanel({
         title="Modules"
         description={
           <>
-            The tools on <strong className="font-semibold text-fg-primary">{siteName}</strong>. Each one opens in its own app with Manage.
+            The tools on <strong className="font-semibold text-fg-primary">{siteName}</strong>. Manage opens each one in Ariyes, where this website&apos;s tools run.
             {api && ` Add-ons have their own monthly price, billed with this website${billed ? "" : " from when you publish"}.`}
           </>
         }

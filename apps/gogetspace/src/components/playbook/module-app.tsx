@@ -10,8 +10,9 @@ import { PLAYBOOKS } from "@/lib/playbooks/engine"
 import { MODULE_ICON } from "./recommended-tools"
 
 /**
- * The app behind a module's Manage button. Each module runs in its own environment; in the prototype, Enquiries
- * opens the real inbox and the others show what their app will hold.
+ * The first stand-in for a module's own app, at /sites/[id]/apps/[module]. Manage now opens Ariyes Apps instead
+ * (apps/ariyes); this page is no longer linked and stays only as a reference for the Enquiries inbox until Ariyes'
+ * Inbox screen is designed.
  */
 export function ModuleApp({ siteId, module }: { siteId: string; module: string }) {
   const site = useSite(siteId)

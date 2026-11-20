@@ -66,7 +66,6 @@ export const DENTIST: Playbook = {
       price: 12,
       benefit: { G1: "Because you want more patients booking online", G2: "So patients can book a consultation slot", G3: "For same-day slots", G4: "So patients can book their next check-up" },
       included: ["Online booking with instant confirmation", "Reminders 24 hours and 2 hours before", "Same-day slots and a phone fallback"],
-      needsAccount: { label: "WhatsApp", testMode: "Reminders go by email until you connect WhatsApp", connect: "Connect WhatsApp" },
       fallback: "Call or message us",
       pages: ["book"],
     },

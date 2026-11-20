@@ -1,5 +1,4 @@
-import { notFound } from "next/navigation"
-import { getMe, listProjects } from "@gogetspace/modules/mock"
+import { getMe, getProject, listProjects } from "@gogetspace/modules/mock"
 import { TopBar } from "@/components/top-bar"
 
 export async function generateStaticParams() {
@@ -8,9 +7,9 @@ export async function generateStaticParams() {
 
 export default async function ProjectLayout({ children, params }: LayoutProps<"/[project]">) {
   const { project: id } = await params
-  const [projects, me] = await Promise.all([listProjects(), getMe()])
-  const project = projects.find((p) => p.id === id)
-  if (!project) notFound()
+  const [all, me, project] = await Promise.all([listProjects(), getMe(), getProject(id)])
+  // a site published in this session isn't listed yet: show it in the switcher too
+  const projects = all.some((p) => p.id === project.id) ? all : [project, ...all]
   return (
     <div className="flex min-h-svh flex-col bg-canvas">
       <TopBar project={project} projects={projects} me={me} />

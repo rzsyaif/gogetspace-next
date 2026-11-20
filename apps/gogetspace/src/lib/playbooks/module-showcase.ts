@@ -35,7 +35,7 @@ export const SHOWCASE: Record<string, Showcase> = {
     kind: "booking",
     about: "Patients book a check-up or treatment from any page, see real free times, and get a confirmation straight away. Reminders go out before the visit, so fewer people forget.",
     features: ["Choose which treatments can be booked, and how long each takes", "Set opening hours, breaks and holidays", "Move or cancel visits — patients are told automatically", "Same-day slots for urgent toothache, with a phone fallback"],
-    manage: "the Appointments app — your calendar, booking types and reminder messages",
+    manage: "Ariyes › Appointments — your calendar, booking types and reminder messages",
     labels: {
       site: "Book a visit",
       siteNote: "Check-up and clean · 45 min",
@@ -54,7 +54,7 @@ export const SHOWCASE: Record<string, Showcase> = {
     kind: "reviews",
     about: "Your real Google reviews appear on your site, and patients are asked for a review the day after their visit. Only real reviews are shown — never written for you.",
     features: ["Pick which pages show reviews", "Turn the review request on or off", "Skip patients who raised a complaint"],
-    manage: "the Reviews app — requests sent, new reviews and where they show",
+    manage: "Ariyes › Reviews — requests sent, new reviews and where they show",
     labels: {
       site: "4.9 from 212 Google reviews",
       siteNote: "Real reviews from real patients",
@@ -72,7 +72,7 @@ export const SHOWCASE: Record<string, Showcase> = {
     kind: "form",
     about: "People thinking about braces, implants or veneers ask for a consultation or estimate. You see every request in one list and follow up before they go elsewhere.",
     features: ["Choose which treatments offer an estimate", "Track each request from New to Accepted", "Automatic follow-ups after 3 and 10 days"],
-    manage: "the Estimates app — requests, statuses and follow-ups",
+    manage: "Ariyes › Estimates — requests, statuses and follow-ups",
     labels: {
       site: "Get an estimate",
       siteNote: "We reply within one working day",
@@ -90,7 +90,7 @@ export const SHOWCASE: Record<string, Showcase> = {
     kind: "contacts",
     about: "Every patient and enquiry in one list, with their last visit. Patients due a check-up get a friendly reminder, and anyone away for a year gets a gentle invitation back.",
     features: ["See who's due a check-up", "Edit the recall and invitation messages", "Notes on each patient — no medical details"],
-    manage: "the Patients app — your patient list, recalls and messages",
+    manage: "Ariyes › CRM — your patient list, recalls and messages",
     labels: {
       site: "Your check-up is due",
       siteNote: "A WhatsApp message from the clinic",
@@ -108,7 +108,7 @@ export const SHOWCASE: Record<string, Showcase> = {
     kind: "payments",
     about: "Take deposits when patients book or accept an estimate, so fewer appointments are missed. Receipts are sent automatically and money goes to your own account.",
     features: ["Choose which bookings need a deposit, and how much", "Refund in one click", "Payouts to your bank account"],
-    manage: "the Payments app — payments, refunds and payouts",
+    manage: "Ariyes › Payments — payments, refunds and payouts",
     labels: {
       site: "Pay your deposit",
       siteNote: "Braces consultation · Wed 2:30",
@@ -126,7 +126,7 @@ export const SHOWCASE: Record<string, Showcase> = {
     kind: "gallery",
     about: "Show before-and-after photos of your work, each with a “results vary” note. Only photos you confirm you have written consent for are published.",
     features: ["Upload photo pairs and pick a treatment for each", "Confirm consent per photo", "Hide any photo at any time"],
-    manage: "the Gallery app — photos, consent and captions",
+    manage: "Ariyes — photos, consent and captions",
     labels: {
       site: "Before and after",
       siteNote: "Results vary from person to person",
@@ -144,7 +144,7 @@ export const SHOWCASE: Record<string, Showcase> = {
     kind: "page",
     about: "A page for toothache and emergencies: call and WhatsApp come first on phones, with an urgent-care notice. Same-day slots show up when Appointments is added.",
     features: ["Set the emergency number and hours", "Add after-hours advice", "Show same-day slots"],
-    manage: "the Emergency page settings — number, hours and notice",
+    manage: "Ariyes — number, hours and notice",
     labels: {
       site: "Toothache? Call us now",
       siteNote: "Same-day appointments, every day",
@@ -162,7 +162,7 @@ export const SHOWCASE: Record<string, Showcase> = {
     kind: "locations",
     about: "A page for each branch and dentist. Patients pick where and who they want to see, and reminders come from the right branch.",
     features: ["Add branches with their own hours", "Add dentists and where they work", "Route bookings to the right branch"],
-    manage: "the Branches app — branches, dentists and hours",
+    manage: "Ariyes › Branches — branches, dentists and hours",
     labels: {
       site: "Choose a branch",
       siteNote: "Book with the dentist you prefer",
@@ -179,7 +179,7 @@ export const SHOWCASE: Record<string, Showcase> = {
     kind: "form",
     about: "List the insurers and company panels you accept, so patients know before they call. Coverage questions go straight to your inbox.",
     features: ["Keep the list of insurers and panels up to date", "Answer coverage questions in one place"],
-    manage: "the Insurance app — insurers, panels and questions",
+    manage: "Ariyes — insurers, panels and questions",
     labels: {
       site: "Insurance and panels we accept",
       siteNote: "Not sure? Ask us before your visit",
@@ -199,7 +199,7 @@ export const SHOWCASE: Record<string, Showcase> = {
     kind: "booking",
     about: "Clients request a consultation from any page — phone, video or in person. You confirm each request after a quick conflict check, and reminders go out before the meeting.",
     features: ["Choose meeting types, length and fees", "Confirm or decline each request", "Video links created automatically", "Reminders 24 hours and 2 hours before"],
-    manage: "the Appointments app — consultation requests, your calendar and reminders",
+    manage: "Ariyes › Appointments — consultation requests, your calendar and reminders",
     labels: {
       site: "Request a consultation",
       siteNote: "Initial consultation · 45 min",
@@ -217,7 +217,7 @@ export const SHOWCASE: Record<string, Showcase> = {
     kind: "form",
     about: "A short, confidential enquiry form — no case details. Enquiries that name another party are flagged for a conflict check, and everyone gets an auto-reply with your response time.",
     features: ["See each enquiry's area of law and urgency", "Conflict-check flag when another party is named", "Edit the auto-reply"],
-    manage: "the Case enquiries app — enquiries, urgency and the auto-reply",
+    manage: "Ariyes › Inbox — enquiries, urgency and the auto-reply",
     labels: {
       site: "Tell us about your matter",
       siteNote: "Please don't include confidential details",
@@ -235,7 +235,7 @@ export const SHOWCASE: Record<string, Showcase> = {
     kind: "contacts",
     about: "Every client and enquiry in one list, with their matter type and when you last spoke — never case details. Reminders tell you who to follow up.",
     features: ["See who's waiting for a reply", "Follow-up reminders for you", "Matter type and last contact for each client"],
-    manage: "the Clients app — your client list and follow-ups",
+    manage: "Ariyes › CRM — your client list and follow-ups",
     labels: {
       site: "We'll be in touch",
       siteNote: "A reply from the firm",
@@ -253,7 +253,7 @@ export const SHOWCASE: Record<string, Showcase> = {
     kind: "form",
     about: "Businesses describe the work they need and get a fee proposal with scope, fee and timeline. You track each one from New to Accepted, with follow-ups if they go quiet.",
     features: ["Track each request from New to Accepted", "Follow-ups after 3 and 10 days", "Proposal validity dates"],
-    manage: "the Fee proposals app — requests, proposals and follow-ups",
+    manage: "Ariyes › Estimates — requests, proposals and follow-ups",
     labels: {
       site: "Request a fee proposal",
       siteNote: "Scope, fee and timeline within two working days",
@@ -271,7 +271,7 @@ export const SHOWCASE: Record<string, Showcase> = {
     kind: "payments",
     about: "Clients pay a consultation fee when they book, or a deposit when they accept a fee proposal. It's for your fees only — client money and retainers stay under your trust account rules.",
     features: ["Set consultation fees and deposits", "Receipts sent automatically", "Payouts to your office account"],
-    manage: "the Payments app — payments, receipts and payouts",
+    manage: "Ariyes › Payments — payments, receipts and payouts",
     labels: {
       site: "Pay the consultation fee",
       siteNote: "Initial consultation · Tue 10:00",
@@ -289,7 +289,7 @@ export const SHOWCASE: Record<string, Showcase> = {
     kind: "page",
     about: "An urgent help page and a banner on every page: call and WhatsApp first on phones, a short call-back form, and a safety notice.",
     features: ["Set the urgent number and hours", "Turn the banner on or off", "Get urgent call-back requests on WhatsApp"],
-    manage: "the Urgent line settings — number, hours and call-backs",
+    manage: "Ariyes — number, hours and call-backs",
     labels: {
       site: "Urgent matter? Call us now",
       siteNote: "A lawyer answers 24 hours a day",
@@ -307,7 +307,7 @@ export const SHOWCASE: Record<string, Showcase> = {
     kind: "contacts",
     about: "Reminds you to update each open matter every two weeks, with a ready status message that never carries case details.",
     features: ["Choose how often you're reminded", "Edit the status message", "Mark matters closed"],
-    manage: "the Client updates app — open matters and reminders",
+    manage: "Ariyes › CRM — open matters and reminders",
     labels: {
       site: "We have an update for you",
       siteNote: "A message from the firm",
@@ -325,7 +325,7 @@ export const SHOWCASE: Record<string, Showcase> = {
     kind: "articles",
     about: "Helpful articles in plain words, each with a “not legal advice” note. Every draft waits for your review before it's published.",
     features: ["Approve every article before it goes live", "Suggested topics from your practice areas", "Link articles from practice-area pages"],
-    manage: "the Articles app — drafts, reviews and published articles",
+    manage: "Ariyes — drafts, reviews and published articles",
     labels: {
       site: "Legal information, in plain words",
       siteNote: "General information, not legal advice",
@@ -343,7 +343,7 @@ export const SHOWCASE: Record<string, Showcase> = {
     kind: "reviews",
     about: "Your real Google reviews on your site, and a review request after a matter closes — only where your rules allow it, and never for clients who raised a complaint.",
     features: ["Pick which pages show reviews", "Turn the review request on or off", "Skip clients who raised a complaint"],
-    manage: "the Reviews app — requests, new reviews and where they show",
+    manage: "Ariyes › Reviews — requests, new reviews and where they show",
     labels: {
       site: "4.9 from 64 Google reviews",
       siteNote: "Real reviews, with consent",
@@ -360,7 +360,7 @@ export const SHOWCASE: Record<string, Showcase> = {
     kind: "locations",
     about: "A profile for each lawyer and a page for each office. Clients book with a specific lawyer, and requests go to whoever handles that area of law.",
     features: ["Add lawyers, their areas and registration numbers", "Add offices with their own hours", "Route requests by area of law"],
-    manage: "the Lawyers and offices app — profiles, offices and routing",
+    manage: "Ariyes — profiles, offices and routing",
     labels: {
       site: "Book with a lawyer",
       siteNote: "Choose who you'd like to speak to",
@@ -382,7 +382,7 @@ export function showcaseOf(id: string, name: string, included: string[]): Showca
       kind: "page",
       about: included.join(". ") + ".",
       features: included,
-      manage: `the ${name} app`,
+      manage: "Ariyes",
       labels: { site: name, siteNote: "", items: included.slice(0, 2), action: "Open", app: name, rows: included.map((x) => [x, "", "On"] as [string, string, string]) },
     }
   )
