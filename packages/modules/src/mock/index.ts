@@ -4,6 +4,7 @@
  */
 import type { Member, Project } from "../project"
 import type { HomeLayout, Peeks } from "../peeks"
+import { HOURS_PRESETS, fromMinutes, toMinutes, type AppointmentSettings, type Booking, type WeekHours } from "../appointments"
 
 const PROJECTS: Project[] = [
   {
@@ -140,4 +141,85 @@ export async function getPeeks(projectId: string): Promise<Peeks> {
 export async function getHomeLayout(projectId: string): Promise<HomeLayout> {
   void projectId
   return { sizes: {} }
+}
+
+/* ---------- Appointments ---------- */
+
+const DENTAL_TYPES = [
+  { id: "checkup", name: "Check-up", minutes: 30, price: 80 },
+  { id: "scaling", name: "Scaling and polishing", minutes: 45, price: 150 },
+  { id: "filling", name: "Filling", minutes: 60 },
+  { id: "braces", name: "Braces review", minutes: 30 },
+  { id: "whitening", name: "Whitening consult", minutes: 30, price: 0 },
+]
+
+/**
+ * A project's Appointments setup. `hoursFromLink` is the opening hours the GoGetSpace chat collected, passed in the
+ * Manage link for a site this mock doesn't know (a real app has them saved with the project already).
+ */
+export async function getAppointmentSettings(projectId: string, hoursFromLink?: WeekHours | null): Promise<AppointmentSettings> {
+  const project = await getProject(projectId)
+  const known = projectId === "rahma-dental"
+  return {
+    hours: known ? HOURS_PRESETS[1].week : (hoursFromLink ?? null),
+    types: DENTAL_TYPES,
+    reminders: { email: true, sms: false, hoursBefore: 24, confirmation: true },
+    slotMinutes: 15,
+    noticeHours: 2,
+    daysAhead: 60,
+    bookingUrl: `https://${project.domain}/book`,
+  }
+}
+
+const NAMES = ["Nur Aina", "Daniel Tan", "Siti Hajar", "Arjun Pillai", "Mei Ling Ong", "Farah Iskandar", "Kumar Raj", "Lim Wei Jie", "Nadia Hassan", "Hafiz Musa", "Grace Lee", "Aiman Zulkifli"]
+const TODAY_RAHMA = [
+  { start: "10:30", name: "Nur Aina", type: "Scaling and polishing" },
+  { start: "11:15", name: "Daniel Tan", type: "Check-up" },
+  { start: "14:00", name: "Siti Hajar", type: "Braces review" },
+  { start: "15:30", name: "Arjun Pillai", type: "Filling" },
+  { start: "16:45", name: "Mei Ling Ong", type: "Whitening consult" },
+]
+
+/** YYYY-MM-DD of a local date */
+export const isoDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+
+/**
+ * The bookings in the week starting `monday` (local dates). Made up from a seed so every week looks lived-in; today
+ * matches the home screen's Appointments widget. Replace with a fetch of that week's bookings.
+ */
+export function weekBookings(projectId: string, monday: Date, hours: WeekHours | null, today = new Date()): Booking[] {
+  if (projectId !== "rahma-dental" || !hours) return []
+  const out: Booking[] = []
+  const todayIso = isoDate(today)
+  for (let i = 0; i < 7; i++) {
+    const day = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i)
+    const date = isoDate(day)
+    if (date === todayIso && hours[i].length) {
+      TODAY_RAHMA.forEach((b, k) => {
+        const t = DENTAL_TYPES.find((x) => x.name === b.type)!
+        out.push({ id: `${date}-${k}`, date, start: b.start, minutes: t.minutes, name: b.name, type: t.name, status: k === 4 ? "pending" : "confirmed" })
+      })
+      continue
+    }
+    // mulberry32, seeded by the date
+    let seed = Number(date.replace(/-/g, ""))
+    const rand = () => {
+      seed = (seed + 0x6d2b79f5) | 0
+      let r = Math.imul(seed ^ (seed >>> 15), 1 | seed)
+      r = (r + Math.imul(r ^ (r >>> 7), 61 | r)) ^ r
+      return ((r ^ (r >>> 14)) >>> 0) / 4294967296
+    }
+    for (const shift of hours[i]) {
+      let t = toMinutes(shift.start)
+      const end = toMinutes(shift.end)
+      while (t < end) {
+        const type = DENTAL_TYPES[Math.floor(rand() * DENTAL_TYPES.length)]
+        if (t + type.minutes <= end && rand() < 0.5) {
+          out.push({ id: `${date}-${t}`, date, start: fromMinutes(t), minutes: type.minutes, name: NAMES[Math.floor(rand() * NAMES.length)], type: type.name, status: rand() < 0.15 ? "pending" : "confirmed" })
+          t += type.minutes
+        } else t += 30
+      }
+    }
+  }
+  return out
 }

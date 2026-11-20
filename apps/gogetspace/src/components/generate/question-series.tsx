@@ -18,7 +18,7 @@ const DECIDE = "decide"
 
 /* ---------------- shell (Figma "Question popover", 125:982) ---------------- */
 
-function Shell({
+export function Shell({
   title,
   help,
   description,
@@ -59,7 +59,7 @@ function Shell({
           </p>
         )}
       </div>
-      <fieldset className="flex flex-col gap-2">
+      <fieldset className="flex min-w-0 flex-col gap-2">
         <legend className="mb-2 type-body-md text-fg-primary">{question}</legend>
         {children}
       </fieldset>
@@ -69,7 +69,7 @@ function Shell({
 }
 
 /** the bordered list of answers; the chosen row is tinted and can show more under it */
-function Options({ children, multi }: { children: ReactNode; multi?: boolean }) {
+export function Options({ children, multi }: { children: ReactNode; multi?: boolean }) {
   return (
     <div role={multi ? "group" : "radiogroup"} className="flex flex-col divide-y divide-line-default overflow-hidden rounded-[16px] border border-line-default">
       {children}
@@ -77,7 +77,7 @@ function Options({ children, multi }: { children: ReactNode; multi?: boolean }) 
   )
 }
 
-function Row({
+export function Row({
   checked,
   multi,
   label,

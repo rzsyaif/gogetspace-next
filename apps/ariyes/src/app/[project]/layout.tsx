@@ -13,7 +13,7 @@ export default async function ProjectLayout({ children, params }: LayoutProps<"/
   return (
     <div className="flex min-h-svh flex-col bg-canvas">
       <TopBar project={project} projects={projects} me={me} />
-      <main className="mx-auto flex w-full max-w-[1280px] flex-1 flex-col px-4 pt-10 pb-20 sm:px-6 sm:pt-14">{children}</main>
+      {children}
     </div>
   )
 }

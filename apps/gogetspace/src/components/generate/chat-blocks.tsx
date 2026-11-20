@@ -35,6 +35,7 @@ import { ActivationCard, GuardCard, PatchCard, PlanCard } from "./playbook-block
 import { AnswersSummary, GateCard, QuestionCard } from "./question-series"
 import { NextSteps } from "./next-steps"
 import { ImplementCard } from "@/components/playbook/implement-card"
+import { HoursCard } from "@/components/playbook/hours-card"
 
 export const ARTIFACTS: { key: ArtifactKey; title: string; Icon: typeof FileText }[] = [
   { key: "brief", title: "Project Brief", Icon: FileText },
@@ -113,6 +114,8 @@ function Block({ m, compact }: { m: Msg; compact?: boolean }) {
       return <ImplementCard m={m} />
     case "pb-activate":
       return <ActivationCard compact={compact} />
+    case "pb-hours":
+      return <HoursCard m={m} compact={compact} />
   }
 }
 
