@@ -173,3 +173,10 @@ export function decodeTypes(code: string): BookingType[] | null {
   }
   return out.length ? out : null
 }
+
+/** a booking's reference for people, stable for its id: "APT-48213" (a real system stores its own) */
+export function bookingRef(id: string) {
+  let h = 0
+  for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0
+  return `APT-${String(10000 + (h % 90000))}`
+}

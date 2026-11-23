@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { ArrowLeft, CalendarClock, CalendarSync, Check, ChevronLeft, ChevronRight, ListChecks } from "lucide-react"
-import { Badge, Button, Dialog, DialogContent, IconButton, RadioCard, Select, Toast } from "@gogetspace/baseplate"
-import { HOURS_PRESETS, WEEKDAYS_SHORT, describeWeek, formatTime, fromMinutes, toMinutes, type AppointmentSettings, type Booking, type BookingType, type Project, type WeekHours } from "@gogetspace/modules"
+import { Alert, Button, Dialog, DialogContent, IconButton, RadioCard, Select, Toast } from "@gogetspace/baseplate"
+import { HOURS_PRESETS, WEEKDAYS_SHORT, bookingRef, describeWeek, formatLength, formatTime, fromMinutes, toMinutes, type AppointmentSettings, type Booking, type BookingType, type Project, type WeekHours } from "@gogetspace/modules"
 import { isoDate, weekBookings } from "@gogetspace/modules/mock"
 import { cn } from "@gogetspace/baseplate/cn"
 import { AppShell } from "../app-shell"
@@ -183,19 +183,22 @@ interface BookingActions {
 function BookingBody({ b, freeDays, freeSlots, onClose, onConfirm, onCancel, onMove }: BookingActions & { b: Booking }) {
   const [moving, setMoving] = useState(false)
   if (moving) return <Reschedule booking={b} days={freeDays(b)} slots={(d) => freeSlots(b, d)} onBack={() => setMoving(false)} onMove={(d, s) => onMove(b, d, s)} />
+  const date = fromIso(b.date)
+  const first = b.name.split(" ")[0]
+  const pending = b.status === "pending"
   return (
     <DialogContent
       title={b.name}
-      description={`${b.type} · ${fmt(fromIso(b.date), { weekday: "long", day: "numeric", month: "long" })}, ${formatTime(b.start)}–${formatTime(endOf(b))}`}
+      description={<span className="type-body-sm text-fg-tertiary tabular-nums">Booking {bookingRef(b.id)}</span>}
       footer={
         <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:items-center [&>*]:max-sm:w-full">
-          <Button variant="ghost" onClick={() => onCancel(b)} className="sm:mr-auto">
+          <Button variant="ghost" onClick={() => onCancel(b)} className="text-status-error-text sm:mr-auto">
             Cancel booking
           </Button>
           <Button variant="secondary" leadingIcon={<CalendarSync />} onClick={() => setMoving(true)}>
             Reschedule
           </Button>
-          {b.status === "pending" ? (
+          {pending ? (
             <Button leadingIcon={<Check />} onClick={() => onConfirm(b)}>
               Confirm
             </Button>
@@ -205,12 +208,28 @@ function BookingBody({ b, freeDays, freeSlots, onClose, onConfirm, onCancel, onM
         </div>
       }
     >
-      <div className="flex flex-col items-start gap-3">
-        {b.status === "pending" ? <Badge tone="warning">Waiting for you to confirm</Badge> : <Badge tone="success">Confirmed</Badge>}
-        <p className="type-body-md text-fg-secondary">
-          They get a confirmation email, and a reminder before the appointment. Rescheduling or cancelling lets them know. You can also drag a booking to a new time in the calendar.
-        </p>
-      </div>
+      <dl className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-[auto_auto_1fr]">
+        {(
+          [
+            ["Date", fmt(date, { weekday: "short", day: "numeric", month: "short", year: "numeric" }), undefined],
+            ["Time", `${formatTime(b.start)} – ${formatTime(endOf(b))}`, formatLength(b.minutes)],
+            ["Activity", b.type, undefined],
+          ] as const
+        ).map(([label, value, sub]) => (
+          <div key={label} className={cn("flex min-w-0 flex-col gap-1", label === "Activity" && "max-sm:col-span-2")}>
+            <dt className="type-caption text-fg-tertiary">{label}</dt>
+            <dd className="type-label-lg text-fg-primary">
+              {value}
+              {sub && <span className="block type-body-sm font-normal text-fg-secondary">{sub}</span>}
+            </dd>
+          </div>
+        ))}
+      </dl>
+      <Alert size="sm" tone={pending ? "warning" : "success"} title={pending ? "Waiting for you to confirm" : "Confirmed"}>
+        {pending
+          ? `${first} booked online. They get a confirmation email once you confirm, then a reminder before the appointment.`
+          : `${first} has a confirmation email and gets a reminder before the appointment. Rescheduling or cancelling lets them know.`}
+      </Alert>
     </DialogContent>
   )
 }
