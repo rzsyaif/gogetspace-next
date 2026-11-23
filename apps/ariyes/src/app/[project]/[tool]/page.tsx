@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { StudsMedia } from "@gogetspace/baseplate"
-import { TOOLS, decodeWeek, type ToolId } from "@gogetspace/modules"
+import { TOOLS, decodeTypes, decodeWeek, type ToolId } from "@gogetspace/modules"
 import { getAppointmentSettings, getProject, listProjects } from "@gogetspace/modules/mock"
 import { AppShell } from "@/components/app-shell"
 import { AppointmentsApp } from "@/components/appointments/appointments-app"
@@ -29,10 +29,11 @@ export default async function ToolPage({ params, searchParams }: PageProps<"/[pr
   const project = await getProject(projectId)
 
   if (tool.id === "appointments") {
-    // hours answered in the GoGetSpace chat arrive in the link (?hours=…); a real app reads them from the account
-    const raw = (await searchParams).hours
-    const hours = typeof raw === "string" ? decodeWeek(raw) : null
-    const settings = await getAppointmentSettings(project.id, hours ?? undefined)
+    // availability and booking types answered in the GoGetSpace chat arrive in the link (?hours=…&types=…); a real app reads them from the account
+    const q = await searchParams
+    const hours = typeof q.hours === "string" ? decodeWeek(q.hours) : null
+    const types = typeof q.types === "string" ? decodeTypes(q.types) : null
+    const settings = await getAppointmentSettings(project.id, hours, types)
     return <AppointmentsApp project={project} initial={settings} />
   }
 

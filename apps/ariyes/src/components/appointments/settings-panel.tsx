@@ -1,13 +1,11 @@
 "use client"
 
 import { useState, type ReactNode } from "react"
-import { Plus, Trash2 } from "lucide-react"
 import { CopyField, Select, Switch } from "@gogetspace/baseplate"
-import { describeWeek, type AppointmentSettings, type BookingType } from "@gogetspace/modules"
+import { describeWeek, type AppointmentSettings } from "@gogetspace/modules"
+import { TypesEditor } from "./types-editor"
 import { WeekEditor } from "./week-editor"
 
-const length = (m: number) => (m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ""}`)
-const DURATIONS = [15, 30, 45, 60, 90, 120].map((m) => ({ value: String(m), label: length(m) }))
 const BEFORE = [
   { value: "1", label: "1 hour before" },
   { value: "2", label: "2 hours before" },
@@ -53,7 +51,6 @@ function Labeled({ label, children }: { label: string; children: ReactNode }) {
  */
 export function SettingsPanel({ value, onChange }: { value: AppointmentSettings; onChange: (v: AppointmentSettings) => void }) {
   const set = <K extends keyof AppointmentSettings>(k: K, v: AppointmentSettings[K]) => onChange({ ...value, [k]: v })
-  const setType = (id: string, patch: Partial<BookingType>) => set("types", value.types.map((t) => (t.id === id ? { ...t, ...patch } : t)))
   const r = value.reminders
   const [editHours, setEditHours] = useState(false)
 
@@ -79,37 +76,7 @@ export function SettingsPanel({ value, onChange }: { value: AppointmentSettings;
       </Section>
 
       <Section title="What people can book" description="Set from your services. The length decides how much of your availability each booking takes.">
-        <ul className="flex flex-col gap-2">
-          {value.types.map((t) => (
-            <li key={t.id} className="flex items-center gap-2">
-              <label className="sr-only" htmlFor={`type-${t.id}`}>
-                Name
-              </label>
-              <input
-                id={`type-${t.id}`}
-                value={t.name}
-                onChange={(e) => setType(t.id, { name: e.target.value })}
-                className="h-10 min-w-0 flex-1 rounded-md border border-line-strong bg-surface px-3 type-body-md text-fg-primary outline-none focus:border-blue-500"
-              />
-              <Select ariaLabel={`${t.name} length`} value={String(t.minutes)} options={DURATIONS} onValueChange={(v) => setType(t.id, { minutes: Number(v) })} className="h-10 w-[7.5rem] shrink-0 px-3" />
-              <button
-                type="button"
-                aria-label={`Remove ${t.name}`}
-                onClick={() => set("types", value.types.filter((x) => x.id !== t.id))}
-                className="grid size-8 shrink-0 place-items-center rounded-sm text-fg-tertiary hover:bg-subtle hover:text-fg-primary focus-visible:outline-none focus-visible:focus-ring"
-              >
-                <Trash2 aria-hidden className="size-4" />
-              </button>
-            </li>
-          ))}
-        </ul>
-        <button
-          type="button"
-          onClick={() => set("types", [...value.types, { id: `t${Date.now()}`, name: "New appointment", minutes: 30 }])}
-          className="flex w-fit items-center gap-1.5 rounded-sm px-1 py-1 type-label-md text-fg-link hover:bg-subtle focus-visible:outline-none focus-visible:focus-ring"
-        >
-          <Plus aria-hidden className="size-4" /> Add a booking type
-        </button>
+        <TypesEditor value={value.types} onChange={(t) => set("types", t)} />
       </Section>
 
       <Section title="Reminders" description="Sent for you, in your business's name.">

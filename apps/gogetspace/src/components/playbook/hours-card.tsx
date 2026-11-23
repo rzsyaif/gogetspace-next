@@ -71,8 +71,9 @@ function WeekEditor({ value, onChange }: { value: WeekHours; onChange: (w: WeekH
 }
 
 /**
- * Appointments' one setup question in the chat: when bookings can be made. Everything else (booking types, slots,
- * reminders) the agent sets up itself. Skipping is fine: Ariyes asks again when the owner first opens Appointments.
+ * Appointments' first setup question in the chat: when bookings can be made. What people can book comes next
+ * (TypesCard); start times and reminders the agent sets up itself. Skipping is fine: Ariyes asks both when the
+ * owner first opens Appointments.
  */
 export function HoursCard({ m, compact }: { m: Extract<Msg, { type: "pb-hours" }>; compact?: boolean }) {
   const { s, dispatch } = useGen()
@@ -83,7 +84,7 @@ export function HoursCard({ m, compact }: { m: Extract<Msg, { type: "pb-hours" }
   const [custom, setCustom] = useState<WeekHours>(() => current ?? HOURS_PRESETS[0].week)
   const chosen = pick === CUSTOM ? custom : HOURS_PRESETS.find((p) => p.id === pick)?.week
   const valid = !!chosen && chosen.some((d) => d.length) && chosen.every((d) => !overlaps(d))
-  const link = ariyesUrl(editor?.site.id ?? "new-site", m.module, { hours: s.hours })
+  const link = ariyesUrl(editor?.site.id ?? "new-site", m.module, { hours: s.hours, types: s.bookingTypes })
 
   if (m.answer) {
     return (
@@ -113,9 +114,10 @@ export function HoursCard({ m, compact }: { m: Extract<Msg, { type: "pb-hours" }
     <div data-hours-card>
       <Shell
         compact={compact}
+        counter="1 / 2"
         title={`Set up ${name}`}
-        help="This is the only part I can't decide for you. Booking types, slot lengths, the confirmation and the reminder are already set up from your services."
-        description={`${name} is on your site. I've set up the rest from your services. I just need your availability, so people only book when you can see them.`}
+        help="Two things I can't decide for you: when you're available, and what people can book. Start times, the confirmation and the reminder I set up myself."
+        description={`${name} is on your site. Two quick questions and it's ready: when you're available, then what people can book.`}
         question="When can people book an appointment?"
         footer={
           <div className="flex flex-wrap items-center justify-between gap-3">

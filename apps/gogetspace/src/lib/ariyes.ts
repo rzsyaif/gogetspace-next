@@ -1,4 +1,4 @@
-import { encodeWeek, toolForModule, type WeekHours } from "@gogetspace/modules"
+import { encodeTypes, encodeWeek, toolForModule, type BookingType, type WeekHours } from "@gogetspace/modules"
 
 /**
  * Ariyes Apps is where a published website's tools run (appointments, payments, inbox…). Its project for a site
@@ -10,10 +10,13 @@ export const ARIYES_URL =
 
 /**
  * Where Manage opens: the module's tool in the site's Ariyes project, or the project home when it has no tool there.
- * `hours` carries the booking hours the chat collected (a real backend saves them with the project instead).
+ * `hours` and `types` carry the availability and booking types the chat collected (a real backend saves them with the project instead).
  */
-export function ariyesUrl(siteId: string, module?: string, opts: { hours?: WeekHours | "skipped" } = {}) {
+export function ariyesUrl(siteId: string, module?: string, opts: { hours?: WeekHours | "skipped"; types?: BookingType[] } = {}) {
   const tool = module ? toolForModule(module) : undefined
-  const hours = tool?.id === "appointments" && opts.hours && opts.hours !== "skipped" ? `?hours=${encodeWeek(opts.hours)}` : ""
-  return `${ARIYES_URL}/${siteId}${tool ? `/${tool.id}` : ""}${hours}`
+  const q = new URLSearchParams()
+  if (tool?.id === "appointments" && opts.hours && opts.hours !== "skipped") q.set("hours", encodeWeek(opts.hours))
+  if (tool?.id === "appointments" && opts.types?.length) q.set("types", encodeTypes(opts.types))
+  const query = q.size ? `?${q}` : ""
+  return `${ARIYES_URL}/${siteId}${tool ? `/${tool.id}` : ""}${query}`
 }

@@ -4,7 +4,7 @@
  */
 import type { Member, Project } from "../project"
 import type { HomeLayout, Peeks } from "../peeks"
-import { HOURS_PRESETS, fromMinutes, toMinutes, type AppointmentSettings, type Booking, type WeekHours } from "../appointments"
+import { HOURS_PRESETS, fromMinutes, toMinutes, type AppointmentSettings, type Booking, type BookingType, type WeekHours } from "../appointments"
 
 const PROJECTS: Project[] = [
   {
@@ -145,24 +145,42 @@ export async function getHomeLayout(projectId: string): Promise<HomeLayout> {
 
 /* ---------- Appointments ---------- */
 
-const DENTAL_TYPES = [
-  { id: "checkup", name: "Check-up", minutes: 30, price: 80 },
-  { id: "scaling", name: "Scaling and polishing", minutes: 45, price: 150 },
-  { id: "filling", name: "Filling", minutes: 60 },
-  { id: "braces", name: "Braces review", minutes: 30 },
-  { id: "whitening", name: "Whitening consult", minutes: 30, price: 0 },
-]
+/**
+ * The booking types the agent suggests from a site's services, by kind of business. In the real product the agent
+ * derives them from the services it wrote for the site.
+ */
+export const SUGGESTED_TYPES: Record<"dentist" | "lawyer" | "general", BookingType[]> = {
+  dentist: [
+    { id: "checkup", name: "Check-up", minutes: 30, price: 80 },
+    { id: "scaling", name: "Scaling and polishing", minutes: 45, price: 150 },
+    { id: "filling", name: "Filling", minutes: 60 },
+    { id: "braces", name: "Braces review", minutes: 30 },
+    { id: "whitening", name: "Whitening consult", minutes: 30, price: 0 },
+  ],
+  lawyer: [
+    { id: "initial", name: "First consultation", minutes: 60 },
+    { id: "followup", name: "Follow-up meeting", minutes: 30 },
+    { id: "review", name: "Document review", minutes: 45 },
+    { id: "call", name: "Phone call", minutes: 15 },
+  ],
+  general: [
+    { id: "meeting", name: "Meeting", minutes: 30 },
+    { id: "long", name: "Long meeting", minutes: 60 },
+  ],
+}
+
+const DENTAL_TYPES = SUGGESTED_TYPES.dentist
 
 /**
- * A project's Appointments setup. `hoursFromLink` is the opening hours the GoGetSpace chat collected, passed in the
- * Manage link for a site this mock doesn't know (a real app has them saved with the project already).
+ * A project's Appointments setup. `hoursFromLink` / `typesFromLink` are the availability and booking types the
+ * GoGetSpace chat collected, passed in the Manage link for a site this mock doesn't know (a real app has them saved with the project already).
  */
-export async function getAppointmentSettings(projectId: string, hoursFromLink?: WeekHours | null): Promise<AppointmentSettings> {
+export async function getAppointmentSettings(projectId: string, hoursFromLink?: WeekHours | null, typesFromLink?: BookingType[] | null): Promise<AppointmentSettings> {
   const project = await getProject(projectId)
   const known = projectId === "rahma-dental"
   return {
     hours: known ? HOURS_PRESETS[1].week : (hoursFromLink ?? null),
-    types: DENTAL_TYPES,
+    types: known ? DENTAL_TYPES : (typesFromLink ?? SUGGESTED_TYPES.dentist),
     reminders: { email: true, sms: false, hoursBefore: 24, confirmation: true },
     slotMinutes: 15,
     noticeHours: 2,

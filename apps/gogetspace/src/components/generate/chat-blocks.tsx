@@ -36,6 +36,7 @@ import { AnswersSummary, GateCard, QuestionCard } from "./question-series"
 import { NextSteps } from "./next-steps"
 import { ImplementCard } from "@/components/playbook/implement-card"
 import { HoursCard } from "@/components/playbook/hours-card"
+import { TypesCard } from "@/components/playbook/types-card"
 
 export const ARTIFACTS: { key: ArtifactKey; title: string; Icon: typeof FileText }[] = [
   { key: "brief", title: "Project Brief", Icon: FileText },
@@ -116,6 +117,8 @@ function Block({ m, compact }: { m: Msg; compact?: boolean }) {
       return <ActivationCard compact={compact} />
     case "pb-hours":
       return <HoursCard m={m} compact={compact} />
+    case "pb-types":
+      return <TypesCard m={m} compact={compact} />
   }
 }
 

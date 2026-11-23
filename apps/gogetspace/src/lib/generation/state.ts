@@ -3,7 +3,7 @@
  * prompt is read; the brief is confirmed later from the to-do list and the questions come after the first build.
  * Pure reducer; timing lives in the provider's runner. Edge cases are driven by `scenario`.
  */
-import { describeWeek, type WeekHours } from "@gogetspace/modules"
+import { describeTypes, describeWeek, type BookingType, type WeekHours } from "@gogetspace/modules"
 import { read as readPrompt } from "@/lib/prompt-builder"
 import { DEFAULT_BRIEF, DEFAULT_QUESTIONS, countAssumptions, type BriefSection, type OpenQuestion } from "./brief"
 import { SITEMAP, flatten, unlockedIds, type PageNode, type Plan } from "@/lib/bakti/sitemap"
@@ -124,6 +124,8 @@ export type Msg =
   | { id: string; type: "next-steps" }
   /** Appointments was added: the one thing the agent can't set up itself, the hours bookings can be made */
   | { id: string; type: "pb-hours"; module: string; answer?: "set" | "skipped" }
+  /** then what people can book: the agent's list from the services, for the owner to check */
+  | { id: string; type: "pb-types"; module: string; answer?: "set" | "skipped" }
 
 export interface FeedbackAnswer {
   rating: "good" | "fine" | "bad"
@@ -176,6 +178,8 @@ export interface GenState {
   sharpenOpen?: boolean
   /** when bookings can be made (Appointments), from the chat; "skipped" means Ariyes asks on first visit */
   hours?: WeekHours | "skipped"
+  /** what people can book, as the owner left it in the chat (absent: the agent's suggestions) */
+  bookingTypes?: BookingType[]
   seq: number
 }
 
@@ -344,6 +348,9 @@ export type Action =
   | { type: "setHours"; id: string; hours: WeekHours }
   | { type: "skipHours"; id: string }
   | { type: "reopenHours"; id: string }
+  | { type: "setTypes"; id: string; types: BookingType[] }
+  | { type: "skipTypes"; id: string }
+  | { type: "reopenTypes"; id: string }
   | { type: "confirmBrief" }
   | { type: "showQuestions" }
 
@@ -700,6 +707,15 @@ export function reducer(s: GenState, a: Action): GenState {
       )
     case "reopenHours":
       return { ...s, msgs: s.msgs.map((m) => (m.id === a.id && m.type === "pb-hours" ? { ...m, answer: undefined } : m)) }
+    case "setTypes":
+      return setTypes(s, a.id, a.types)
+    case "skipTypes":
+      return push(
+        { ...s, msgs: s.msgs.map((m) => (m.id === a.id && m.type === "pb-types" ? { ...m, answer: "skipped" as const } : m)) },
+        { type: "agent", text: `I'll keep my list for now. ${SETUP_SUMMARY} You can change any of it in Ariyes › Appointments.` },
+      )
+    case "reopenTypes":
+      return { ...s, msgs: s.msgs.map((m) => (m.id === a.id && m.type === "pb-types" ? { ...m, answer: undefined } : m)) }
     case "pbActivate":
       if (!s.pb || s.pb.activated.includes(a.module)) return s
       return push({ ...s, pb: { ...s.pb, activated: [...s.pb.activated, a.module] } }, { type: "agent", text: `Connected — ${moduleById(a.module).name} is out of test mode and live.` })
@@ -712,14 +728,28 @@ export function reducer(s: GenState, a: Action): GenState {
 export const BOOKING_MODULES = ["appointments", "consultations"]
 const needsHours = (s: GenState, module: string) => BOOKING_MODULES.includes(module) && s.hours === undefined && !s.msgs.some((m) => m.type === "pb-hours")
 
-/** the hours are in: everything else about Appointments the agent sets up itself, and says what it did */
+/** the rest of the Appointments setup the agent does on its own */
+const SETUP_SUMMARY =
+  `I've also set 15-minute start times with at least 2 hours' notice, a confirmation email when someone books and a reminder the day before.`
+
+/** availability is in; next, what people can book (asked once; changing availability later doesn't ask again) */
 function setHours(s: GenState, id: string, hours: WeekHours): GenState {
   const msg = s.msgs.find((m) => m.id === id && m.type === "pb-hours")
-  const name = msg?.type === "pb-hours" ? moduleById(msg.module).name : "Appointments"
+  const mod = msg?.type === "pb-hours" ? msg.module : "appointments"
+  const name = moduleById(mod).name
+  const again = s.msgs.some((m) => m.type === "pb-types")
   const n = { ...s, hours, msgs: s.msgs.map((m) => (m.id === id && m.type === "pb-hours" ? { ...m, answer: "set" as const } : m)) }
+  if (again) return push(n, { type: "agent", text: `Updated — ${name} takes bookings ${describeWeek(hours)}.` })
+  return push(n, { type: "agent", text: `Done — ${name} takes bookings ${describeWeek(hours)}. Next, what people can book. I made a list from your services; check the names and how long each one takes.` }, { type: "pb-types", module: mod })
+}
+
+/** the booking types are in: the agent says what else it set up */
+function setTypes(s: GenState, id: string, types: BookingType[]): GenState {
+  const first = s.msgs.some((m) => m.id === id && m.type === "pb-types" && m.answer === undefined && s.bookingTypes === undefined)
+  const n = { ...s, bookingTypes: types, msgs: s.msgs.map((m) => (m.id === id && m.type === "pb-types" ? { ...m, answer: "set" as const } : m)) }
   return push(n, {
     type: "agent",
-    text: `Done — ${name} takes bookings ${describeWeek(hours)}. I also set it up: a booking type for each ${s.pb?.niche === "lawyer" ? "kind of consultation" : "treatment"} with its usual length, 15-minute slots with at least 2 hours' notice, a confirmation email when someone books and a reminder the day before. You can change any of it in Ariyes › ${name}.`,
+    text: first ? `Got it — people can book ${describeTypes(types)}. ${SETUP_SUMMARY} You can change any of it in Ariyes › Appointments.` : `Updated — people can book ${describeTypes(types)}.`,
   })
 }
 
