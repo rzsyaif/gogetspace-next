@@ -308,7 +308,16 @@ export function AppointmentsApp({ project, initial }: { project: Project; initia
     return () => clearTimeout(t)
   }, [toast])
 
-  const panel = <SettingsPanel value={settings} onChange={setSettings} />
+  const panel = (
+    <SettingsPanel
+      value={settings}
+      onSave={(next, message) => {
+        const before = settings
+        setSettings(next)
+        setToast({ message, undo: () => setSettings(before) })
+      }}
+    />
+  )
   const nav = monday && hours && (
     <>
       <Button
