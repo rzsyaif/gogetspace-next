@@ -140,3 +140,36 @@ export interface Booking {
   type: string
   status: "confirmed" | "pending"
 }
+
+/** a booking type's length for people: "30 min", "1 h", "1 h 30 min" */
+export const formatLength = (m: number) => (m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ""}`)
+
+/** the lengths a booking type can have */
+export const TYPE_LENGTHS = [15, 20, 30, 45, 60, 90, 120]
+
+/** "Check-up 30 min, Filling 1 h and 2 more" */
+export function describeTypes(types: BookingType[], max = 3) {
+  const shown = types.slice(0, max).map((t) => `${t.name} ${formatLength(t.minutes)}`)
+  const rest = types.length - shown.length
+  return rest > 0 ? `${shown.join(", ")} and ${rest} more` : shown.join(", ")
+}
+
+/** booking types in a link: "Check-up~30|Filling~60" (names URI-encoded) */
+export const encodeTypes = (types: BookingType[]) => types.map((t) => `${encodeURIComponent(t.name)}~${t.minutes}`).join("|")
+
+export function decodeTypes(code: string): BookingType[] | null {
+  const out: BookingType[] = []
+  for (const [i, part] of code.split("|").entries()) {
+    const [name, min] = part.split("~")
+    const minutes = Number(min)
+    let n = ""
+    try {
+      n = decodeURIComponent(name ?? "").trim()
+    } catch {
+      return null
+    }
+    if (!n || !(minutes > 0 && minutes <= 480)) return null
+    out.push({ id: `t${i}`, name: n.slice(0, 80), minutes })
+  }
+  return out.length ? out : null
+}

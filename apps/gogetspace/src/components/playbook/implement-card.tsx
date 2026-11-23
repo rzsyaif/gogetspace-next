@@ -73,7 +73,7 @@ export function ImplementCard({ m }: { m: Extract<Msg, { type: "pb-implement" }>
               </Button>
             )}
             <Button size="sm" variant="secondary" trailingIcon={<ArrowUpRight />} asChild>
-              <a href={ariyesUrl(editor?.site.id ?? "new-site", mod.id, { hours: s.hours })} target="_blank" rel="noreferrer">
+              <a href={ariyesUrl(editor?.site.id ?? "new-site", mod.id, { hours: s.hours, types: s.bookingTypes })} target="_blank" rel="noreferrer">
                 Manage {mod.name} in Ariyes
               </a>
             </Button>

@@ -1,15 +1,16 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { ArrowLeft, CalendarClock, CalendarSync, Check, ChevronLeft, ChevronRight } from "lucide-react"
+import { ArrowLeft, CalendarClock, CalendarSync, Check, ChevronLeft, ChevronRight, ListChecks } from "lucide-react"
 import { Badge, Button, Dialog, DialogContent, IconButton, RadioCard, Select, Toast } from "@gogetspace/baseplate"
-import { HOURS_PRESETS, WEEKDAYS_SHORT, describeWeek, formatTime, fromMinutes, toMinutes, type AppointmentSettings, type Booking, type Project, type WeekHours } from "@gogetspace/modules"
+import { HOURS_PRESETS, WEEKDAYS_SHORT, describeWeek, formatTime, fromMinutes, toMinutes, type AppointmentSettings, type Booking, type BookingType, type Project, type WeekHours } from "@gogetspace/modules"
 import { isoDate, weekBookings } from "@gogetspace/modules/mock"
 import { cn } from "@gogetspace/baseplate/cn"
 import { AppShell } from "../app-shell"
 import { useMedia, useMounted } from "../use-media"
 import { Legend, WeekCalendar } from "./week-calendar"
 import { SettingsPanel } from "./settings-panel"
+import { TypesEditor, typesValid } from "./types-editor"
 import { WeekEditor, weekValid } from "./week-editor"
 
 const mondayOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 6) % 7))
@@ -29,34 +30,61 @@ function rangeLabel(a: Date, b: Date) {
   return `${fmt(a, { day: "numeric", month: "short" })} – ${fmt(b, { day: "numeric", month: "short", year: "numeric" })}`
 }
 
-/** first visit without availability: the one question the GoGetSpace chat would have asked */
-function AvailabilityOnboarding({ onSave }: { onSave: (w: WeekHours) => void }) {
+/**
+ * First visit without availability (skipped in the GoGetSpace chat): the chat's two setup questions, one at a time.
+ * 1. when people can book, 2. what they can book (prefilled from the site's services).
+ */
+function SetupOnboarding({ types: suggested, onSave }: { types: BookingType[]; onSave: (w: WeekHours, t: BookingType[]) => void }) {
+  const [step, setStep] = useState<1 | 2>(1)
   const [pick, setPick] = useState<string>(HOURS_PRESETS[0].id)
   const [custom, setCustom] = useState<WeekHours>(HOURS_PRESETS[0].week)
+  const [types, setTypes] = useState(suggested)
   const week = pick === "custom" ? custom : HOURS_PRESETS.find((p) => p.id === pick)!.week
   return (
     <div className="h-full overflow-y-auto">
       <div className="mx-auto flex max-w-[560px] flex-col gap-6 px-4 py-10 sm:py-14">
         <div className="flex flex-col gap-3">
           <span aria-hidden className="grid size-12 place-items-center rounded-lg bg-accent-blue-subtle text-fg-link">
-            <CalendarClock className="size-6" strokeWidth={1.5} />
+            {step === 1 ? <CalendarClock className="size-6" strokeWidth={1.5} /> : <ListChecks className="size-6" strokeWidth={1.5} />}
           </span>
-          <h2 className="type-h3 text-fg-primary">When can people book you?</h2>
+          <p className="type-label-md text-fg-tertiary tabular-nums" aria-live="polite">
+            Step {step} of 2
+          </p>
+          <h2 className="type-h3 text-fg-primary">{step === 1 ? "When can people book you?" : "What can people book?"}</h2>
           <p className="type-body-md text-fg-secondary">
-            Everything else is set up: booking types from your services, confirmations and reminders. Your booking page opens as soon as it knows your availability.
+            {step === 1
+              ? "Two quick questions and your booking page opens. Confirmations and reminders are already set up."
+              : "These come from the services on your website. Rename, remove or add, and set how long each one takes in your calendar."}
           </p>
         </div>
-        <div role="radiogroup" aria-label="Availability" className="flex flex-col gap-2">
-          {HOURS_PRESETS.map((p) => (
-            <RadioCard key={p.id} name="hours" checked={pick === p.id} onChange={() => setPick(p.id)} title={p.label} description={describeWeek(p.week)} />
-          ))}
-          <RadioCard name="hours" checked={pick === "custom"} onChange={() => setPick("custom")} title="Set my own availability">
-            {pick === "custom" ? <WeekEditor value={custom} onChange={setCustom} /> : null}
-          </RadioCard>
-        </div>
-        <Button disabled={!weekValid(week)} onClick={() => onSave(week)} className="self-start">
-          Open my booking page
-        </Button>
+        {step === 1 ? (
+          <div role="radiogroup" aria-label="Availability" className="flex flex-col gap-2">
+            {HOURS_PRESETS.map((p) => (
+              <RadioCard key={p.id} name="hours" checked={pick === p.id} onChange={() => setPick(p.id)} title={p.label} description={describeWeek(p.week)} />
+            ))}
+            <RadioCard name="hours" checked={pick === "custom"} onChange={() => setPick("custom")} title="Set my own availability">
+              {pick === "custom" ? <WeekEditor value={custom} onChange={setCustom} /> : null}
+            </RadioCard>
+          </div>
+        ) : (
+          <div className="rounded-lg border border-line-default bg-surface p-4">
+            <TypesEditor value={types} onChange={setTypes} />
+          </div>
+        )}
+        {step === 1 ? (
+          <Button disabled={!weekValid(week)} onClick={() => setStep(2)} className="self-start">
+            Next
+          </Button>
+        ) : (
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="ghost" leadingIcon={<ArrowLeft />} onClick={() => setStep(1)}>
+              Back
+            </Button>
+            <Button disabled={!typesValid(types)} onClick={() => onSave(week, types.map((t) => ({ ...t, name: t.name.trim() })))}>
+              Open my booking page
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -309,7 +337,7 @@ export function AppointmentsApp({ project, initial }: { project: Project; initia
 
   let main
   if (!mounted || !now) main = null
-  else if (!hours) main = <AvailabilityOnboarding onSave={(h) => setSettings((s) => ({ ...s, hours: h }))} />
+  else if (!hours) main = <SetupOnboarding types={settings.types} onSave={(h, t) => setSettings((s) => ({ ...s, hours: h, types: t }))} />
   else
     main = (
       <div className="flex h-full min-h-0 flex-col">

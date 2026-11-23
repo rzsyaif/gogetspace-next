@@ -79,6 +79,24 @@ export function NextSteps({ compact }: { compact?: boolean }) {
         },
       }
     : null
+  // then what people can book (asked right after availability)
+  const typesMsg = s.msgs.find((m) => m.type === "pb-types")
+  const typesStep: Step | null = typesMsg
+    ? {
+        id: "types",
+        title: "Choose what people can book",
+        detail: typesMsg.type === "pb-types" && typesMsg.answer === "skipped" && !s.bookingTypes ? "Using the agent's list for now." : undefined,
+        done: !!typesMsg.answer,
+        action: {
+          label: "Review",
+          onClick: () => {
+            if (typesMsg.type === "pb-types" && typesMsg.answer) dispatch({ type: "reopenTypes", id: typesMsg.id })
+            nav.goTo("agent")
+            window.setTimeout(() => document.querySelector("[data-types-card]")?.scrollIntoView({ behavior: "smooth", block: "start" }), 120)
+          },
+        },
+      }
+    : null
   const pagesStep: Step | null = locked ? { id: "pages", title: `Build ${locked} more planned ${locked === 1 ? "page" : "pages"}`, done: false, action: { label: "Upgrade", onClick: () => nav.goTo("plan") } } : null
 
   // modules: one line; Modules lists what's recommended, and asks to publish first when the site isn't live yet
@@ -96,6 +114,7 @@ export function NextSteps({ compact }: { compact?: boolean }) {
     briefStep,
     ...(accountsStep ? [accountsStep] : []),
     ...(hoursStep ? [hoursStep] : []),
+    ...(typesStep ? [typesStep] : []),
     {
       id: "publish",
       title: "Publish website",
