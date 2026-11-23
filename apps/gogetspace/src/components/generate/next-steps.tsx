@@ -66,11 +66,11 @@ export function NextSteps({ compact }: { compact?: boolean }) {
   const hoursStep: Step | null = hoursMsg
     ? {
         id: "hours",
-        title: "Set your booking hours",
+        title: "Set your availability",
         detail: s.hours === "skipped" ? "Skipped. Ariyes asks when you open Appointments." : undefined,
         done: !!s.hours && s.hours !== "skipped",
         action: {
-          label: "Set hours",
+          label: "Set availability",
           onClick: () => {
             if (hoursMsg.type === "pb-hours" && hoursMsg.answer) dispatch({ type: "reopenHours", id: hoursMsg.id })
             nav.goTo("agent")

@@ -49,12 +49,13 @@ export const fromMinutes = (m: number) => `${String(Math.floor(m / 60)).padStart
 /** "09:00" → "9am", "13:30" → "1:30pm" */
 export function formatTime(t: string) {
   const m = toMinutes(t)
+  if (m >= 24 * 60) return "midnight"
   const h = Math.floor(m / 60), min = m % 60
   const h12 = ((h + 11) % 12) + 1
   return `${h12}${min ? `:${String(min).padStart(2, "0")}` : ""}${h < 12 ? "am" : "pm"}`
 }
 
-const shiftsText = (shifts: Shift[]) => shifts.map((s) => `${formatTime(s.start)}–${formatTime(s.end)}`).join(", ")
+const shiftsText = (shifts: Shift[]) => [...shifts].sort((a, b) => toMinutes(a.start) - toMinutes(b.start)).map((s) => `${formatTime(s.start)}–${formatTime(s.end)}`).join(", ")
 
 /** a week in one line, grouping days with the same hours: "Mon–Fri 9am–5pm · Sat 9am–1pm · Sun closed" */
 export function describeWeek(week: WeekHours): string {
@@ -65,7 +66,7 @@ export function describeWeek(week: WeekHours): string {
     let j = i
     while (j + 1 < 7 && JSON.stringify(week[j + 1]) === key) j++
     const days = i === j ? WEEKDAYS_SHORT[i] : `${WEEKDAYS_SHORT[i]}–${WEEKDAYS_SHORT[j]}`
-    parts.push(week[i].length ? `${days} ${shiftsText(week[i])}` : `${days} closed`)
+    parts.push(week[i].length ? `${days} ${shiftsText(week[i])}` : `${days} unavailable`)
     i = j + 1
   }
   return parts.join(" · ")
