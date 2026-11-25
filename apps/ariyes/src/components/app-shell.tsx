@@ -31,11 +31,11 @@ function RailLink({ href, label, active, children }: { href: string; label: stri
 }
 
 /** the narrow, icon-only switcher between the project's apps: Home first, Settings last */
-function ToolRail({ project }: { project: Project }) {
+export function ToolRail({ project }: { project: Project }) {
   const path = usePathname()
   const have = new Set<ToolId>([...DEFAULT_TOOLS, ...project.installed])
   const apps = RAIL_ORDER.filter((id) => have.has(id)).map(toolById)
-  const at = (id: string) => path === `/${project.id}/${id}`
+  const at = (id: string) => path === `/${project.id}/${id}` || path.startsWith(`/${project.id}/${id}/`)
   return (
     <nav aria-label="Apps" className="flex w-14 shrink-0 flex-col items-center gap-1 overflow-y-auto border-r border-line-default bg-surface py-3 sm:w-16">
       <RailLink href={`/${project.id}`} label="Home" active={path === `/${project.id}`}>
