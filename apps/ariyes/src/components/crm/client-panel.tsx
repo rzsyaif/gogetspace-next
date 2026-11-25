@@ -1,12 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
 import { ArrowRightLeft, CalendarPlus, Flag, Mail, MessageSquareText, Phone, PhoneCall, Send, Sparkles } from "lucide-react"
 import { Avatar, Button, Drawer, DrawerContent, Field, Input, Select, Textarea, buttonVariants } from "@gogetspace/baseplate"
 import { LOST_REASONS, SOURCES, ago, isoDay, stageOf, type ActivityKind, type CrmEnquiry } from "@gogetspace/modules"
 import { cn } from "@gogetspace/baseplate/cn"
 import { useCrm } from "./crm-store"
+import { ClientAppointments } from "./client-appointments"
 import { Value } from "./bits"
 
 const ICON: Record<ActivityKind, typeof Mail> = {
@@ -115,7 +115,7 @@ function EnquiryCard({ e }: { e: CrmEnquiry }) {
  * step), a note box, and everything that has happened with them.
  */
 export function ClientPanel() {
-  const { data, now, project, openClient, setOpenClient, addNote } = useCrm()
+  const { data, now, openClient, setOpenClient, addNote } = useCrm()
   const [note, setNote] = useState("")
   const c = data && openClient ? data.clients.find((x) => x.id === openClient) : null
   const company = c?.companyId ? data!.companies.find((x) => x.id === c.companyId) : null
@@ -161,9 +161,6 @@ export function ClientPanel() {
                   <Mail aria-hidden className="size-4 shrink-0" /> <span className="truncate">{c.email}</span>
                 </a>
               )}
-              <Link href={`/${project.id}/appointments`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
-                <CalendarPlus aria-hidden className="size-4" /> Book an appointment
-              </Link>
             </div>
 
             <section className="flex flex-col gap-3">
@@ -174,6 +171,8 @@ export function ClientPanel() {
                 ))}
               </ul>
             </section>
+
+            <ClientAppointments key={c.id} client={c} />
 
             <section className="flex flex-col gap-3">
               <h3 className="type-label-lg text-fg-primary">History</h3>

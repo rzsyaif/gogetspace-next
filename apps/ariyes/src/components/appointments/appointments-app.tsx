@@ -1,10 +1,13 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { ArrowLeft, CalendarClock, CalendarSync, Check, ChevronLeft, ChevronRight, ListChecks } from "lucide-react"
+import Link from "next/link"
+import { ArrowLeft, ArrowUpRight, CalendarClock, CalendarSync, Check, ChevronLeft, ChevronRight, ListChecks } from "lucide-react"
 import { Alert, Button, Dialog, DialogContent, IconButton, RadioCard, Select, Toast } from "@gogetspace/baseplate"
 import { HOURS_PRESETS, WEEKDAYS_SHORT, bookingRef, describeWeek, formatLength, formatTime, fromMinutes, toMinutes, type AppointmentSettings, type Booking, type BookingType, type Project, type WeekHours } from "@gogetspace/modules"
-import { isoDate, weekBookings } from "@gogetspace/modules/mock"
+import { keys, useShared } from "@/lib/shared"
+import { crmClientByName, crmData, logToCrm } from "@/lib/crm-link"
+import { schedule, type Edits } from "./schedule"
 import { cn } from "@gogetspace/baseplate/cn"
 import { AppShell } from "../app-shell"
 import { useMedia, useMounted } from "../use-media"
@@ -13,9 +16,7 @@ import { SettingsPanel } from "./settings-panel"
 import { TypesEditor, typesValid } from "./types-editor"
 import { WeekEditor, weekValid } from "./week-editor"
 
-const mondayOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 6) % 7))
-const addDays = (d: Date, n: number) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n)
-const fromIso = (iso: string) => new Date(`${iso}T00:00`)
+import { addDays, fromIso, mondayOf } from "./schedule"
 const fmt = (d: Date, o: Intl.DateTimeFormatOptions) => d.toLocaleDateString("en-GB", o)
 const endOf = (b: Pick<Booking, "start" | "minutes">) => fromMinutes(toMinutes(b.start) + b.minutes)
 /** "Fri 20 Nov, 2pm" */
@@ -171,6 +172,8 @@ function Reschedule({
 }
 
 interface BookingActions {
+  /** the client's place in the CRM, when they're in it */
+  crmOf: (b: Booking) => { href: string; line: string } | null
   freeDays: (b: Booking) => string[]
   freeSlots: (b: Booking, date: string) => string[]
   onClose: () => void
@@ -180,7 +183,8 @@ interface BookingActions {
 }
 
 /** one booking's details, or its reschedule step */
-function BookingBody({ b, freeDays, freeSlots, onClose, onConfirm, onCancel, onMove }: BookingActions & { b: Booking }) {
+function BookingBody({ b, crmOf, freeDays, freeSlots, onClose, onConfirm, onCancel, onMove }: BookingActions & { b: Booking }) {
+  const crm = crmOf(b)
   const [moving, setMoving] = useState(false)
   if (moving) return <Reschedule booking={b} days={freeDays(b)} slots={(d) => freeSlots(b, d)} onBack={() => setMoving(false)} onMove={(d, s) => onMove(b, d, s)} />
   const date = fromIso(b.date)
@@ -225,6 +229,17 @@ function BookingBody({ b, freeDays, freeSlots, onClose, onConfirm, onCancel, onM
           </div>
         ))}
       </dl>
+      {crm && (
+        <div className="flex items-center justify-between gap-3 rounded-md border border-line-default px-4 py-3">
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <span className="type-caption text-fg-tertiary">In your CRM</span>
+            <span className="truncate type-body-md text-fg-primary">{crm.line}</span>
+          </div>
+          <Link href={crm.href} className="flex shrink-0 items-center gap-1 rounded-sm type-label-md text-fg-link hover:underline focus-visible:outline-none focus-visible:focus-ring">
+            Open in CRM <ArrowUpRight aria-hidden className="size-4" />
+          </Link>
+        </div>
+      )}
       <Alert size="sm" tone={pending ? "warning" : "success"} title={pending ? "Waiting for you to confirm" : "Confirmed"}>
         {pending
           ? `${first} booked online. They get a confirmation email once you confirm, then a reminder before the appointment.`
@@ -245,18 +260,20 @@ function BookingDialog({ booking, ...actions }: BookingActions & { booking: Book
 }
 
 /** what the owner changed: a booking's new version, or that it was cancelled. A real app saves each change. */
-type Edits = Record<string, Booking | "cancelled">
 
 /**
  * Ariyes › Appointments: the week's calendar in the middle, the settings on the right. With no availability yet
- * (skipped in the GoGetSpace chat) it asks for it first. Edits are local to the prototype.
+ * (skipped in the GoGetSpace chat) it asks for it first. Bookings and settings are shared with the CRM for the tab's session (src/lib/shared.ts).
  */
 export function AppointmentsApp({ project, initial }: { project: Project; initial: AppointmentSettings }) {
-  const [settings, setSettings] = useState(initial)
+  // shared with the CRM (its Book button) for the tab's session; a real app reads and saves these on the server
+  const [shared, setSettings] = useShared(keys.apptSettings(project.id), () => initial)
+  const settings = shared ?? initial
   const [offset, setOffset] = useState(0)
   const [dayIndex, setDayIndex] = useState<number | null>(null)
   const [open, setOpen] = useState<Booking | null>(null)
-  const [edits, setEdits] = useState<Edits>({})
+  const [sharedEdits, setEdits] = useShared<Edits>(keys.bookings(project.id), () => ({}))
+  const edits = sharedEdits ?? {}
   const [toast, setToast] = useState<{ message: string; undo?: () => void } | null>(null)
   const mounted = useMounted()
   const narrow = useMedia("(max-width: 767px)")
@@ -269,54 +286,42 @@ export function AppointmentsApp({ project, initial }: { project: Project; initia
   const day = dayIndex ?? todayIdx
   const hours = settings.hours
 
-  /** the bookings in the week starting `mon`, with the owner's edits applied */
-  const inWeek = (mon: Date) => {
-    if (!hours || !now) return []
-    const dates = new Set(Array.from({ length: 7 }, (_, i) => isoDate(addDays(mon, i))))
-    const moved = Object.values(edits).filter((e): e is Booking => e !== "cancelled" && dates.has(e.date))
-    return [...weekBookings(project.id, mon, hours, now).filter((b) => !(b.id in edits)), ...moved]
-  }
-  const bookings = monday ? inWeek(monday) : []
+  const sched = now ? schedule(project.id, settings, edits, now) : null
+  const bookings = monday && sched ? sched.inWeek(monday) : []
   const pending = bookings.filter((b) => b.status === "pending").length
+  const canPlace = (b: Booking, date: string, start: string) => !!sched?.canPlace(b, date, start)
+  const freeSlots = (b: Booking, date: string) => sched?.freeSlots(b, date) ?? []
+  const freeDays = (b: Booking) => sched?.freeDays(b) ?? []
 
-  /** can `b` start at `start` on `date`: inside availability, not in the past, and not overlapping another booking */
-  const canPlace = (b: Booking, date: string, start: string) => {
-    if (!hours || !now) return false
-    const from = toMinutes(start)
-    const to = from + b.minutes
-    const d = fromIso(date)
-    if (!hours[(d.getDay() + 6) % 7].some((s) => toMinutes(s.start) <= from && to <= toMinutes(s.end))) return false
-    if (new Date(`${date}T${start}`) <= now) return false
-    return !inWeek(mondayOf(d)).some((o) => o.id !== b.id && o.date === date && toMinutes(o.start) < to && from < toMinutes(o.start) + o.minutes)
-  }
-  const freeSlots = (b: Booking, date: string) => {
-    if (!hours) return []
-    const shifts = hours[(fromIso(date).getDay() + 6) % 7]
-    const out: string[] = []
-    for (const s of shifts) for (let t = toMinutes(s.start); t + b.minutes <= toMinutes(s.end); t += settings.slotMinutes) if (canPlace(b, date, fromMinutes(t)) || (date === b.date && fromMinutes(t) === b.start)) out.push(fromMinutes(t))
-    return out.sort()
-  }
-  const freeDays = (b: Booking) => {
-    if (!now) return []
-    const ahead = Math.min(settings.daysAhead, 28)
-    return Array.from({ length: ahead }, (_, i) => isoDate(addDays(now, i))).filter((d) => freeSlots(b, d).some((t) => d !== b.date || t !== b.start))
+  const crmOf = (b: Booking) => {
+    if (!project.installed.includes("crm")) return null
+    const c = crmClientByName(project, b.name)
+    if (!c) return null
+    const d = crmData(project)
+    const es = d.enquiries.filter((e) => e.clientId === c.id)
+    const e = es.find((x) => d.settings.stages.find((st) => st.id === x.stageId)?.kind === "open") ?? es[es.length - 1]
+    return { href: `/${project.id}/crm?client=${c.id}`, line: e ? `${e.title} · ${d.settings.stages.find((st) => st.id === e.stageId)?.name}` : "Client" }
   }
 
-  const edit = (b: Booking, next: Booking | "cancelled", message: string) => {
+  /** apply a change, write it to the client's CRM history, and offer Undo for both */
+  const edit = (b: Booking, next: Booking | "cancelled", message: string, history: string) => {
     const before = edits[b.id]
     setEdits((e) => ({ ...e, [b.id]: next }))
+    const logged = logToCrm(project, b.name, "booking", history)
     setToast({
-      message,
-      undo: () =>
+      message: logged ? `${message} · added to their CRM history` : message,
+      undo: () => {
+        logged?.undo()
         setEdits((e) => {
           const rest = { ...e }
           delete rest[b.id]
           return before ? { ...rest, [b.id]: before } : rest
-        }),
+        })
+      },
     })
   }
   const move = (b: Booking, date: string, start: string) => {
-    edit(b, { ...b, date, start }, `Moved ${b.name} to ${when(date, start)}`)
+    edit(b, { ...b, date, start }, `Moved ${b.name} to ${when(date, start)}`, `Moved ${b.type} to ${when(date, start)}`)
     setOpen(null)
   }
 
@@ -417,15 +422,16 @@ export function AppointmentsApp({ project, initial }: { project: Project; initia
       <AppShell project={project} title="Appointments" actions={nav} main={main} settings={panel} />
       <BookingDialog
         booking={open}
+        crmOf={crmOf}
         freeDays={freeDays}
         freeSlots={freeSlots}
         onClose={() => setOpen(null)}
         onConfirm={(b) => {
-          edit(b, { ...b, status: "confirmed" }, `Confirmed ${b.name}'s booking`)
+          edit(b, { ...b, status: "confirmed" }, `Confirmed ${b.name}'s booking`, `Confirmed: ${b.type}, ${when(b.date, b.start)}`)
           setOpen(null)
         }}
         onCancel={(b) => {
-          edit(b, "cancelled", `Cancelled ${b.name}'s booking`)
+          edit(b, "cancelled", `Cancelled ${b.name}'s booking`, `Cancelled: ${b.type}, ${when(b.date, b.start)}`)
           setOpen(null)
         }}
         onMove={move}
