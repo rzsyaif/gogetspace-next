@@ -126,9 +126,9 @@ function Flow({ module, onClose, api, goals, book, billing, onImplement }: { mod
             ))}
           </div>
           <div className="max-md:-my-[38px] max-md:scale-[0.8]">
-            <ModulePreview sc={sc} view={view} />
+            <ModulePreview sc={sc} view={view} who={book.copy.customers} />
           </div>
-          <p className="text-center type-caption text-fg-tertiary max-md:hidden">{view === "customer" ? "On your website, phone and desktop" : "In Ariyes, from Modules › Manage"}</p>
+          {!(view === "owner" && sc.kind === "booking") && <p className="text-center type-caption text-fg-tertiary max-md:hidden">{view === "customer" ? "On your website, phone and desktop" : "In Ariyes, from Modules › Manage"}</p>}
         </div>
 
         {/* what it does, what it needs, what it costs */}
