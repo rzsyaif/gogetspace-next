@@ -241,3 +241,4 @@ export function weekBookings(projectId: string, monday: Date, hours: WeekHours |
   }
   return out
 }
+export { getCrm } from "./crm"

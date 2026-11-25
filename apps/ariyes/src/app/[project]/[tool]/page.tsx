@@ -9,7 +9,8 @@ import { ToolIcon } from "@/components/tool-icon"
 
 export async function generateStaticParams() {
   const projects = await listProjects()
-  return projects.flatMap((p) => TOOLS.map((t) => ({ project: p.id, tool: t.id })))
+  // CRM has its own pages (app/[project]/crm)
+  return projects.flatMap((p) => TOOLS.filter((t) => t.id !== "crm").map((t) => ({ project: p.id, tool: t.id })))
 }
 
 export async function generateMetadata({ params }: PageProps<"/[project]/[tool]">): Promise<Metadata> {
