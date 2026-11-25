@@ -96,6 +96,50 @@ const PEEKS: Record<string, Peeks> = {
       ],
     },
     settings: { plan: "Starter", domain: "rahma-family-dental.get.space", seats: 4 },
+    estimates: {
+      open: 3,
+      awaitingReply: 2,
+      list: [
+        { name: "Kumar Raj", matter: "Staff dental plan, 40 people", amount: 18000, status: "awaiting" },
+        { name: "Lim Wei Jie", matter: "Crown, upper left molar", amount: 1800, status: "awaiting" },
+        { name: "Aiman Zulkifli", matter: "Braces for his daughter", amount: 6500, status: "draft" },
+      ],
+    },
+    locations: {
+      count: 3,
+      busiest: "Bangsar",
+      list: [
+        { name: "Bangsar", detail: "Jalan Telawi 3 · 6 visits today", status: "open" },
+        { name: "Mont Kiara", detail: "Arcoris Plaza · 3 visits today", status: "closing" },
+        { name: "Petaling Jaya", detail: "SS2 · opens Saturday 9:00 am", status: "closed" },
+      ],
+    },
+    sequences: {
+      running: 2,
+      enrolled: 340,
+      list: [
+        { name: "After a filling: care tips, then a review request", steps: 3, people: 212, sentToday: 14 },
+        { name: "New patient welcome", steps: 4, people: 128, sentToday: 6 },
+      ],
+    },
+    broadcasts: {
+      scheduled: 2,
+      next: "Fri 9am",
+      list: [
+        { name: "Hari Raya opening hours", when: "Fri 9am", channel: "WhatsApp", audience: 1284 },
+        { name: "December whitening offer", when: "1 Dec", channel: "Email", audience: 860 },
+      ],
+    },
+    helpdesk: {
+      open: 4,
+      oldestHours: 6,
+      tickets: [
+        { from: "Kumar Raj", subject: "The invoice shows the wrong company name for our staff plan", when: "6h" },
+        { from: "Grace Lee", subject: "I can't reschedule online, the button does nothing on my phone", when: "4h" },
+        { from: "Nadia Hassan", subject: "I need a receipt for my insurance claim from last week's visit", when: "2h" },
+        { from: "Daniel Tan", subject: "Is there parking near the clinic on weekends?", when: "35m" },
+      ],
+    },
   },
   "bakti-analisa": {
     inbox: { unread: 2, recent: [{ from: "Website form", preview: "Corporate screening quote for 40 staff", when: "2h" }] },

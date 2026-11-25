@@ -91,6 +91,36 @@ function StageBar({ stages }: { stages: { name: string; count: number }[] }) {
   )
 }
 
+const TONES = { muted: "text-fg-tertiary", good: "text-status-success-text", warn: "text-status-warning-text" }
+type Tone = keyof typeof TONES
+
+/** large widgets: a short list, each row a title with a status or time beside it and one line of detail */
+function Items({ items }: { items: { key: string; title: ReactNode; detail?: ReactNode; side?: ReactNode; tone?: Tone }[] }) {
+  return (
+    <ul className="flex flex-col divide-y divide-line-default">
+      {items.map((it) => (
+        <li key={it.key} className="flex min-w-0 flex-col gap-0.5 py-2 first:pt-0 last:pb-0 @max-[799px]:py-1.5 @max-[799px]:nth-3:hidden">
+          <span className="flex items-baseline gap-3">
+            <span className="min-w-0 flex-1 truncate type-label-md text-fg-primary">{it.title}</span>
+            {it.side != null && <span className={cn("shrink-0 type-body-sm tabular-nums", TONES[it.tone ?? "muted"])}>{it.side}</span>}
+          </span>
+          {it.detail != null && <span className="truncate type-body-sm text-fg-secondary">{it.detail}</span>}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+/** a large widget: the headline, then its list */
+function Listed({ stat, items }: { stat: ReactNode; items: ReactNode }) {
+  return (
+    <div className="flex flex-col gap-4 @max-[799px]:gap-3">
+      {stat}
+      {items}
+    </div>
+  )
+}
+
 const n = (v: number) => v.toLocaleString("en-US")
 
 /* ---------- each tool, at each size ---------- */
@@ -346,22 +376,76 @@ export function WidgetContent({ tool, size, data, project }: { tool: ToolId; siz
     case "estimates": {
       const d = data as PeekMap["estimates"] | undefined
       if (!d || d.open === 0) return <Empty>Quote requests for bigger treatments will show up here.</Empty>
-      return <Stat value={d.open} label={`open · ${d.awaitingReply} awaiting reply`} big={large} />
+      const stat = <Stat value={d.open} label={`open · ${d.awaitingReply} awaiting reply`} big={large} />
+      if (!large || !d.list?.length) return stat
+      return (
+        <Listed
+          stat={stat}
+          items={
+            <Items
+              items={d.list.slice(0, 3).map((e) => ({
+                key: e.name + e.matter,
+                title: e.name,
+                detail: e.amount ? `${e.matter} · ${money(e.amount)}` : e.matter,
+                side: e.status === "awaiting" ? "Awaiting reply" : "Draft",
+                tone: e.status === "awaiting" ? "warn" : "muted",
+              }))}
+            />
+          }
+        />
+      )
     }
     case "locations": {
       const d = data as PeekMap["locations"] | undefined
       if (!d) return <Empty>Add your branches, each with its own hours.</Empty>
-      return <Stat value={d.count} label={`branches · busiest: ${d.busiest}`} big={large} />
+      const stat = <Stat value={d.count} label={`branches · busiest: ${d.busiest}`} big={large} />
+      if (!large || !d.list?.length) return stat
+      const STATUS = { open: ["Open", "good"], closing: ["Closing soon", "warn"], closed: ["Closed", "muted"] } as const
+      return (
+        <Listed
+          stat={stat}
+          items={
+            <Items
+              items={d.list.slice(0, 3).map((b) => ({
+                key: b.name,
+                title: b.name,
+                detail: b.detail,
+                side: (
+                  <span className="flex items-center gap-1.5">
+                    <span aria-hidden className="size-1.5 rounded-full bg-current" />
+                    {STATUS[b.status][0]}
+                  </span>
+                ),
+                tone: STATUS[b.status][1],
+              }))}
+            />
+          }
+        />
+      )
     }
     case "sequences": {
       const d = data as PeekMap["sequences"] | undefined
       if (!d || d.running === 0) return <Empty>Follow-ups that send themselves after a visit.</Empty>
-      return <Stat value={d.running} label={`running · ${n(d.enrolled)} people`} big={large} />
+      const stat = <Stat value={d.running} label={`running · ${n(d.enrolled)} people`} big={large} />
+      if (!large || !d.list?.length) return stat
+      return (
+        <Listed
+          stat={stat}
+          items={<Items items={d.list.slice(0, 3).map((q) => ({ key: q.name, title: q.name, detail: `${q.steps} messages · ${n(q.people)} people in it`, side: `${q.sentToday} sent today` }))} />}
+        />
+      )
     }
     case "broadcasts": {
       const d = data as PeekMap["broadcasts"] | undefined
       if (!d || d.scheduled === 0) return <Empty>Send one message to many people at once.</Empty>
-      return <Stat value={d.scheduled} label={d.next ? `scheduled · next ${d.next}` : "scheduled"} big={large} />
+      const stat = <Stat value={d.scheduled} label={d.next ? `scheduled · next ${d.next}` : "scheduled"} big={large} />
+      if (!large || !d.list?.length) return stat
+      return (
+        <Listed
+          stat={stat}
+          items={<Items items={d.list.slice(0, 3).map((b) => ({ key: b.name, title: b.name, detail: `${b.channel} · to ${n(b.audience)} people`, side: b.when }))} />}
+        />
+      )
     }
     case "helpdesk": {
       const d = data as PeekMap["helpdesk"] | undefined
@@ -371,7 +455,14 @@ export function WidgetContent({ tool, size, data, project }: { tool: ToolId; siz
             <Check aria-hidden className="size-4" /> No open tickets
           </p>
         )
-      return <Stat value={d.open} label={`open · oldest ${d.oldestHours}h`} big={large} />
+      const stat = <Stat value={d.open} label={`open · oldest ${d.oldestHours}h`} big={large} />
+      if (!large || !d.tickets?.length) return stat
+      return (
+        <Listed
+          stat={stat}
+          items={<Items items={d.tickets.slice(0, 3).map((t) => ({ key: t.from + t.when, title: t.from, detail: t.subject, side: `${t.when} ago` }))} />}
+        />
+      )
     }
   }
 }
