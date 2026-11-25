@@ -2,6 +2,8 @@
  * MOCK DATA for the CRM. `getCrm` builds a project's clients, enquiries and history relative to `now`, so the
  * follow-up list and "this month" always have something to show. Replace with an API call returning `CrmData`.
  */
+import { HOURS_PRESETS, formatTime } from "../appointments"
+import { weekBookings } from "./index"
 import { STAGE_PRESETS, isoDay, type CrmActivity, type CrmClient, type CrmCompany, type CrmData, type CrmEnquiry, type LeadSource } from "../crm"
 
 const DAY = 24 * 60 * 60 * 1000
@@ -86,6 +88,22 @@ export function getCrm(projectId: string, now: Date): CrmData {
     const via = s.source === "website" ? "Enquiry from your website" : s.source === "referral" ? "Referred by a client" : s.source === "phone" ? "Phoned in" : "Walked in"
     activity.push({ id: `a${i}-0`, clientId: id, enquiryId: eid, at: at(s.age, 9 + (i % 6)), kind: "enquiry", text: `${via}: ${s.title}` })
     for (const [k, [ago, kind, text]] of (s.history ?? []).entries()) activity.push({ id: `a${i}-${k + 1}`, clientId: id, enquiryId: eid, at: at(ago, 12 + k), kind, text })
+  }
+  // online bookings from people who aren't clients yet arrive as enquiries (Settings › New enquiries › new bookings)
+  if (rahma) {
+    const known = new Set(clients.map((c) => c.name.toLowerCase()))
+    const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7))
+    const weeks = [0, 7].flatMap((n) => weekBookings(projectId, new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + n), HOURS_PRESETS[1].week, now))
+    for (const b of weeks.filter((b) => new Date(`${b.date}T${b.start}`) > now).sort((a, b) => (`${a.date}${a.start}` < `${b.date}${b.start}` ? -1 : 1))) {
+      if (known.has(b.name.toLowerCase())) continue
+      known.add(b.name.toLowerCase())
+      const n = clients.length + 1
+      const booked = at(Math.min(2, (n % 3) + 1), 20)
+      const day = new Date(`${b.date}T00:00`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })
+      clients.push({ id: `c${n}`, name: b.name, email: `${b.name.toLowerCase().replace(/\s+/g, ".")}@gmail.com`, source: "website", createdAt: booked })
+      enquiries.push({ id: `e${n}`, clientId: `c${n}`, title: b.type, stageId: "consult", updatedAt: booked })
+      activity.push({ id: `a-b${n}`, clientId: `c${n}`, enquiryId: `e${n}`, at: booked, kind: "booking", text: `Booked online: ${b.type}, ${day} ${formatTime(b.start)}` })
+    }
   }
   const data: CrmData = {
     settings: { stages: STAGE_PRESETS[rahma ? "dentist" : "general"], quietDays: 7, companies: rahma, auto: { website: true, appointments: true } },

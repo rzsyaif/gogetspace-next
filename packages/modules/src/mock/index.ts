@@ -176,7 +176,12 @@ const DENTAL_TYPES = SUGGESTED_TYPES.dentist
  * GoGetSpace chat collected, passed in the Manage link for a site this mock doesn't know (a real app has them saved with the project already).
  */
 export async function getAppointmentSettings(projectId: string, hoursFromLink?: WeekHours | null, typesFromLink?: BookingType[] | null): Promise<AppointmentSettings> {
-  const project = await getProject(projectId)
+  return appointmentDefaults(await getProject(projectId), hoursFromLink, typesFromLink)
+}
+
+/** the same, without the fetch: for screens in another app that need the booking rules (the CRM's Book button) */
+export function appointmentDefaults(project: Project, hoursFromLink?: WeekHours | null, typesFromLink?: BookingType[] | null): AppointmentSettings {
+  const projectId = project.id
   const known = projectId === "rahma-dental"
   return {
     hours: known ? HOURS_PRESETS[1].week : (hoursFromLink ?? null),
@@ -189,7 +194,9 @@ export async function getAppointmentSettings(projectId: string, hoursFromLink?: 
   }
 }
 
-const NAMES = ["Nur Aina", "Daniel Tan", "Siti Hajar", "Arjun Pillai", "Mei Ling Ong", "Farah Iskandar", "Kumar Raj", "Lim Wei Jie", "Nadia Hassan", "Hafiz Musa", "Grace Lee", "Aiman Zulkifli"]
+// regulars, plus a few people who aren't in the CRM yet (their online bookings arrive there as new enquiries). The
+// CRM's brand-new enquiries (Hafiz Musa, Grace Lee) have no bookings until someone books them.
+const NAMES = ["Nur Aina", "Siti Hajar", "Arjun Pillai", "Mei Ling Ong", "Farah Iskandar", "Kumar Raj", "Lim Wei Jie", "Nadia Hassan", "Aiman Zulkifli", "Tan Boon Hock", "Priya Nair", "Zara Ahmad", "Ben Wong", "Chloe Teo"]
 const TODAY_RAHMA = [
   { start: "10:30", name: "Nur Aina", type: "Scaling and polishing" },
   { start: "11:15", name: "Daniel Tan", type: "Check-up" },

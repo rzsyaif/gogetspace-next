@@ -1,9 +1,9 @@
 "use client"
 
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react"
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
 import { isoDay, stageOf, type CrmActivity, type CrmData, type CrmEnquiry, type CrmSettings, type LeadSource, type Project } from "@gogetspace/modules"
 import { getCrm } from "@gogetspace/modules/mock"
-import { useMounted } from "../use-media"
+import { keys, useShared } from "@/lib/shared"
 
 export interface NewLead {
   name: string
@@ -58,16 +58,22 @@ export function useCrm() {
  * real app calls its API. Moves and edits show a toast with Undo.
  */
 export function CrmProvider({ project, children }: { project: Project; children: ReactNode }) {
-  const mounted = useMounted()
   const now = useMemo(() => new Date(), [])
-  const [data, setData] = useState<CrmData | null>(null)
+  // shared with Appointments for the tab's session (bookings write to the history); the seed uses today's date
+  const [shared, setData] = useShared<CrmData>(keys.crm(project.id), () => getCrm(project.id, now))
+  const data = shared ?? null
   const [openClient, setOpenClient] = useState<string | null>(null)
   const [openCompany, setOpenCompany] = useState<string | null>(null)
   const [addOpen, setAddOpen] = useState(false)
   const [toast, setToast] = useState<Toast | null>(null)
 
-  // the seed depends on today's date, so it's made in the browser
-  if (mounted && !data) setData(getCrm(project.id, now))
+  // "Open in CRM" from another app links here with ?client=<id>
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("client")
+    // a link's target only exists in the browser
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (id) setOpenClient(id)
+  }, [])
 
   const stamp = () => new Date().toISOString()
   const log = (d: CrmData, a: Omit<CrmActivity, "id" | "at">): CrmActivity[] => [...d.activity, { ...a, id: `a${Date.now()}${Math.random().toString(36).slice(2, 6)}`, at: stamp() }]
