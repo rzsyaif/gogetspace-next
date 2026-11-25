@@ -9,6 +9,7 @@ import type { Playbook } from "@/lib/playbooks/types"
 import type { ModulesApi } from "@/components/generate/editor-site"
 import { showcaseOf } from "@/lib/playbooks/module-showcase"
 import { ModulePreview } from "./module-preview"
+import { BookingFlowPreview } from "./previews/booking-flow"
 import { MODULE_ICON } from "./recommended-tools"
 
 export interface AddBilling {
@@ -107,28 +108,35 @@ function Flow({ module, onClose, api, goals, book, billing, onImplement }: { mod
       <div className="-mb-2 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain pb-6 md:grid md:overflow-hidden md:pb-0 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-8">
         {/* what it looks like, for customers and for the owner */}
         <div className="flex shrink-0 flex-col gap-3 rounded-lg bg-subtle p-3 md:gap-4 md:self-start md:p-4">
-          <div role="group" aria-label="Preview" className="grid grid-cols-2 gap-1 rounded-md bg-surface p-1">
-            {(
-              [
-                ["customer", `For ${book.copy.customers}`],
-                ["owner", "For you"],
-              ] as const
-            ).map(([id, label]) => (
-              <button
-                key={id}
-                type="button"
-                aria-pressed={view === id}
-                onClick={() => setView(id)}
-                className={cn("rounded-sm px-2 py-2 type-label-sm focus-visible:outline-none focus-visible:focus-ring", view === id ? "bg-accent-blue-subtle text-fg-link" : "text-fg-secondary hover:text-fg-primary")}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          <div className="max-md:-my-[38px] max-md:scale-[0.8]">
-            <ModulePreview sc={sc} view={view} />
-          </div>
-          <p className="text-center type-caption text-fg-tertiary max-md:hidden">{view === "customer" ? "On your website, phone and desktop" : "In Ariyes, from Modules › Manage"}</p>
+          {sc.kind === "booking" ? (
+            // both sides in one animation: the patient on the website, the owner in Ariyes
+            <BookingFlowPreview sc={sc} who={book.copy.customers} />
+          ) : (
+            <>
+              <div role="group" aria-label="Preview" className="grid grid-cols-2 gap-1 rounded-md bg-surface p-1">
+                {(
+                  [
+                    ["customer", `For ${book.copy.customers}`],
+                    ["owner", "For you"],
+                  ] as const
+                ).map(([id, label]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    aria-pressed={view === id}
+                    onClick={() => setView(id)}
+                    className={cn("rounded-sm px-2 py-2 type-label-sm focus-visible:outline-none focus-visible:focus-ring", view === id ? "bg-accent-blue-subtle text-fg-link" : "text-fg-secondary hover:text-fg-primary")}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div className="max-md:-my-[38px] max-md:scale-[0.8]">
+                <ModulePreview sc={sc} view={view} />
+              </div>
+              <p className="text-center type-caption text-fg-tertiary max-md:hidden">{view === "customer" ? "On your website, phone and desktop" : "In Ariyes, from Modules › Manage"}</p>
+            </>
+          )}
         </div>
 
         {/* what it does, what it needs, what it costs */}
