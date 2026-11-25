@@ -3,17 +3,13 @@
 import { Check, ChevronLeft, ImageIcon, Lock, MessageCircle, Phone, Star } from "lucide-react"
 import { cn } from "@gogetspace/baseplate/cn"
 import type { Showcase } from "@/lib/playbooks/module-showcase"
-import { BookingOwnerPreview } from "./previews/booking-owner"
 
 /**
  * A picture of a module, drawn rather than photographed: what customers see on the site (in a phone), and what
  * the owner sees in the module's own app (in a window). One layout per kind, worded for the module.
  */
-export function ModulePreview({ sc, view, who }: { sc: Showcase; view: "customer" | "owner"; /** "patients", "clients" */ who?: string }) {
-  if (view === "customer") return <Phone_ sc={sc} />
-  // booking modules show the real Ariyes Appointments screen, animated
-  if (sc.kind === "booking") return <BookingOwnerPreview sc={sc} who={who} />
-  return <AppWindow sc={sc} />
+export function ModulePreview({ sc, view }: { sc: Showcase; view: "customer" | "owner" }) {
+  return view === "customer" ? <Phone_ sc={sc} /> : <AppWindow sc={sc} />
 }
 
 /* ---------------- what customers see ---------------- */
