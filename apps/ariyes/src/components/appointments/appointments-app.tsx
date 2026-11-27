@@ -361,7 +361,28 @@ export function AppointmentsApp({ project, initial }: { project: Project; initia
       {rangeLabel(week[0], week[6])}
     </span>
   )
-  // phones keep only Today beside the title; the week and its arrows get their own row under the header
+  /** phones show one day at a time, so their arrows step a day, into the next or previous week at the ends */
+  const step = (by: -1 | 1) => {
+    const next = day + by
+    if (next < 0 || next > 6) {
+      setOffset((o) => o + by)
+      setDayIndex(next < 0 ? 6 : 0)
+    } else setDayIndex(next)
+  }
+  const dayBar = monday && (
+    <div className="flex items-center gap-2 border-b border-line-default bg-surface px-2 py-1.5 md:hidden">
+      <IconButton aria-label="Previous day" onClick={() => step(-1)}>
+        <ChevronLeft />
+      </IconButton>
+      <span className="min-w-0 flex-1 truncate text-center type-label-md text-fg-primary tabular-nums" aria-live="polite">
+        {fmt(week[day], { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+      </span>
+      <IconButton aria-label="Next day" onClick={() => step(1)}>
+        <ChevronRight />
+      </IconButton>
+    </div>
+  )
+  // phones keep only Today beside the title; the day and its arrows get their own row under the header
   const nav = monday && hours && (
     <>
       <Button size="sm" variant="secondary" onClick={today}>
@@ -380,12 +401,9 @@ export function AppointmentsApp({ project, initial }: { project: Project; initia
   else
     main = (
       <div className="flex h-full min-h-0 flex-col">
-        <div className="flex items-center justify-between gap-3 border-b border-line-default bg-surface py-1.5 pr-2 pl-4 md:hidden">
-          {range}
-          {arrows}
-        </div>
-        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line-default bg-surface px-4 py-2 sm:px-5">
-          <p className="type-body-sm text-fg-secondary max-md:hidden">
+        {dayBar}
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line-default bg-surface px-4 py-2 max-md:hidden sm:px-5">
+          <p className="type-body-sm text-fg-secondary">
             <span className="font-medium text-fg-primary">{bookings.length} booked</span> this week
             {pending > 0 && <> · {pending} waiting for you to confirm</>}
           </p>
@@ -424,6 +442,10 @@ export function AppointmentsApp({ project, initial }: { project: Project; initia
             onMove={move}
           />
         </div>
+        {/* phones: the legend sits at the bottom of the screen, under the calendar */}
+        <div className="border-t border-line-default bg-surface px-4 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] md:hidden">
+          <Legend className="justify-center" />
+        </div>
       </div>
     )
 
@@ -446,7 +468,7 @@ export function AppointmentsApp({ project, initial }: { project: Project; initia
         }}
         onMove={move}
       />
-      <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center px-4">
+      <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center px-4 max-md:bottom-16">
         {toast && (
           <Toast
             key={toast.message}
