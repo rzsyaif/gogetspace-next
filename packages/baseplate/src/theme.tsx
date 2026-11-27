@@ -49,7 +49,8 @@ const OPTIONS: { value: Theme; label: string; Icon: typeof Sun }[] = [
   { value: "dark", label: "Dark", Icon: Moon },
 ]
 
-export function ThemeToggle({ className }: { className?: string }) {
+/** the light / system / dark switch; `labels` spells the options out and stretches to the full width (e.g. in a menu) */
+export function ThemeToggle({ className, labels }: { className?: string; labels?: boolean }) {
   const [theme, setTheme] = useState<Theme>("light")
 
   useEffect(() => {
@@ -64,8 +65,9 @@ export function ThemeToggle({ className }: { className?: string }) {
   return (
     <SegmentedControl
       label="Color theme"
-      size="sm"
-      iconOnly
+      size={labels ? "md" : "sm"}
+      iconOnly={!labels}
+      fill={labels}
       className={className}
       value={theme}
       onChange={(value) => {

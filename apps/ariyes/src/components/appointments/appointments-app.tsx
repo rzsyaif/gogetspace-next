@@ -342,28 +342,34 @@ export function AppointmentsApp({ project, initial }: { project: Project; initia
       }}
     />
   )
+  const today = () => {
+    setOffset(0)
+    setDayIndex(null)
+  }
+  const arrows = (
+    <span className="flex">
+      <IconButton aria-label="Previous week" onClick={() => setOffset((o) => o - 1)}>
+        <ChevronLeft />
+      </IconButton>
+      <IconButton aria-label="Next week" onClick={() => setOffset((o) => o + 1)}>
+        <ChevronRight />
+      </IconButton>
+    </span>
+  )
+  const range = monday && (
+    <span className="type-label-md text-fg-primary tabular-nums" aria-live="polite">
+      {rangeLabel(week[0], week[6])}
+    </span>
+  )
+  // phones keep only Today beside the title; the week and its arrows get their own row under the header
   const nav = monday && hours && (
     <>
-      <Button
-        size="sm"
-        variant="secondary"
-        onClick={() => {
-          setOffset(0)
-          setDayIndex(null)
-        }}
-      >
+      <Button size="sm" variant="secondary" onClick={today}>
         Today
       </Button>
-      <span className="flex">
-        <IconButton aria-label="Previous week" onClick={() => setOffset((o) => o - 1)}>
-          <ChevronLeft />
-        </IconButton>
-        <IconButton aria-label="Next week" onClick={() => setOffset((o) => o + 1)}>
-          <ChevronRight />
-        </IconButton>
-      </span>
-      <span className="type-label-md text-fg-primary tabular-nums" aria-live="polite">
-        {rangeLabel(week[0], week[6])}
+      <span className="flex items-center gap-2 max-md:hidden">
+        {arrows}
+        {range}
       </span>
     </>
   )
@@ -374,8 +380,12 @@ export function AppointmentsApp({ project, initial }: { project: Project; initia
   else
     main = (
       <div className="flex h-full min-h-0 flex-col">
+        <div className="flex items-center justify-between gap-3 border-b border-line-default bg-surface py-1.5 pr-2 pl-4 md:hidden">
+          {range}
+          {arrows}
+        </div>
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line-default bg-surface px-4 py-2 sm:px-5">
-          <p className="type-body-sm text-fg-secondary">
+          <p className="type-body-sm text-fg-secondary max-md:hidden">
             <span className="font-medium text-fg-primary">{bookings.length} booked</span> this week
             {pending > 0 && <> · {pending} waiting for you to confirm</>}
           </p>
