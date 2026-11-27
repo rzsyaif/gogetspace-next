@@ -1,9 +1,14 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
-import { Check, ChevronsUpDown, ExternalLink, Plus } from "lucide-react"
+import { Check, ChevronsUpDown, ExternalLink, LayoutGrid, Plus } from "lucide-react"
 import {
   Avatar,
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+  IconButton,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -13,6 +18,8 @@ import {
 } from "@gogetspace/baseplate"
 import { ThemeToggle } from "@gogetspace/baseplate/theme"
 import type { Member, Project } from "@gogetspace/modules"
+import { cn } from "@gogetspace/baseplate/cn"
+import { useAppLinks } from "./app-shell"
 
 /** where "Build another website" goes: the GoGetSpace app */
 const GOGETSPACE_URL = process.env.NEXT_PUBLIC_GOGETSPACE_URL ?? "http://localhost:3000"
@@ -24,6 +31,59 @@ function ProjectMark({ name }: { name: string }) {
     <span aria-hidden className="grid size-7 shrink-0 place-items-center rounded-sm bg-action-primary type-label-sm text-fg-on-action">
       {initials}
     </span>
+  )
+}
+
+const tile = "flex min-h-14 min-w-0 items-center gap-3 rounded-lg border px-3 py-2 type-label-md"
+
+/**
+ * Phones: the app rail, the account and the theme switch, in one sheet from the top bar's Apps button. Each app is
+ * a tile with its icon and name, two to a row; the theme switch spans the width underneath.
+ */
+function AppsMenu({ project, me }: { project: Project; me: Member }) {
+  const [open, setOpen] = useState(false)
+  const links = useAppLinks(project)
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <IconButton aria-label="Apps" className="md:hidden">
+          <LayoutGrid />
+        </IconButton>
+      </DialogTrigger>
+      <DialogContent title="Apps">
+        <nav aria-label="Apps" className="flex flex-col gap-4 pb-4">
+          <ul className="grid grid-cols-2 gap-2">
+            {links.map((l) => (
+              <li key={l.key} className="min-w-0">
+                <Link
+                  href={l.href}
+                  aria-current={l.active ? "page" : undefined}
+                  onClick={() => setOpen(false)}
+                  className={cn(
+                    tile,
+                    "transition-colors duration-150 focus-visible:outline-none focus-visible:focus-ring",
+                    l.active ? "border-blue-300 bg-accent-blue-subtle text-fg-link" : "border-line-default bg-surface text-fg-primary hover:bg-subtle",
+                  )}
+                >
+                  <span className={cn("grid size-6 shrink-0 place-items-center", !l.active && "text-fg-secondary")}>{l.icon(l.active)}</span>
+                  <span className="truncate">{l.label}</span>
+                </Link>
+              </li>
+            ))}
+            <li className="min-w-0">
+              <div className={cn(tile, "border-line-default bg-surface text-fg-primary")}>
+                <Avatar name={me.name} size="sm" />
+                <span className="flex min-w-0 flex-col">
+                  <span className="truncate">{me.name}</span>
+                  <span className="truncate type-caption text-fg-tertiary">{me.role}</span>
+                </span>
+              </div>
+            </li>
+          </ul>
+          <ThemeToggle labels />
+        </nav>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -80,8 +140,9 @@ export function TopBar({ project, projects, me }: { project: Project; projects: 
         >
           View website <ExternalLink aria-hidden className="size-4" />
         </a>
-        <ThemeToggle className="max-sm:hidden" />
-        <Avatar name={me.name} size="sm" />
+        <ThemeToggle className="max-md:hidden" />
+        <Avatar name={me.name} size="sm" className="max-md:hidden" />
+        <AppsMenu project={project} me={me} />
       </div>
     </header>
   )
